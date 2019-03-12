@@ -88,7 +88,7 @@ class Order(models.Model):
 
     def is_fully_paid(self):
         total_paid = sum([
-            payment.get_total_price() for payment in
+            payment.get_captured_amount() for payment in
             self.payments.filter(status=PaymentStatus.CONFIRMED)],
             ZERO_TAXED_MONEY
         )
@@ -130,8 +130,10 @@ class Payment(BasePayment):
         on_delete=models.PROTECT
     )
 
-    def get_total_price(self):
-        return self.captured_amount
+    def get_captured_amount(self):
+        return Money(
+            self.captured_amount, self.currency or settings.DEFAULT_CURRENCY
+        )
 
     def get_failure_url(self):
         return self.order.get_failure_url()
