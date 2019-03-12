@@ -130,6 +130,9 @@ class Payment(BasePayment):
         on_delete=models.PROTECT
     )
 
+    def get_total_price(self):
+        return self.captured_amount
+
     def get_failure_url(self):
         return self.order.get_failure_url()
 
