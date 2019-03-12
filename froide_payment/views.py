@@ -12,8 +12,7 @@ from froide.helper.utils import get_client_ip
 
 from payments import RedirectNeeded, PaymentStatus
 
-from . import CHECKOUT_PAYMENT_CHOICES
-from .models import Payment, Order
+from .models import Payment, Order, CHECKOUT_PAYMENT_CHOICES
 
 
 logger = logging.getLogger(__name__)
