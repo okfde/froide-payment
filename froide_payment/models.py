@@ -3,6 +3,7 @@ import uuid
 from django.conf import settings
 from django.db import models
 from django.apps import apps
+from django.utils.translation import ugettext_lazy as _
 from django.utils import timezone
 
 from django_countries.fields import CountryField
@@ -12,6 +13,16 @@ from prices import Money, TaxedMoney
 from payments import PurchasedItem, PaymentStatus
 from payments.models import BasePayment
 
+
+CHECKOUT_PAYMENT_CHOICES = [
+    ('creditcard', _('Credit Card')),
+    ('sepa', _('SEPA Debit')),
+]
+
+PAYMENT_METHODS = [
+    variant for variant in CHECKOUT_PAYMENT_CHOICES
+    if variant[0] in settings.PAYMENT_VARIANTS
+]
 
 ZERO_MONEY = Money(0, settings.DEFAULT_CURRENCY)
 ZERO_TAXED_MONEY = TaxedMoney(net=ZERO_MONEY, gross=ZERO_MONEY)
