@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block navbar %}{% endblock %}
+
+{% block body_extra_attributes %}{{ block.super }} data-raven="{{ RAVEN_JS_URL }}"{% endblock %}
+
+
+{% block body %}
+  <div class="container mb-5 mt-3" style="min-height: 90vh">
+    {% block app_body %}{% endblock %}
+  </div>
+{% endblock %}

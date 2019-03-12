@@ -1,0 +1,82 @@
+{% extends "froide_payment/base.html" %}
+
+{% load i18n %}
+{% load static %}
+{% load block_helper %}
+
+{% block app_body %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="mt-5 mb-3">
+      {% if order.is_donation %}
+        <h2>{% trans "Finish your donation" %}</h2>
+      {% else %}
+        <h2>{% trans "Finish your payment" %}</h2>
+      {% endif %}
+    </div>
+
+    <p class="lead mb-5 mt-5">
+      {% if order.is_donation %}
+        {% blocktrans with amount=order.amount description=order.description %}You are donating <strong>{{ amount }}&nbsp;€</strong> to <mark>{{ description }}</mark>.{% endblocktrans %}
+      {% else %}
+        {% blocktrans with amount=order.amount description=order.description %}You are paying <strong>{{ amount }}&nbsp;€</strong> for <mark>{{ description }}</mark>.{% endblocktrans %}
+      {% endif %}
+    </p>
+  </div>
+</div>
+<div class="row justify-content-center">
+  <div class="col-md-8">
+
+    <div id="payment-request" style="display: none">
+      <div id="payment-request-button">
+          <!-- A Stripe Element will be inserted here. -->
+      </div>
+      <p>
+          {% trans "Or choose a payment method below" %}
+      </p>
+    </div>
+  </div>
+</div>
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <form method="{{ form.method }}"
+      id="payment-form"
+      class="form-horizontal"
+      {% if form.action %} action="{{ form.action }}"{% endif %}
+      data-stripepk="{{ form.public_key }}"
+      data-clientsecret="{{ form.intent_secret }}"
+      data-firstname="{{ order.first_name }}"
+      data-lastname="{{ order.last_name }}"
+      data-email="{{ order.user_email }}"
+      data-country="{{ order.country.code }}"
+      data-successurl="{{ payment.get_success_url }}"
+      data-currency="{{ order.currency }}"
+      data-amount="{{ order.amount_cents }}"
+      data-label="{{ order.description }}"
+      data-address1="{{ order.street_address_1 }}"
+      data-address2="{{ order.street_address_2 }}"
+      data-city="{{ order.city }}"
+      data-locale="{{ LANGUAGE_CODE }}"
+      data-postcode="{{ order.postcode }}"
+      novalidate>
+      {% csrf_token %}
+      <div id="loading" style="display: none">
+        <div class="spinner-border" role="status">
+          <span class="sr-only">{% trans "Loading..." %}</span>
+        </div>
+      </div>
+      <div id="container">
+        {% block payment_method %}{% endblock %}
+      </div>
+    </form>
+  </div>
+</div>
+
+{% addtoblock "js" %}
+<script src="https://js.stripe.com/v3/"></script>
+{% endaddtoblock %}
+{% addtoblock "js" %}
+<script src="{% static 'js/payment.js' %}"></script>
+{% endaddtoblock %}
+
+{% endblock %}

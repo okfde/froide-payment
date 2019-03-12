@@ -1,0 +1,38 @@
+{
+  "name": "froide_payment",
+  "version": "1.0.0",
+  "description": "Froide payment",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint --ext .js,.vue frontend"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/okfde/froide-payment.git"
+  },
+  "author": "Stefan Wehrmeyer",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/okfde/froide-payment/issues"
+  },
+  "homepage": "https://github.com/okfde/froide-payment#readme",
+  "devDependencies": {
+    "eslint": "^4.7.1",
+    "eslint-config-standard": "^11.0.0-beta.0",
+    "eslint-plugin-html": "^4.0.1",
+    "eslint-plugin-import": "^2.7.0",
+    "eslint-plugin-node": "^5.1.1",
+    "eslint-plugin-promise": "^3.5.0",
+    "eslint-plugin-standard": "^3.0.1"
+  },
+  "dependencies": {
+    "@types/stripe-v3": "^3.0.9",
+    "tslint": "^5.13.1",
+    "tslint-config-standard": "^8.0.1",
+    "typescript": "^3.3.3333"
+  }
+}

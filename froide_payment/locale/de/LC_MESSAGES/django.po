@@ -1,0 +1,108 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2019-03-12 13:45+0100\n"
+"PO-Revision-Date: 2019-03-12 14:09+0100\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Last-Translator: Stefan Wehrmeyer <stefan.wehrmeyer@okfn.de>\n"
+"Language-Team: \n"
+"X-Generator: Poedit 2.2\n"
+
+#: __init__.py:8 templates/froide_payment/payment/stripeintent.html:71
+msgid "Credit Card"
+msgstr "Kreditkarte"
+
+#: apps.py:7
+msgid "Froide Payment App"
+msgstr "Froide Bezahlungs-App"
+
+#: templates/froide_payment/payment/default.html:22
+msgid "Make payment"
+msgstr "Bezahlen"
+
+#: templates/froide_payment/payment/stripeintent.html:12
+msgid "Finish your donation"
+msgstr "Spenden"
+
+#: templates/froide_payment/payment/stripeintent.html:14
+msgid "Finish your payment"
+msgstr "Bezahlen"
+
+#: templates/froide_payment/payment/stripeintent.html:20
+#, python-format
+msgid ""
+"You are donating <strong>%(amount)s&nbsp;€</strong> to <mark>"
+"%(description)s</mark>."
+msgstr ""
+"Sie spenden <strong>%(amount)s&nbsp;€</strong> an <mark>%(description)s</"
+"mark>."
+
+#: templates/froide_payment/payment/stripeintent.html:22
+#, python-format
+msgid ""
+"You are paying <strong>%(amount)s&nbsp;€</strong> for <mark>%(description)s</"
+"mark>."
+msgstr ""
+"Sie zahlen <strong>%(amount)s&nbsp;€</strong> für <mark>%(description)s</"
+"mark>."
+
+#: templates/froide_payment/payment/stripeintent.html:35
+msgid "Or choose a payment method below"
+msgstr "Oder wählen Sie eine dieser Zahlungsmethoden"
+
+#: templates/froide_payment/payment/stripeintent.html:76
+msgid "SEPA"
+msgstr "Lastschrift"
+
+#: templates/froide_payment/payment/stripeintent.html:88
+msgid "Please enter your credit card details"
+msgstr "Bitte geben Sie die Details Ihrer Kreditkarte ein"
+
+#: templates/froide_payment/payment/stripeintent.html:99
+#: templates/froide_payment/payment/stripeintent.html:119
+msgid "Donate now"
+msgstr "Jetzt spenden"
+
+#: templates/froide_payment/payment/stripeintent.html:101
+#: templates/froide_payment/payment/stripeintent.html:121
+msgid "Pay now"
+msgstr "Jetzt bezahlen"
+
+#: templates/froide_payment/payment/stripeintent.html:108
+msgid "Please enter your IBAN"
+msgstr "Bitte geben Sie Ihre IBAN ein"
+
+#: templates/froide_payment/payment/stripeintent.html:127
+msgid ""
+"By providing your IBAN and confirming this payment, you are authorizing Open "
+"Knowledge Foundation Deutschland e.V. and Stripe, our payment service "
+"provider, to send instructions to your bank to debit your account and your "
+"bank to debit your account in accordance with those instructions.\n"
+"              You are entitled to a refund from your bank under the terms "
+"and conditions of your agreement with your bank. A refund must be claimed "
+"within 8 weeks starting from the date on which your account was debited."
+msgstr ""
+"Ich ermächtige (A) Open Knowledge Foundation Deutschland e.V. und Stripe, "
+"Zahlungen von meinem Konto mittels Lastschrift einzuziehen. Zugleich (B) "
+"weise ich mein Kreditinstitut an, die von Open Knowledge Foundation auf mein "
+"Konto gezogenen Lastschriften einzulösen. Hinweis: Ich kann innerhalb von "
+"acht Wochen, beginnend mit dem Belastungsdatum, die Erstattung des "
+"belasteten Betrages verlangen. Es gelten dabei die mit meinem Kreditinstitut "
+"vereinbarten Bedingungen."
+
+#: views.py:76
+msgid ""
+"Oops, it looks like we were unable to contact the selected payment service"
+msgstr ""
+"Hoppla, wir konnten offenbar den ausgewählten Zahlungsdienstleister nicht "
+"erreichen"

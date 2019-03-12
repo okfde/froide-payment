@@ -1,0 +1,25 @@
+{% extends "froide_payment/payment/base.html" %}
+
+{% load i18n %}
+
+{% block payment_method %}
+  <div class="form-group">
+    <label for="card-element">
+      {% trans "Please enter your credit card details" %}
+    </label>
+    <div id="card-element">
+      <!-- A Stripe Element will be inserted here. -->
+    </div>
+  </div>
+  <!-- Used to display Element errors. -->
+  <div id="card-errors" role="alert"></div>
+  <p class="text-right">
+    <button class="btn btn-success btn-lg">
+      {% if order.is_donation %}
+        &rarr;&nbsp;{% trans "Donate now" %}
+      {% else %}
+        &rarr;&nbsp;{% trans "Pay now" %}
+      {% endif %}
+    </button>
+  </p>
+{% endblock %}
