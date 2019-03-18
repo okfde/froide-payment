@@ -16,7 +16,9 @@ from payments.models import BasePayment
 
 CHECKOUT_PAYMENT_CHOICES = [
     ('creditcard', _('Credit Card')),
-    ('sepa', _('SEPA Debit')),
+    # ('sepa', _('SEPA Debit')),
+    ('sofort', _('SOFORT Überweisung')),
+    ('paypal', _('Paypal')),
 ]
 
 PAYMENT_METHODS = [

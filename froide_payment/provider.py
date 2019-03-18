@@ -1,9 +1,11 @@
 from decimal import Decimal
 import json
+import logging
 
 import stripe
 
 from django.conf import settings
+from django.shortcuts import redirect
 from django.http import HttpResponse
 
 from payments.forms import PaymentForm
@@ -12,8 +14,14 @@ from payments import PaymentStatus, RedirectNeeded, get_payment_model
 
 from .forms import SourcePaymentForm
 
+logger = logging.getLogger(__name__)
+
 
 class StripeWebhookMixin():
+    def __init__(self, **kwargs):
+        self.signing_secret = kwargs.pop('signing_secret', '')
+        super().__init__(**kwargs)
+
     def decode_webhook_request(self, request):
         payload = request.body
         sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
@@ -37,22 +45,29 @@ class StripeWebhookMixin():
         event_dict = self.decode_webhook_request(request)
         if event_dict is None:
             return None
-        intent = event_dict['data']['object']
+        obj = event_dict['data']['object']
         Payment = get_payment_model()
         try:
             payment = Payment.objects.get(
-                transaction_id=intent['id']
+                transaction_id=obj['id'],
             )
         except Payment.DoesNotExist:
             return None
         return payment.token
 
     def process_data(self, payment, request):
+        if payment.variant != self.provider_name:
+            # This payment reached the wrong provider implementation endpoint
+            return HttpResponse(status=201)
+
         event_dict = self.decode_webhook_request(request)
         event_type = event_dict['type']
 
         method_name = event_type.replace('.', '_')
-        method = getattr(self, method_name)
+        method = getattr(self, method_name, None)
+        if method is None:
+            return HttpResponse(status=201)
+
         result = method(payment, request, event_dict)
         if result is not None:
             return result
@@ -60,12 +75,16 @@ class StripeWebhookMixin():
         return HttpResponse(status=201)
 
 
+def get_statement_descriptor(payment):
+    return '{} {}'.format(
+            settings.SITE_NAME,
+            payment.order.id
+        )
+
+
 class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
     form_class = PaymentForm
-
-    def __init__(self, **kwargs):
-        self.signing_secret = kwargs.pop('signing_secret')
-        super().__init__(**kwargs)
+    provider_name = 'creditcard'
 
     def get_form(self, payment, data=None):
         if payment.status == PaymentStatus.WAITING:
@@ -87,10 +106,7 @@ class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
                 currency=payment.currency,
                 payment_method_types=['card'],
                 use_stripe_sdk=True,
-                statement_descriptor='{} {}'.format(
-                    settings.SITE_NAME,
-                    payment.order.id
-                ),
+                statement_descriptor=get_statement_descriptor(payment),
                 metadata={'order_id': str(payment.order.token)},
             )
             payment.transaction_id = intent.id
@@ -104,6 +120,8 @@ class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
         return form
 
     def payment_intent_succeeded(self, payment, request, event_dict):
+        logger.info('Creditcard Webhook: Payment intent succeeded: %d',
+                    payment.id)
         intent = event_dict['data']['object']
 
         payment.attrs.charges = intent.charges.data
@@ -111,6 +129,8 @@ class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
         payment.change_status(PaymentStatus.CONFIRMED)
 
     def payment_intent_failed(self, payment, request, event_dict):
+        logger.info('Creditcard Webhook: Payment intent failed: %d',
+                    payment.id)
         intent = event_dict['data']['object']
         error_message = None
         if intent.get('last_payment_error'):
@@ -120,6 +140,7 @@ class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
 
 class StripeSourceProvider(StripeProvider):
     form_class = SourcePaymentForm
+    provider_name = 'sepa'
 
     def get_form(self, payment, data=None):
         form = super().get_form(payment, data=data)
@@ -129,6 +150,111 @@ class StripeSourceProvider(StripeProvider):
     def charge_succeeded(self, payment, request, event_dict):
         charge = event_dict['data']['object']
 
+        payment.attrs.charge = json.dumps(charge)
+        payment.captured_amount = Decimal(charge.amount) / 100
+        payment.change_status(PaymentStatus.CONFIRMED)
+
+
+class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
+    provider_name = 'sofort'
+
+    def get_form(self, payment, data=None):
+        if payment.transaction_id:
+            raise RedirectNeeded(payment.get_success_url())
+        else:
+            try:
+                source = stripe.Source.create(
+                    type='sofort',
+                    amount=int(payment.total * 100),
+                    currency=payment.currency,
+                    statement_descriptor=get_statement_descriptor(payment),
+                    redirect={
+                        'return_url': self.get_return_url(payment),
+                    },
+                    sofort={
+                        'country': 'DE',
+                    },
+                )
+                payment.transaction_id = source.id
+                payment.change_status(PaymentStatus.INPUT)
+            except stripe.error.StripeError as e:
+                payment.change_status(PaymentStatus.ERROR)
+                # charge_id = e.json_body['error']['charge']
+                raise RedirectNeeded(payment.get_failure_url())
+        if source.status == 'chargeable':
+            self.charge_source(payment, source)
+            raise RedirectNeeded(payment.get_success_url())
+        else:
+            raise RedirectNeeded(source.redirect['url'])
+
+    def get_token_from_request(self, request=None, payment=None):
+        if request.method == 'GET':
+            # Redirect not webhook
+            source_id = request.GET.get('source')
+            if source_id is None:
+                return None
+            Payment = get_payment_model()
+            try:
+                payment = Payment.objects.get(
+                    transaction_id=source_id,
+                )
+            except Payment.DoesNotExist:
+                return None
+            return payment.token
+        return super().get_token_from_request(request=request, payment=payment)
+
+    def process_data(self, payment, request):
+        if request.method == 'GET':
+            # Redirect (not webhook)
+            try:
+                source_id = request.GET['source']
+                client_secret = request.GET['client_secret']
+            except KeyError:
+                return redirect(payment.get_failure_url())
+            try:
+                source = stripe.Source.retrieve(
+                    source_id, client_secret=client_secret
+                )
+            except stripe.error.StripeError as e:
+                return redirect(payment.get_failure_url())
+            if source.status in ('canceled', 'failed'):
+                return redirect(payment.get_failure_url())
+            # Charging takes place in webhook
+            return redirect(payment.get_success_url())
+        # Process web hook
+        logger.info('Incoming Sofort Webhook')
+        return super().process_data(payment, request)
+
+    def charge_source(self, payment, source):
+        try:
+            charge = stripe.Charge.create(
+                amount=int(payment.total * 100),
+                currency=payment.currency,
+                source=source.id,
+            )
+        except stripe.error.StripeError as e:
+            raise RedirectNeeded(payment.get_failure_url())
+
+        payment.transaction_id = charge.id
+        payment.save()
+
+    def source_chargeable(self, payment, request, event_dict):
+        logger.info('Sofort Webhook: source chargeable: %d', payment.id)
+        source = event_dict['data']['object']
+        if not payment.transaction_id.startswith(source.id):
+            return
+        self.charge_source(payment, source)
+
+    def charge_succeeded(self, payment, request, event_dict):
+        logger.info('Sofort Webhook: charge succeeded: %d', payment.id)
+        charge = event_dict['data']['object']
+        payment.attrs.charge = json.dumps(charge)
+        payment.captured_amount = Decimal(charge.amount) / 100
+        payment.change_status(PaymentStatus.CONFIRMED)
+
+    def charge_failed(self, payment, request, event_dict):
+        logger.info('Sofort Webhook: charge failed: %d', payment.id)
+        charge = event_dict['data']['object']
         payment.attrs.charge = json.dumps(charge)
         payment.captured_amount = Decimal(charge.amount) / 100
         payment.change_status(PaymentStatus.CONFIRMED)
