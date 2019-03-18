@@ -40,7 +40,7 @@ Configure these event types:
 Use this URL on your domain:
 
 ```
-/payment/payments/process/sofort/
+/payments/process/sofort/
 ```
 
 
