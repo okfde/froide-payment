@@ -144,8 +144,9 @@ class Payment(BasePayment):
     def get_purchased_items(self):
         order = self.order
         yield PurchasedItem(
-            name=str(order.item_name),
+            name=str(order.description),
             quantity=1,
-            price=order.total_gross,
-            currency=settings.DEFAULT_CURRENCY
+            price=order.total_gross.amount,
+            currency=order.total_gross.currency,
+            sku=order.id
         )

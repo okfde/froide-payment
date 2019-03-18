@@ -1,12 +1,11 @@
+from decimal import Decimal
 import logging
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import Http404
-from django.contrib import messages
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
-from django.utils.translation import ugettext_lazy as _
 
 from froide.helper.utils import get_client_ip
 
@@ -25,6 +24,8 @@ def start_payment(request, token, variant):
 
     defaults = {
         'total': order.amount,
+        'delivery': Decimal('0.0'),
+        'tax': Decimal('0.0'),
         'currency': settings.DEFAULT_CURRENCY,
         'billing_first_name': order.first_name,
         'billing_last_name': order.last_name,
@@ -52,13 +53,6 @@ def start_payment(request, token, variant):
             form = payment.get_form(data=None)
         except RedirectNeeded as redirect_to:
             return redirect(str(redirect_to))
-        except Exception:
-            logger.exception('Error communicating with the payment gateway')
-            msg = _('Oops, it looks like we were unable to contact the '
-                    'selected payment service')
-            messages.error(request, msg)
-            payment.change_status(PaymentStatus.ERROR)
-            return redirect('froide_payment:payment', token=order.token)
     default_template = 'froide_payment/payment/default.html'
     template = 'froide_payment/payment/%s.html' % variant
     ctx = {
