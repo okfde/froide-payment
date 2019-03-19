@@ -7,7 +7,7 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 
-from froide.helper.utils import get_client_ip
+from froide.helper.utils import get_client_ip, render_403
 
 from payments import RedirectNeeded, PaymentStatus
 
@@ -15,6 +15,30 @@ from .models import Payment, Order, CHECKOUT_PAYMENT_CHOICES
 
 
 logger = logging.getLogger(__name__)
+
+
+def order_detail(request, token):
+    order = get_object_or_404(Order, token=token)
+    user = request.user
+    if order.user and user != order.user and not user.is_superuser:
+        return render_403(request)
+
+    payments = Payment.objects.filter(order=order)
+    templates = []
+    if order.kind:
+        part = '/'.join(order.kind.lower().split('.'))
+        templates.append('froide_payment/order/%s/detail.html' % part)
+    templates.append('froide_payment/order/default.html')
+
+    domain_object = order.get_domain_object()
+
+    ctx = {
+        'payments': payments,
+        'order': order,
+        'object': domain_object,
+        'result': request.GET.get('result')
+    }
+    return render(request, templates, ctx)
 
 
 def start_payment(request, token, variant):

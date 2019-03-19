@@ -3,6 +3,7 @@ import uuid
 from django.conf import settings
 from django.db import models
 from django.apps import apps
+from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 from django.utils import timezone
 
@@ -16,10 +17,12 @@ from payments.models import BasePayment
 
 CHECKOUT_PAYMENT_CHOICES = [
     ('creditcard', _('Credit Card')),
-    # ('sepa', _('SEPA Debit')),
+    ('sepa', _('SEPA Debit')),
     ('sofort', _('SOFORT Überweisung')),
     ('paypal', _('Paypal')),
 ]
+
+CHECKOUT_PAYMENT_CHOICES_DICT = dict(CHECKOUT_PAYMENT_CHOICES)
 
 PAYMENT_METHODS = [
     variant for variant in CHECKOUT_PAYMENT_CHOICES
@@ -96,6 +99,11 @@ class Order(models.Model):
         )
         return total_paid.gross >= self.total.gross
 
+    def get_absolute_url(self):
+        return reverse('froide_payment:order-detail', kwargs={
+            'token': self.token
+        })
+
     def get_failure_url(self):
         obj = self.get_domain_object()
         if obj is None:
@@ -132,6 +140,16 @@ class Payment(BasePayment):
         on_delete=models.PROTECT
     )
 
+    STATUS_COLORS = {
+        PaymentStatus.WAITING: 'secondary',
+        PaymentStatus.PREAUTH: 'light',
+        PaymentStatus.CONFIRMED: 'success',
+        PaymentStatus.REJECTED: 'danger',
+        PaymentStatus.REFUNDED: 'warning',
+        PaymentStatus.ERROR: 'danger',
+        PaymentStatus.INPUT: 'light',
+    }
+
     def get_captured_amount(self):
         return Money(
             self.captured_amount, self.currency or settings.DEFAULT_CURRENCY
@@ -152,3 +170,10 @@ class Payment(BasePayment):
             currency=order.total_gross.currency,
             sku=order.id
         )
+
+    def get_variant_display(self):
+        return CHECKOUT_PAYMENT_CHOICES_DICT.get(self.variant, '')
+
+    @property
+    def status_color(self):
+        return self.STATUS_COLORS[self.status]

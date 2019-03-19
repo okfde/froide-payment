@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+{% load static %}
+{% load block_helper %}
+{% load prices %}
+
+{% block app_body %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <h3>{% trans "Your order" %}</h3>
+    {% if result == 'success' %}
+      <div class="alert alert-success mb-5 mt-5">
+        <h4>{% trans "Thank you!" %}</h4>
+        {% if order.is_fully_paid %}
+          <p>
+            {% trans "Your payment has been received." %}
+          </p>
+        {% else %}
+          <p>
+            {% trans "We are processing your payment now." %}
+          </p>
+        {% endif %}
+      </div>
+    {% elif result == 'failure' %}
+      <div class="alert alert-danger mb-5 mt-5">
+        <h4>{% trans "Sorry, there was an error." %}</h4>
+          <p>
+            {% trans "Your payment was NOT received." %}
+          </p>
+      </div>
+    {% endif %}
+    {% block domain_block %}{% endblock %}
+    <table class="table">
+      <tr>
+        <td>{% trans "date" %}</td>
+        <td>
+          {{ order.created|date:"SHORT_DATETIME_FORMAT" }}
+        </td>
+      </tr>
+      <tr>
+        <td>{% trans "amount gross" %}</td>
+        <td>
+          {{ order.total.gross|amount }}
+        </td>
+      </tr>
+      <tr>
+        <td>{% trans "amount net" %}</td>
+        <td>
+          {{ order.total.net|amount }}
+        </td>
+      </tr>
+      {% if order.is_donation %}
+        <tr>
+          <td>{% trans "Donation" %}</td>
+          <td class="text-success">
+            <i class="fa fa-check"></i>
+            {% trans "This is a donation" %}
+          </td>
+        </tr>
+      {% endif %}
+    </table>
+    <h4>{% trans "order details" %}</h4>
+    <dl>
+      <dt>{% trans "name" %}</dt>
+      <dd>{{ order.first_name }} {{ order.last_name }}</dd>
+      {% if order.company_name %}
+        <dt>{% trans "company name" %}</dt>
+        <dd>{{ order.company_name }}</dd>
+      {% endif %}
+      <dt>{% trans "address" %}</dt>
+      <dd>
+        {{ order.street_address_1 }}
+        {% if order.street_address_2 %}<br/>{{ order.street_address_2 }}{% endif %}
+        <br/>{{ order.postcode }} {{ order.city }}
+        <br/>{{ order.get_country_display }}
+      </dd>
+      <dt>{% trans "E-Mail" %}</dt>
+      <dd>{{ order.user_email }}</dd>
+    </dl>
+    <h4>{% trans "payment" %}</h4>
+    {% for payment in payments %}
+      <div class="alert alert-{{ payment.status_color }}">
+        <h4>{{ payment.get_variant_display }}</h4>
+        <table class="table">
+          <tr>
+            <td>{% trans "status" %}</td>
+            <td>{{ payment.get_status_display }}</td>
+          </tr>
+          {% if payment.message %}
+            <tr>
+              <td>{% trans "status message" %}</td>
+              <td>{{ payment.message }}</td>
+            </tr>
+          {% endif %}
+          <tr>
+            <td>{% trans "amount due" %}</td>
+            <td>{{ payment.total }}&nbsp;{{ payment.currency }}</td>
+          </tr>
+          <tr>
+            <td>{% trans "amount paid" %}</td>
+            <td>{{ payment.captured_amount }}&nbsp;{{ payment.currency }}</td>
+          </tr>
+          <tr>
+            <td>{% trans "date created" %}</td>
+            <td>{{ payment.created|date:"SHORT_DATETIME_FORMAT" }}</td>
+          </tr>
+          <tr>
+            <td>{% trans "last updated" %}</td>
+            <td>{{ payment.modified|date:"SHORT_DATETIME_FORMAT" }}</td>
+          </tr>
+        </table>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
