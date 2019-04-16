@@ -203,52 +203,65 @@ function stripeSourceHandler (source: stripe.Source) {
  *
  */
 
-const paymentRequest = stripe.paymentRequest({
-  country: form.dataset.country || 'DE',
-  currency: currency,
-  total: {
-    label: form.dataset.label || '',
-    amount: parseInt(form.dataset.amount || '0', 10)
-  }
-  // requestPayerName: true,
-  // requestPayerEmail: true,
-})
-
-const prButton = elements.create('paymentRequestButton', {
-  paymentRequest: paymentRequest
-})
-
-// Check the availability of the Payment Request API first.
-paymentRequest.canMakePayment().then((result) => {
-  if (result) {
-    const prContainer = document.getElementById('payment-request')
-    if (prContainer) {
-      prContainer.style.display = 'block'
-      prButton.mount('#payment-request-button')
+if (clientSecret) {
+  const paymentRequest = stripe.paymentRequest({
+    country: form.dataset.country || 'DE',
+    currency: currency,
+    total: {
+      label: form.dataset.label || '',
+      amount: parseInt(form.dataset.amount || '0', 10)
     }
-  }
-})
-
-paymentRequest.on('token', (ev) => {
-  // Send the token to your server to charge it!
-  fetch(form.action, {
-    method: 'POST',
-    body: JSON.stringify({ token: ev.token.id }),
-    headers: { 'content-type': 'application/json' }
+    // requestPayerName: true,
+    // requestPayerEmail: true,
   })
-  .then((response) => {
-    if (response.ok) {
-      // Report to the browser that the payment was successful, prompting
-      // it to close the browser payment interface.
-      ev.complete('success')
-    } else {
-      // Report to the browser that the payment failed, prompting it to
-      // re-show the payment interface, or show an error message and close
-      // the payment interface.
-      ev.complete('fail')
+
+  const prButton = elements.create('paymentRequestButton', {
+    paymentRequest: paymentRequest
+  })
+
+  // Check the availability of the Payment Request API first.
+  paymentRequest.canMakePayment().then((result) => {
+    if (result) {
+      const prContainer = document.getElementById('payment-request')
+      if (prContainer) {
+        prContainer.style.display = 'block'
+        prButton.mount('#payment-request-button')
+      }
     }
   })
-})
+
+  paymentRequest.on('paymentmethod', (ev) => {
+    stripe.confirmPaymentIntent(clientSecret, {
+      payment_method: ev.paymentMethod.id
+    }).then((confirmResult) => {
+      if (confirmResult.error) {
+        // Report to the browser that the payment failed, prompting it to
+        // re-show the payment interface, or show an error message and close
+        // the payment interface.
+        ev.complete('fail')
+      } else {
+        // Report to the browser that the confirmation was successful, prompting
+        // it to close the browser payment method collection interface.
+        ev.complete('success')
+        // Let Stripe.js handle the rest of the payment flow.
+        stripe.handleCardPayment(clientSecret).then((result) => {
+          if (result.error) {
+            // The payment failed -- ask your customer for a new payment method.
+          // Inform the customer that there was an error.
+            const errorElement = document.getElementById('card-errors')
+            if (errorElement) {
+              errorElement.textContent = result.error.message || 'Card error'
+            }
+          } else if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
+            document.location.href = form.dataset.successurl || '/'
+          } else {
+            console.error('Payment intent did not succeed.')
+          }
+        })
+      }
+    })
+  })
+}
 
 /*
  *
