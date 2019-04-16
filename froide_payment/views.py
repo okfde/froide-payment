@@ -9,9 +9,12 @@ from django.db.models import Q
 
 from froide.helper.utils import get_client_ip, render_403
 
-from payments import RedirectNeeded, PaymentStatus
+from payments import RedirectNeeded
+from payments.core import provider_factory
 
-from .models import Payment, Order, CHECKOUT_PAYMENT_CHOICES
+from .models import (
+    Payment, Order, PaymentStatus, CHECKOUT_PAYMENT_CHOICES
+)
 
 
 logger = logging.getLogger(__name__)
@@ -32,11 +35,23 @@ def order_detail(request, token):
 
     domain_object = order.get_domain_object()
 
+    result = request.GET.get('result')
+    if result == 'success':
+        any_confirmed = any(
+            payment.status == PaymentStatus.CONFIRMED
+            for payment in payments
+        )
+        if not any_confirmed:
+            for payment in payments:
+                provider = provider_factory(payment.variant)
+                if hasattr(provider, 'update_status'):
+                    provider.update_status(payment)
+
     ctx = {
         'payments': payments,
         'order': order,
         'object': domain_object,
-        'result': request.GET.get('result')
+        'result': result
     }
     return render(request, templates, ctx)
 
