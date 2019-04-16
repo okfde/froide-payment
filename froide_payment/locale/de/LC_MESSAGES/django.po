@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-04-16 23:03+0200\n"
-"PO-Revision-Date: 2019-04-16 23:03+0200\n"
+"POT-Creation-Date: 2019-04-16 23:48+0200\n"
+"PO-Revision-Date: 2019-04-16 23:49+0200\n"
 "Last-Translator: Stefan Wehrmeyer <stefan.wehrmeyer@okfn.de>\n"
 "Language-Team: \n"
 "Language: de\n"
@@ -165,24 +165,24 @@ msgstr ""
 "Sie zahlen <strong>%(amount)s&nbsp;€</strong> für <mark>%(description)s</"
 "mark>."
 
-#: templates/froide_payment/payment/base.html:35
-msgid "Or choose a payment method below"
-msgstr "Oder wählen Sie eine dieser Zahlungsmethoden"
-
-#: templates/froide_payment/payment/base.html:65
+#: templates/froide_payment/payment/base.html:53
 msgid "Loading..."
 msgstr "Wird geladen..."
 
-#: templates/froide_payment/payment/creditcard.html:8
+#: templates/froide_payment/payment/creditcard.html:12
+msgid "Or enter your credit card details below"
+msgstr "Oder geben Sie die Details Ihrer Kreditkarte selbst ein"
+
+#: templates/froide_payment/payment/creditcard.html:18
 msgid "Please enter your credit card details"
 msgstr "Bitte geben Sie die Details Ihrer Kreditkarte ein"
 
-#: templates/froide_payment/payment/creditcard.html:19
+#: templates/froide_payment/payment/creditcard.html:29
 #: templates/froide_payment/payment/sepa.html:18
 msgid "Donate now"
 msgstr "Jetzt spenden"
 
-#: templates/froide_payment/payment/creditcard.html:21
+#: templates/froide_payment/payment/creditcard.html:31
 #: templates/froide_payment/payment/sepa.html:20
 msgid "Pay now"
 msgstr "Jetzt bezahlen"
@@ -208,6 +208,9 @@ msgstr ""
 "acht Wochen, beginnend mit dem Belastungsdatum, die Erstattung des "
 "belasteten Betrages verlangen. Es gelten dabei die mit meinem Kreditinstitut "
 "vereinbarten Bedingungen."
+
+#~ msgid "Or choose a payment method below"
+#~ msgstr "Oder wählen Sie eine dieser Zahlungsmethoden"
 
 #~ msgid "E-Mail"
 #~ msgstr "E-Mail"
