@@ -3,6 +3,16 @@
 {% load i18n %}
 
 {% block payment_method %}
+  <div id="payment-request" style="display: none">
+    <div id="payment-request-button">
+        <!-- A Stripe Element will be inserted here. -->
+    </div>
+    <p class="mt-5 mb-5 text-center">
+      <strong>
+        {% trans "Or enter your credit card details below" %}
+      </strong>
+    </p>
+  </div>
   <div class="form-group">
     <label for="card-element">
       {% trans "Please enter your credit card details" %}

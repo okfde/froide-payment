@@ -203,7 +203,9 @@ function stripeSourceHandler (source: stripe.Source) {
  *
  */
 
-if (clientSecret) {
+const prContainer = document.getElementById('payment-request')
+
+if (prContainer && clientSecret) {
   const paymentRequest = stripe.paymentRequest({
     country: form.dataset.country || 'DE',
     currency: currency,
@@ -216,17 +218,21 @@ if (clientSecret) {
   })
 
   const prButton = elements.create('paymentRequestButton', {
-    paymentRequest: paymentRequest
+    paymentRequest: paymentRequest,
+    style: {
+      paymentRequestButton: {
+        type: form.dataset.donation ? 'donate' : 'default', //  | 'donate' | 'buy', // default: 'default'
+        theme: 'dark',
+        height: '64px' // default: '40px', the width is always '100%'
+      }
+    }
   })
 
   // Check the availability of the Payment Request API first.
   paymentRequest.canMakePayment().then((result) => {
     if (result) {
-      const prContainer = document.getElementById('payment-request')
-      if (prContainer) {
-        prContainer.style.display = 'block'
-        prButton.mount('#payment-request-button')
-      }
+      prContainer.style.display = 'block'
+      prButton.mount('#payment-request-button')
     }
   })
 

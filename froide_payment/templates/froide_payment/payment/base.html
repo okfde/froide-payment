@@ -26,19 +26,6 @@
 </div>
 <div class="row justify-content-center">
   <div class="col-md-8">
-
-    <div id="payment-request" style="display: none">
-      <div id="payment-request-button">
-          <!-- A Stripe Element will be inserted here. -->
-      </div>
-      <p>
-          {% trans "Or choose a payment method below" %}
-      </p>
-    </div>
-  </div>
-</div>
-<div class="row justify-content-center">
-  <div class="col-md-8">
     <form method="{{ form.method }}"
       id="payment-form"
       class="form-horizontal"
@@ -51,6 +38,7 @@
       data-country="{{ order.country.code }}"
       data-successurl="{{ payment.get_success_url }}"
       data-currency="{{ order.currency }}"
+      data-donation="{% if order.is_donation %}1{% endif %}"
       data-amount="{{ order.amount_cents }}"
       data-label="{{ order.description }}"
       data-address1="{{ order.street_address_1 }}"
