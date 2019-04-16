@@ -4,14 +4,14 @@ from django.conf import settings
 from django.db import models
 from django.apps import apps
 from django.urls import reverse
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import pgettext_lazy, ugettext_lazy as _
 from django.utils import timezone
 
 from django_countries.fields import CountryField
 from django_prices.models import MoneyField, TaxedMoneyField
 from prices import Money, TaxedMoney
 
-from payments import PurchasedItem, PaymentStatus
+from payments import PurchasedItem, PaymentStatus as BasePaymentStatus
 from payments.models import BasePayment
 
 
@@ -31,6 +31,14 @@ PAYMENT_METHODS = [
 
 ZERO_MONEY = Money(0, settings.DEFAULT_CURRENCY)
 ZERO_TAXED_MONEY = TaxedMoney(net=ZERO_MONEY, gross=ZERO_MONEY)
+
+
+class PaymentStatus(BasePaymentStatus):
+    PENDING = 'pending'
+
+    CHOICES = BasePaymentStatus.CHOICES + [
+        (PENDING, pgettext_lazy('payment status', 'Confirmation pending')),
+    ]
 
 
 class Order(models.Model):
@@ -135,14 +143,21 @@ class Order(models.Model):
 
 
 class Payment(BasePayment):
+    status = models.CharField(
+        max_length=10, choices=PaymentStatus.CHOICES,
+        default=PaymentStatus.WAITING)
     order = models.ForeignKey(
         Order, related_name='payments',
         on_delete=models.PROTECT
     )
 
+    class Meta:
+        ordering = ('-modified',)
+
     STATUS_COLORS = {
         PaymentStatus.WAITING: 'secondary',
         PaymentStatus.PREAUTH: 'light',
+        PaymentStatus.PENDING: 'secondary',
         PaymentStatus.CONFIRMED: 'success',
         PaymentStatus.REJECTED: 'danger',
         PaymentStatus.REFUNDED: 'warning',
