@@ -33,7 +33,6 @@ setup(
     author_email='mail@stefanwehrmeyer.com',
     packages=find_packages(),
     install_requires=[
-        'froide',
         'django-payments',
         'django-countries',
         'django-prices',
