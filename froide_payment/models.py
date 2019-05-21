@@ -1,4 +1,5 @@
 import uuid
+import json
 
 from django.conf import settings
 from django.db import models
@@ -10,14 +11,17 @@ from django.utils import timezone
 from django_countries.fields import CountryField
 from django_prices.models import MoneyField, TaxedMoneyField
 from prices import Money, TaxedMoney
+from dateutil.relativedelta import relativedelta
 
 from payments import PurchasedItem, PaymentStatus as BasePaymentStatus
 from payments.models import BasePayment
 
 
 CHECKOUT_PAYMENT_CHOICES = [
+    ('default', _('Dummy')),
     ('creditcard', _('Credit Card')),
     ('sepa', _('SEPA Debit')),
+    ('lastschrift', _('SEPA Lastschrift')),
     ('sofort', _('SOFORT Überweisung')),
     ('paypal', _('Paypal')),
 ]
@@ -32,13 +36,122 @@ PAYMENT_METHODS = [
 ZERO_MONEY = Money(0, settings.DEFAULT_CURRENCY)
 ZERO_TAXED_MONEY = TaxedMoney(net=ZERO_MONEY, gross=ZERO_MONEY)
 
+MONTHLY_INTERVALS = (
+    (1, _(u'monthly')),
+    (3, _(u'quarterly')),
+    (6, _(u'semiannually')),
+    (12, _(u'annually')),
+)
 
-class PaymentStatus(BasePaymentStatus):
-    PENDING = 'pending'
 
-    CHOICES = BasePaymentStatus.CHOICES + [
-        (PENDING, pgettext_lazy('payment status', 'Confirmation pending')),
-    ]
+class Plan(models.Model):
+    name = models.CharField(max_length=256)
+    slug = models.SlugField()
+    category = models.CharField(max_length=256, blank=True)
+    description = models.TextField(blank=True)
+
+    created = models.DateTimeField(
+        default=timezone.now, editable=False)
+    amount = MoneyField(
+        currency=settings.DEFAULT_CURRENCY, max_digits=12,
+        decimal_places=settings.DEFAULT_DECIMAL_PLACES, default=0)
+    interval = models.PositiveSmallIntegerField(
+        verbose_name=_('interval'),
+        choices=MONTHLY_INTERVALS, null=True, blank=True
+    )
+
+    remote_reference = models.CharField(max_length=256, blank=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Customer(models.Model):
+    created = models.DateTimeField(
+        default=timezone.now, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, blank=True, null=True,
+        on_delete=models.SET_NULL)
+
+    first_name = models.CharField(max_length=256, blank=True)
+    last_name = models.CharField(max_length=256, blank=True)
+    company_name = models.CharField(max_length=256, blank=True)
+    street_address_1 = models.CharField(max_length=256, blank=True)
+    street_address_2 = models.CharField(max_length=256, blank=True)
+    city = models.CharField(max_length=256, blank=True)
+    postcode = models.CharField(max_length=20, blank=True)
+    country = CountryField()
+
+    user_email = models.EmailField(blank=True, default='')
+
+    remote_reference = models.CharField(max_length=256, blank=True)
+
+    custom_data = models.TextField()
+
+    def __str__(self):
+        return self.user_email
+
+    @property
+    def data(self):
+        try:
+            return json.loads(self.custom_data or '{}')
+        except ValueError:
+            return {}
+
+
+class Subscription(models.Model):
+    active = models.BooleanField(default=False)
+    customer = models.ForeignKey(
+        Customer, on_delete=models.CASCADE
+    )
+    plan = models.ForeignKey(
+        Plan, on_delete=models.CASCADE
+    )
+
+    created = models.DateTimeField(
+        default=timezone.now, editable=False)
+
+    last_date = models.DateTimeField(
+        null=True, blank=True)
+    next_date = models.DateTimeField(
+        null=True, blank=True)
+
+    remote_reference = models.CharField(max_length=256, blank=True)
+    token = models.UUIDField(default=uuid.uuid4, db_index=True)
+
+    def __str__(self):
+        return self.customer
+
+    def get_next_date(self):
+        timestamp = self.last_date
+        if self.last_date is None:
+            timestamp = self.created
+        return timestamp + relativedelta(months=self.plan.interval)
+
+    def create_order(self, kind='', is_donation=False):
+        now = timezone.now()
+        if self.next_date and self.next_date > now.date():
+            raise ValueError
+        customer = self.customer
+        order = Order.objects.create(
+            customer=customer,
+            subscription=self,
+            user=customer.user,
+            first_name=customer.first_name,
+            last_name=customer.last_name,
+            street_address_1=customer.street_address_1,
+            street_address_2=customer.street_address_2,
+            city=customer.city,
+            postcode=customer.postcode,
+            country=customer.country,
+            user_email=customer.user_email,
+            total_net=self.plan.amount,
+            total_gross=self.plan.amount,
+            is_donation=is_donation,
+            kind=kind,
+            description=self.plan.name
+        )
+        return order
 
 
 class Order(models.Model):
@@ -48,6 +161,14 @@ class Order(models.Model):
         settings.AUTH_USER_MODEL, blank=True, null=True,
         related_name='invoices',
         on_delete=models.SET_NULL)
+    customer = models.ForeignKey(
+        Customer, blank=True, null=True,
+        on_delete=models.SET_NULL
+    )
+    subscription = models.ForeignKey(
+        Subscription, blank=True, null=True,
+        on_delete=models.SET_NULL
+    )
 
     first_name = models.CharField(max_length=256, blank=True)
     last_name = models.CharField(max_length=256, blank=True)
@@ -91,6 +212,10 @@ class Order(models.Model):
         return int(self.total.gross.amount * 100)
 
     @property
+    def email(self):
+        return self.user_email
+
+    @property
     def address(self):
         return '\n'.join(x for x in [
             self.street_address_1,
@@ -98,6 +223,14 @@ class Order(models.Model):
             '{} {}'.format(self.postcode, self.city),
             self.country.name
         ] if x)
+
+    def get_user_or_order(self):
+        if self.user:
+            return self.user
+        return self
+
+    def get_full_name(self):
+        return '{} {}'.format(self.first_name, self.last_name).strip()
 
     def is_fully_paid(self):
         total_paid = sum([
@@ -129,6 +262,8 @@ class Order(models.Model):
         if model is None:
             return None
         try:
+            if self.subscription:
+                return model.objects.get(subscription=self.subscription)
             return model.objects.get(order=self)
         except model.DoesNotExist:
             return None
@@ -140,6 +275,14 @@ class Order(models.Model):
             return apps.get_model(self.kind)
         except LookupError:
             return None
+
+
+class PaymentStatus(BasePaymentStatus):
+    PENDING = 'pending'
+
+    CHOICES = BasePaymentStatus.CHOICES + [
+        (PENDING, pgettext_lazy('payment status', 'Confirmation pending')),
+    ]
 
 
 class Payment(BasePayment):
