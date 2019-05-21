@@ -10,6 +10,7 @@ from django.http import HttpResponse
 
 from payments.forms import PaymentForm
 from payments.stripe import StripeProvider
+from payments.core import BasicProvider
 from payments import RedirectNeeded, get_payment_model
 
 from .models import PaymentStatus
@@ -285,3 +286,24 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
         payment.attrs.charge = json.dumps(charge)
         payment.captured_amount = Decimal(charge.amount) / 100
         payment.change_status(PaymentStatus.REJECTED)
+
+
+class LastschriftProvider(BasicProvider):
+    provider_name = 'lastschrift'
+
+    def get_form(self, payment, data=None):
+        '''
+        Lastschrift gets stored and processed
+        '''
+        if payment.status == PaymentStatus.WAITING:
+            payment.change_status(PaymentStatus.INPUT)
+
+        iban = None
+        if payment.order.customer:
+            customer = payment.order.customer
+            iban = customer.data.get('iban', None)
+
+        if iban is not None:
+            if payment.status == PaymentStatus.INPUT:
+                payment.change_status(PaymentStatus.PENDING)
+            raise RedirectNeeded(payment.get_success_url())
