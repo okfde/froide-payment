@@ -1,9 +1,7 @@
-from decimal import Decimal
 import logging
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import Http404
-from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 
@@ -13,7 +11,7 @@ from payments.core import provider_factory
 from .models import (
     Payment, Order, PaymentStatus, CHECKOUT_PAYMENT_CHOICES
 )
-from .utils import get_client_ip
+from .utils import get_payment_defaults
 
 
 logger = logging.getLogger(__name__)
@@ -60,22 +58,7 @@ def start_payment(request, token, variant):
     if order.is_fully_paid():
         return redirect(order.get_success_url())
 
-    defaults = {
-        'total': order.amount,
-        'delivery': Decimal('0.0'),
-        'tax': Decimal('0.0'),
-        'currency': settings.DEFAULT_CURRENCY,
-        'billing_first_name': order.first_name,
-        'billing_last_name': order.last_name,
-        'billing_address_1': order.street_address_1,
-        'billing_address_2': order.street_address_2,
-        'billing_city': order.city,
-        'billing_postcode': order.postcode,
-        'billing_country_code': order.country,
-        'billing_email': order.user_email,
-        'description': order.description,
-        'customer_ip_address': get_client_ip(request)
-    }
+    defaults = get_payment_defaults(order, request=request)
     if variant not in [code for code, dummy_name in CHECKOUT_PAYMENT_CHOICES]:
         raise Http404('%r is not a valid payment variant' % (variant,))
     with transaction.atomic():
