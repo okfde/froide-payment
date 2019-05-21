@@ -120,7 +120,7 @@ class Subscription(models.Model):
     token = models.UUIDField(default=uuid.uuid4, db_index=True)
 
     def __str__(self):
-        return self.customer
+        return str(self.customer)
 
     def get_next_date(self):
         timestamp = self.last_date
