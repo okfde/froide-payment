@@ -7,14 +7,13 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 
-from froide.helper.utils import get_client_ip, render_403
-
 from payments import RedirectNeeded
 from payments.core import provider_factory
 
 from .models import (
     Payment, Order, PaymentStatus, CHECKOUT_PAYMENT_CHOICES
 )
+from .utils import get_client_ip
 
 
 logger = logging.getLogger(__name__)
@@ -24,7 +23,7 @@ def order_detail(request, token):
     order = get_object_or_404(Order, token=token)
     user = request.user
     if order.user and user != order.user and not user.is_superuser:
-        return render_403(request)
+        return redirect('/')
 
     payments = Payment.objects.filter(order=order)
     templates = []
