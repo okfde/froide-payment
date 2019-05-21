@@ -28,7 +28,7 @@ setup(
     url='https://github.com/okfde/froide-payment',
     license='MIT',
     description="Froide payment app",
-    long_description=read('README.md'),
+    long_description='',
     author='Stefan Wehrmeyer',
     author_email='mail@stefanwehrmeyer.com',
     packages=find_packages(),
