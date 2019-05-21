@@ -189,6 +189,9 @@ class Order(models.Model):
         decimal_places=settings.DEFAULT_DECIMAL_PLACES, default=0)
     total = TaxedMoneyField(net_field='total_net', gross_field='total_gross')
 
+    # FIXME: https://github.com/mirumee/django-prices/issues/71
+    total.unique = False
+
     is_donation = models.BooleanField(default=False)
     description = models.CharField(max_length=255, blank=True)
     customer_note = models.TextField(blank=True, default='')
