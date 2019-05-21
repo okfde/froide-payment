@@ -17,10 +17,23 @@ class PlanAdmin(admin.ModelAdmin):
 
 class CustomerAdmin(admin.ModelAdmin):
     raw_id_fields = ('user',)
+    list_display = (
+        'user_email', 'first_name', 'last_name',
+        'created',
+    )
+    search_fields = ('user_email', 'last_name', 'first_name',)
 
 
 class SubscriptionAdmin(admin.ModelAdmin):
     raw_id_fields = ('customer',)
+    list_display = (
+        'customer', 'plan', 'created',
+        'active',
+    )
+    search_fields = (
+        'customer__user_email',
+        'customer__last_name', 'customer__first_name',
+    )
 
 
 class OrderAdmin(admin.ModelAdmin):
