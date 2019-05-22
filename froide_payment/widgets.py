@@ -3,7 +3,7 @@ from django.conf import settings
 
 
 class PriceInput(forms.TextInput):
-    template_name = "donations/widgets/price_input.html"
+    template_name = "froide_payment/widgets/price_input.html"
 
     def get_context(self, name, value, attrs):
         ctx = super(PriceInput, self).get_context(name, value, attrs)
