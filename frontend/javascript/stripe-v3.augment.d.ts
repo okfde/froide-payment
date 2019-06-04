@@ -1,7 +1,4 @@
 declare namespace stripe {
-  interface StripeOptions {
-    betas: string[];
-  }
   interface PaymentIntent {
     status: string
   }
