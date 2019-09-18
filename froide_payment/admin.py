@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Plan, Customer, Subscription, Payment, Order
+from .models import Plan, Customer, Subscription, Payment, Order, Product
 
 
 class PlanAdmin(admin.ModelAdmin):
@@ -45,8 +45,13 @@ class PaymentAdmin(admin.ModelAdmin):
     list_display = ('billing_email', 'status', 'variant', 'token')
 
 
+class ProductAdmin(admin.ModelAdmin):
+    pass
+
+
 admin.site.register(Plan, PlanAdmin)
 admin.site.register(Customer, CustomerAdmin)
 admin.site.register(Subscription, SubscriptionAdmin)
 admin.site.register(Order, OrderAdmin)
 admin.site.register(Payment, PaymentAdmin)
+admin.site.register(Product, ProductAdmin)
