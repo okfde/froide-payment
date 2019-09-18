@@ -93,7 +93,11 @@ class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
             return
         if not payment.transaction_id:
             return
-        intent = stripe.PaymentIntent.retrieve(payment.transaction_id)
+        try:
+            intent = stripe.PaymentIntent.retrieve(payment.transaction_id)
+        except stripe.error.InvalidRequestError:
+            # intent is not yet available
+            return
         if intent.status == 'succeeded':
             payment.change_status(PaymentStatus.CONFIRMED)
             return True
@@ -176,7 +180,11 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
             return
         if not payment.transaction_id:
             return
-        intent = stripe.PaymentIntent.retrieve(payment.transaction_id)
+        try:
+            intent = stripe.PaymentIntent.retrieve(payment.transaction_id)
+        except stripe.error.InvalidRequestError:
+            # intent is not yet available
+            return
         if intent.status == 'succeeded':
             payment.change_status(PaymentStatus.CONFIRMED)
             return True
@@ -262,8 +270,8 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
         except stripe.error.StripeError as e:
             payment.change_status(PaymentStatus.ERROR)
             raise RedirectNeeded(payment.get_failure_url())
-
         payment.transaction_id = charge.id
+        payment.change_status(PaymentStatus.PENDING)
         payment.save()
 
     def source_chargeable(self, payment, request, event_dict):
