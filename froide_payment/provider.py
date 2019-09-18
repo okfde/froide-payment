@@ -180,6 +180,9 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
             return
         if not payment.transaction_id:
             return
+        if not payment.transaction_id.startswith(('py_', 'ch_')):
+            # source has not been charged yet
+            return
         try:
             charge = stripe.Charge.retrieve(payment.transaction_id)
         except stripe.error.InvalidRequestError:
