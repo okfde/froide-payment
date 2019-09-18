@@ -181,11 +181,11 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
         if not payment.transaction_id:
             return
         try:
-            intent = stripe.PaymentIntent.retrieve(payment.transaction_id)
+            charge = stripe.Charge.retrieve(payment.transaction_id)
         except stripe.error.InvalidRequestError:
-            # intent is not yet available
+            # charge is not yet available
             return
-        if intent.status == 'succeeded':
+        if charge.status == 'succeeded':
             payment.change_status(PaymentStatus.CONFIRMED)
             return True
 
