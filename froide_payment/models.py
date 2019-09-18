@@ -44,6 +44,18 @@ MONTHLY_INTERVALS = (
 )
 
 
+class Product(models.Model):
+    name = models.CharField(max_length=256)
+
+    category = models.CharField(max_length=256, blank=True)
+
+    provider = models.CharField(max_length=256, blank=True)
+    remote_reference = models.CharField(max_length=256, blank=True)
+
+    def __str__(self):
+        return self.name
+
+
 class Plan(models.Model):
     name = models.CharField(max_length=256)
     slug = models.SlugField()
@@ -61,6 +73,11 @@ class Plan(models.Model):
     )
 
     remote_reference = models.CharField(max_length=256, blank=True)
+    provider = models.CharField(max_length=256, blank=True)
+    product = models.ForeignKey(
+        Product, null=True, blank=True,
+        on_delete=models.SET_NULL
+    )
 
     def __str__(self):
         return self.name
