@@ -36,6 +36,7 @@ setup(
         'django-payments',
         'django-countries',
         'django-prices',
+        'django-localflavor',
         'prices',
         'stripe',
     ],
