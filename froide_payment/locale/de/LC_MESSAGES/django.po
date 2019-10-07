@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-10-07 13:01+0200\n"
-"PO-Revision-Date: 2019-10-07 13:06+0200\n"
+"POT-Creation-Date: 2019-10-07 20:07+0200\n"
+"PO-Revision-Date: 2019-10-07 20:07+0200\n"
 "Last-Translator: Stefan Wehrmeyer <stefan.wehrmeyer@okfn.de>\n"
 "Language-Team: \n"
 "Language: de\n"
@@ -42,93 +42,93 @@ msgstr "Die IBAN hat 20-22 Stellen und fängt mit zwei Buchstaben an."
 msgid "Sie müssen den Bedingungen der Lastschrift zustimmen."
 msgstr "Sie müssen den Bedingungen der Lastschrift zustimmen."
 
-#: models.py:21
+#: models.py:22
 msgid "Dummy"
 msgstr "Dummy"
 
-#: models.py:22
+#: models.py:23
 msgid "Credit Card"
 msgstr "Kreditkarte"
 
-#: models.py:23
+#: models.py:24
 msgid "SEPA Debit"
 msgstr "Lastschrift"
 
-#: models.py:24
+#: models.py:25
 msgid "Lastschrift"
 msgstr "Lastschrift"
 
-#: models.py:25
+#: models.py:26
 msgid "SOFORT Überweisung"
 msgstr "SOFORT Überweisung"
 
-#: models.py:26
+#: models.py:27
 msgid "Paypal"
 msgstr "Paypal"
 
-#: models.py:40
+#: models.py:41
 msgid "monthly"
 msgstr "monatlich"
 
-#: models.py:41
+#: models.py:42
 msgid "quarterly"
 msgstr "vierteljährlich"
 
-#: models.py:42
+#: models.py:43
 msgid "semiannually"
 msgstr "halbjährlich"
 
-#: models.py:43
+#: models.py:44
 msgid "annually"
 msgstr "jährlich"
 
-#: models.py:71
+#: models.py:72
 msgid "interval"
 msgstr "Intervall"
 
-#: models.py:305
+#: models.py:334
 msgctxt "payment status"
 msgid "Waiting for confirmation"
 msgstr "Warte auf Bestätigung"
 
-#: models.py:307
+#: models.py:336
 msgctxt "payment status"
 msgid "Pre-authorized"
 msgstr "Vor-Autorisiert"
 
-#: models.py:309
+#: models.py:338
 msgctxt "payment status"
 msgid "Confirmed"
 msgstr "Bestätigt"
 
-#: models.py:311
+#: models.py:340
 msgctxt "payment status"
 msgid "Rejected"
 msgstr "Abgewiesen"
 
-#: models.py:313
+#: models.py:342
 msgctxt "payment status"
 msgid "Refunded"
 msgstr "Zurückgebucht"
 
-#: models.py:315
+#: models.py:344
 msgctxt "payment status"
 msgid "Error"
 msgstr "Fehler"
 
-#: models.py:317
+#: models.py:346
 msgctxt "payment status"
 msgid "Input"
 msgstr "Warte auf Eingabe"
 
-#: models.py:319
+#: models.py:348
 msgctxt "payment status"
 msgid "Confirmation pending"
 msgstr "Warte auf Bestätigung"
 
 #: templates/froide_payment/order/default.html:12
-msgid "Your order"
-msgstr "Ihre Bestellung"
+msgid "Your payment"
+msgstr "Ihre Bezahlung"
 
 #: templates/froide_payment/order/default.html:15
 msgid "Thank you!"
@@ -175,8 +175,8 @@ msgid "This is a donation"
 msgstr "Dies ist eine Spende"
 
 #: templates/froide_payment/order/default.html:73
-msgid "order details"
-msgstr "Details der Bestellung"
+msgid "Your details"
+msgstr "Ihre Angaben"
 
 #: templates/froide_payment/order/default.html:75
 msgid "name"
@@ -305,6 +305,9 @@ msgid "There was a problem with your payment. Your direct debit was rejected."
 msgstr ""
 "Es gab ein Problem mit Ihrer Bezahlung. Die Lastschrift wurde abgewiesen "
 "oder zurückgebucht."
+
+#~ msgid "Your order"
+#~ msgstr "Ihre Bestellung"
 
 #~ msgid "Or choose a payment method below"
 #~ msgstr "Oder wählen Sie eine dieser Zahlungsmethoden"
