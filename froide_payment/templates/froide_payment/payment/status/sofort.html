@@ -1,0 +1,12 @@
+{% extends "froide_payment/payment/status/base.html" %}
+
+{% load i18n %}
+
+{% block variant_message %}
+{% if payment.is_pending %}
+  <p>
+    Obwohl der Anbieter SOFORT heißt, kann es bis zu 48 Stunden dauern, bis wir die Überweisung von unserem Zahlungsanbieter bestätigt bekommen.<br/>
+    Wenn der Betrag bei Ihnen abgebucht ist, ist es aber sehr wahrscheinlich, das alles funktioniert hat.
+  </p>
+{% endif %}
+{% endblock %}
