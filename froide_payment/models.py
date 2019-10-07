@@ -21,7 +21,7 @@ CHECKOUT_PAYMENT_CHOICES = [
     ('default', _('Dummy')),
     ('creditcard', _('Credit Card')),
     ('sepa', _('SEPA Debit')),
-    ('lastschrift', _('SEPA Lastschrift')),
+    ('lastschrift', _('Lastschrift')),
     ('sofort', _('SOFORT Überweisung')),
     ('paypal', _('Paypal')),
 ]
@@ -300,7 +300,22 @@ class Order(models.Model):
 class PaymentStatus(BasePaymentStatus):
     PENDING = 'pending'
 
-    CHOICES = BasePaymentStatus.CHOICES + [
+    CHOICES = [
+        (BasePaymentStatus.WAITING,
+            pgettext_lazy('payment status', 'Waiting for confirmation')),
+        (BasePaymentStatus.PREAUTH,
+            pgettext_lazy('payment status', 'Pre-authorized')),
+        (BasePaymentStatus.CONFIRMED,
+            pgettext_lazy('payment status', 'Confirmed')),
+        (BasePaymentStatus.REJECTED,
+            pgettext_lazy('payment status', 'Rejected')),
+        (BasePaymentStatus.REFUNDED,
+            pgettext_lazy('payment status', 'Refunded')),
+        (BasePaymentStatus.ERROR,
+            pgettext_lazy('payment status', 'Error')),
+        (BasePaymentStatus.INPUT,
+            pgettext_lazy('payment status', 'Input')),
+
         (PENDING, pgettext_lazy('payment status', 'Confirmation pending')),
     ]
 
@@ -355,3 +370,18 @@ class Payment(BasePayment):
     @property
     def status_color(self):
         return self.STATUS_COLORS[self.status]
+
+    def is_pending(self):
+        return self.status in (
+            PaymentStatus.PENDING
+        )
+
+    def is_confirmed(self):
+        return self.status in (
+            PaymentStatus.CONFIRMED
+        )
+
+    def is_rejected(self):
+        return self.status in (
+            PaymentStatus.REJECTED
+        )

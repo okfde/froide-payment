@@ -1,0 +1,19 @@
+{% extends "froide_payment/payment/status/base.html" %}
+
+{% load i18n %}
+
+{% block variant_message %}
+{% if payment.is_pending %}
+  <p>
+    {% trans "Your direct debit will get deducted during the next month." %}
+  </p>
+{% elif payment.is_confirmed %}
+  <p>
+    {% trans "Your direct debit was processed." %}
+  </p>
+  {% elif payment.is_rejected %}
+  <p>
+    {% trans "There was a problem with your payment. Your direct debit was rejected." %}
+  </p>
+{% endif %}
+{% endblock %}

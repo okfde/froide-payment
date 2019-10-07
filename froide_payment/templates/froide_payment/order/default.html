@@ -4,6 +4,7 @@
 {% load static %}
 {% load block_helper %}
 {% load prices %}
+{% load froide_payment %}
 
 {% block app_body %}
 <div class="row justify-content-center">
@@ -38,18 +39,27 @@
           {{ order.created|date:"SHORT_DATETIME_FORMAT" }}
         </td>
       </tr>
-      <tr>
-        <td>{% trans "amount gross" %}</td>
-        <td>
-          {{ order.total.gross|amount }}
-        </td>
-      </tr>
-      <tr>
-        <td>{% trans "amount net" %}</td>
-        <td>
-          {{ order.total.net|amount }}
-        </td>
-      </tr>
+      {% if order.total.net != order.total.gross %}
+        <tr>
+          <td>{% trans "amount gross" %}</td>
+          <td>
+            {{ order.total.gross|amount }}
+          </td>
+        </tr>
+        <tr>
+          <td>{% trans "amount net" %}</td>
+          <td>
+            {{ order.total.net|amount }}
+          </td>
+        </tr>
+      {% else %}
+        <tr>
+          <td>{% trans "amount" %}</td>
+          <td>
+            {{ order.total.net|amount }}
+          </td>
+        </tr>
+      {% endif %}
       {% if order.is_donation %}
         <tr>
           <td>{% trans "Donation" %}</td>
@@ -80,37 +90,7 @@
     </dl>
     <h4>{% trans "payment" %}</h4>
     {% for payment in payments %}
-      <div class="alert alert-{{ payment.status_color }}">
-        <h4>{{ payment.get_variant_display }}</h4>
-        <table class="table">
-          <tr>
-            <td>{% trans "status" %}</td>
-            <td>{{ payment.get_status_display }}</td>
-          </tr>
-          {% if payment.message %}
-            <tr>
-              <td>{% trans "status message" %}</td>
-              <td>{{ payment.message }}</td>
-            </tr>
-          {% endif %}
-          <tr>
-            <td>{% trans "amount due" %}</td>
-            <td>{{ payment.total }}&nbsp;{{ payment.currency }}</td>
-          </tr>
-          <tr>
-            <td>{% trans "amount paid" %}</td>
-            <td>{{ payment.captured_amount }}&nbsp;{{ payment.currency }}</td>
-          </tr>
-          <tr>
-            <td>{% trans "date created" %}</td>
-            <td>{{ payment.created|date:"SHORT_DATETIME_FORMAT" }}</td>
-          </tr>
-          <tr>
-            <td>{% trans "last updated" %}</td>
-            <td>{{ payment.modified|date:"SHORT_DATETIME_FORMAT" }}</td>
-          </tr>
-        </table>
-      </div>
+      {% render_payment_status payment %}
     {% endfor %}
   </div>
 </div>

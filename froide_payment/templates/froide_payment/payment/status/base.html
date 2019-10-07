@@ -1,0 +1,34 @@
+{% load i18n %}
+
+<div class="alert alert-{{ payment.status_color }}">
+  <h4>{{ payment.get_variant_display }}</h4>
+  {% block variant_message %}{% endblock %}
+  <table class="table">
+    <tr>
+      <td>{% trans "status" %}</td>
+      <td>{{ payment.get_status_display }}</td>
+    </tr>
+    {% if payment.message %}
+      <tr>
+        <td>{% trans "status message" %}</td>
+        <td>{{ payment.message }}</td>
+      </tr>
+    {% endif %}
+    <tr>
+      <td>{% trans "amount due" %}</td>
+      <td>{{ payment.total }}&nbsp;{{ payment.currency }}</td>
+    </tr>
+    <tr>
+      <td>{% trans "amount paid" %}</td>
+      <td>{{ payment.captured_amount }}&nbsp;{{ payment.currency }}</td>
+    </tr>
+    <tr>
+      <td>{% trans "date created" %}</td>
+      <td>{{ payment.created|date:"SHORT_DATETIME_FORMAT" }}</td>
+    </tr>
+    <tr>
+      <td>{% trans "last updated" %}</td>
+      <td>{{ payment.modified|date:"SHORT_DATETIME_FORMAT" }}</td>
+    </tr>
+  </table>
+</div>
