@@ -1,5 +1,6 @@
-import uuid
+from collections import defaultdict
 import json
+import uuid
 
 from django.conf import settings
 from django.db import models
@@ -260,6 +261,34 @@ class Order(models.Model):
         )
         return total_paid.gross >= self.total.gross
 
+    def is_tentatively_paid(self):
+        tentatively_paid = sum([
+            payment.total for payment in
+            self.payments.filter(status__in=(
+                PaymentStatus.CONFIRMED,
+                PaymentStatus.PENDING,
+                PaymentStatus.PREAUTH
+            ))],
+            ZERO_TAXED_MONEY
+        )
+        return tentatively_paid.gross >= self.total.gross
+
+    def get_payment_amounts(self):
+        tentative_status = (
+            PaymentStatus.CONFIRMED,
+            PaymentStatus.PENDING,
+            PaymentStatus.PREAUTH
+        )
+
+        payments = self.payments.filter(status__in=tentative_status)
+
+        amounts = defaultdict(lambda: ZERO_MONEY)
+        for payment in payments:
+            amounts['tentative'] += payment.get_amount()
+            if payment.status in (PaymentStatus.CONFIRMED,):
+                amounts['total'] += payment.get_captured_amount()
+        return amounts
+
     def get_absolute_url(self):
         return reverse('froide_payment:order-detail', kwargs={
             'token': self.token
@@ -342,6 +371,11 @@ class Payment(BasePayment):
         PaymentStatus.ERROR: 'danger',
         PaymentStatus.INPUT: 'light',
     }
+
+    def get_amount(self):
+        return Money(
+            self.total, self.currency or settings.DEFAULT_CURRENCY
+        )
 
     def get_captured_amount(self):
         return Money(
