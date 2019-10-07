@@ -64,16 +64,22 @@ def start_payment(request, token, variant):
     with transaction.atomic():
         payment, created = Payment.objects.filter(
             Q(status=PaymentStatus.WAITING) |
-            Q(status=PaymentStatus.INPUT)
+            Q(status=PaymentStatus.INPUT) |
+            Q(status=PaymentStatus.PENDING)
         ).get_or_create(
             variant=variant,
             order=order,
             defaults=defaults
         )
-        try:
-            form = payment.get_form(data=None)
-        except RedirectNeeded as redirect_to:
-            return redirect(str(redirect_to))
+
+    data = None
+    if request.method == 'POST':
+        data = request.POST
+    try:
+        form = payment.get_form(data=data)
+    except RedirectNeeded as redirect_to:
+        return redirect(str(redirect_to))
+
     default_template = 'froide_payment/payment/default.html'
     template = 'froide_payment/payment/%s.html' % variant
     ctx = {

@@ -1,0 +1,36 @@
+{% extends "froide_payment/payment/base.html" %}
+
+{% load i18n %}
+{% load static %}
+{% load block_helper %}
+
+{% block form_attrs %}
+  data-stripepk="{{ form.public_key }}"
+  data-clientsecret="{{ form.intent_secret }}"
+  data-firstname="{{ order.first_name }}"
+  data-lastname="{{ order.last_name }}"
+  data-email="{{ order.user_email }}"
+  data-country="{{ order.country.code }}"
+  data-successurl="{{ payment.get_success_url }}"
+  data-currency="{{ order.currency }}"
+  data-donation="{% if order.is_donation %}1{% endif %}"
+  data-amount="{{ order.amount_cents }}"
+  data-label="{{ order.description }}"
+  data-address1="{{ order.street_address_1 }}"
+  data-address2="{{ order.street_address_2 }}"
+  data-city="{{ order.city }}"
+  data-locale="{{ LANGUAGE_CODE }}"
+  data-postcode="{{ order.postcode }}"
+  novalidate
+{% endblock %}
+
+{% block payment_method %}
+
+{% addtoblock "js" %}
+<script src="https://js.stripe.com/v3/"></script>
+{% endaddtoblock %}
+{% addtoblock "js" %}
+<script src="{% static 'js/payment.js' %}"></script>
+{% endaddtoblock %}
+
+{% endblock %}

@@ -1,12 +1,17 @@
 import json
+import uuid
 
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 
 import stripe
 
-from payments import PaymentStatus, FraudStatus
+from payments import FraudStatus
 from payments.forms import PaymentForm as BasePaymentForm
+
+from localflavor.generic.forms import IBANFormField
+
+from .models import PaymentStatus
 
 
 class SourcePaymentForm(BasePaymentForm):
@@ -56,3 +61,45 @@ class SourcePaymentForm(BasePaymentForm):
 
         # Make sure we store the info of the charge being marked as fraudulent
         self._handle_potentially_fraudulent_charge(self.charge)
+
+
+class LastschriftPaymentForm(BasePaymentForm):
+    iban = IBANFormField(
+        label=_('Your IBAN'),
+        widget=forms.TextInput(
+            attrs={
+                'class': 'form-control',
+                'pattern': (
+                    r"^[A-Z]{2}\d{2}[ ]\d{4}[ ]\d{4}[ ]\d{4}[ ]\d{4}[ ]*"
+                    r"\d{0,2}|[A-Z]{2}\d{20,22}$"
+                ),
+                'placeholder': _('IBAN'),
+                'title': _(
+                    'The IBAN has 20-22 digits and starts with two letters.'
+                )
+            }
+        )
+    )
+    terms = forms.BooleanField(
+        required=True,
+        label='Lastschrift einziehen',
+        help_text=(
+            "Ich ermächtige (A) Open Knowledge Foundation Deutschland e.V., "
+            "Zahlungen von meinem Konto mittels Lastschrift einzuziehen. "
+            "Zugleich (B) weise ich mein Kreditinstitut an, die von "
+            "Open Knowledge Foundation auf mein Konto gezogenen Lastschriften "
+            "einzulösen. Hinweis: Ich kann innerhalb von acht Wochen, "
+            "beginnend mit dem Belastungsdatum, die Erstattung des belasteten "
+            "Betrages verlangen. Es gelten dabei die mit meinem "
+            "Kreditinstitut vereinbarten Bedingungen."
+        ),
+        error_messages={
+            'required': _(
+                'Sie müssen den Bedingungen der Lastschrift zustimmen.'
+            )},
+    )
+
+    def save(self):
+        self.payment.attrs.iban = self.cleaned_data['iban']
+        self.payment.transaction_id = str(uuid.uuid4())
+        self.payment.change_status(PaymentStatus.PENDING)  # Calls .save()

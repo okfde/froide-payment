@@ -1,0 +1,13 @@
+{% extends "froide_payment/payment/base.html" %}
+
+{% load i18n %}
+
+{% block payment_method %}
+
+  {% include "bootstrap_field.html" with field=form.iban %}
+  {% include "bootstrap_field.html" with field=form.terms %}
+
+  <button type="submit" class="btn btn-success btn-lg">
+    Jetzt spenden
+  </button>
+{% endblock %}

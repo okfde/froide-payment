@@ -14,7 +14,7 @@ from payments.core import BasicProvider
 from payments import RedirectNeeded, get_payment_model
 
 from .models import PaymentStatus
-from .forms import SourcePaymentForm
+from .forms import SourcePaymentForm, LastschriftPaymentForm
 
 logger = logging.getLogger(__name__)
 
@@ -301,6 +301,7 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
 
 class LastschriftProvider(BasicProvider):
     provider_name = 'lastschrift'
+    form_class = LastschriftPaymentForm
 
     def get_form(self, payment, data=None):
         '''
@@ -310,7 +311,11 @@ class LastschriftProvider(BasicProvider):
             payment.change_status(PaymentStatus.INPUT)
 
         iban = None
-        if payment.order.customer:
+        try:
+            iban = payment.attrs.iban
+        except KeyError:
+            pass
+        if iban is None and payment.order.customer:
             customer = payment.order.customer
             iban = customer.data.get('iban', None)
 
@@ -318,3 +323,14 @@ class LastschriftProvider(BasicProvider):
             if payment.status == PaymentStatus.INPUT:
                 payment.change_status(PaymentStatus.PENDING)
             raise RedirectNeeded(payment.get_success_url())
+
+        form = self.form_class(
+            data=data, payment=payment, provider=self,
+            hidden_inputs=False
+        )
+        if data is not None:
+            if form.is_valid():
+                form.save()
+                raise RedirectNeeded(payment.get_success_url())
+
+        return form

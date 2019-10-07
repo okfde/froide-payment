@@ -1,5 +1,8 @@
+import csv
 from decimal import Decimal
+
 from django.conf import settings
+from django.http import StreamingHttpResponse
 
 
 def get_client_ip(request=None):
@@ -30,3 +33,30 @@ def get_payment_defaults(order, request=None):
         'description': order.description,
         'customer_ip_address': get_client_ip(request)
     }
+
+
+def dicts_to_csv_response(generator, name='export.csv'):
+    response = StreamingHttpResponse(
+        dict_to_csv_stream(generator),
+        content_type='text/csv'
+    )
+    response['Content-Disposition'] = 'attachment; filename="%s"' % name
+    return response
+
+
+class FakeFile(object):
+    def write(self, string):
+        self._last_string = string.encode('utf-8')
+
+
+def dict_to_csv_stream(stream):
+    writer = None
+    fake_file = FakeFile()
+    for d in stream:
+        if writer is None:
+            field_names = list(d.keys())
+            writer = csv.DictWriter(fake_file, field_names)
+            writer.writeheader()
+            yield fake_file._last_string
+        writer.writerow(d)
+        yield fake_file._last_string

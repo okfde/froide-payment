@@ -1,6 +1,18 @@
-from django.contrib import admin
+import csv
+from decimal import Decimal
+from io import StringIO
 
-from .models import Plan, Customer, Subscription, Payment, Order, Product
+from django.contrib import admin
+from django.utils import timezone
+from django.conf.urls import url
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import redirect
+
+from .models import (
+    Plan, Customer, Subscription, Payment, Order, Product,
+    PaymentStatus
+)
+from .utils import dicts_to_csv_response
 
 
 class PlanAdmin(admin.ModelAdmin):
@@ -42,7 +54,104 @@ class OrderAdmin(admin.ModelAdmin):
 
 class PaymentAdmin(admin.ModelAdmin):
     raw_id_fields = ('order',)
-    list_display = ('billing_email', 'status', 'variant', 'token')
+    date_hierarchy = 'created'
+    list_display = ('billing_email', 'status', 'variant', 'created', 'modified')
+    list_filter = ('variant', 'status')
+
+    actions = ['export_lastschrift']
+
+    def get_urls(self):
+        urls = super().get_urls()
+        my_urls = [
+            url(r'^import-lastschrift/$',
+                self.admin_site.admin_view(self.import_lastschrift_result),
+                name='froide_payment-payment-import_lastschrift_result'),
+        ]
+        return my_urls + urls
+
+    def export_lastschrift(self, request, queryset):
+        if not self.has_change_permission(request):
+            raise PermissionDenied
+
+        def get_lastschrift_export(payment):
+            data = {
+                'id': str(payment.id),
+                'transaction_id': payment.transaction_id,
+                'transaction_label': '{} (P{})'.format(
+                    payment.order.description, payment.id
+                ),
+                'amount': str(payment.total),
+                'currency': payment.currency,
+                'email': payment.billing_email,
+                'first_name': payment.billing_first_name,
+                'last_name': payment.billing_last_name,
+                'name': ' '.join([
+                    payment.billing_first_name,
+                    payment.billing_last_name,
+                ]),
+                'address': '\n'.join([
+                    payment.billing_address_1,
+                    payment.billing_address_2
+                ]).strip(),
+                'postcode': payment.billing_postcode,
+                'city': payment.billing_city,
+                'country': payment.billing_country_code,
+                'iban': payment.attrs.iban,
+                'failed': '',
+                'captured': '',
+            }
+
+            return data
+
+        # Only export pending lastschrift
+        base_queryset = queryset.filter(
+            variant='lastschrift',
+            status=PaymentStatus.PENDING,
+        )
+        # Mark rows to be processed with timestamp
+        queryset = base_queryset.exclude(extra_data__contains='"processing":')
+        now = str(timezone.now().isoformat())
+        for lastschrift in queryset:
+            lastschrift.attrs.processing = now
+            lastschrift.save()
+
+        # Export to be processed rows
+        queryset = base_queryset.filter(
+            extra_data__contains='"processing": "{}"'.format(now)
+        )
+        queryset = queryset.select_related('order')
+
+        filename = 'lastschrift_{}.csv'.format(
+            timezone.now().isoformat(timespec='minutes')
+        )
+        dict_generator = (
+            get_lastschrift_export(payment) for payment in queryset
+        )
+        return dicts_to_csv_response(dict_generator, name=filename)
+
+    def import_lastschrift_result(self, request):
+        if not request.method == 'POST':
+            raise PermissionDenied
+        if not self.has_change_permission(request):
+            raise PermissionDenied
+
+        csv_file = request.FILES.get('file')
+        csv_file = StringIO(csv_file.read().decode('utf-8'))
+        reader = csv.DictReader(csv_file)
+        rows = [row for row in reader]
+        row_map = {int(row['id']): row for row in rows}
+        row_ids = list(row_map.keys())
+        payments = Payment.objects.filter(id__in=row_ids)
+        for payment in payments:
+            row = row_map[payment.id]
+            if row['failed'].strip():
+                payment.captured_amount = Decimal(0.0)
+                payment.change_status(PaymentStatus.REJECTED)
+            elif row['captured'].strip():
+                payment.captured_amount = payment.total
+                payment.change_status(PaymentStatus.CONFIRMED)
+
+        return redirect('admin:froide_payment_payment_changelist')
 
 
 class ProductAdmin(admin.ModelAdmin):

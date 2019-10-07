@@ -1,0 +1,41 @@
+{% with classes=field.css_classes label=label|default:field.label help_text=help_text|default:field.help_text required=field.field.required %}
+
+{% if field.errors %}<p class="text-danger">
+{% for error in field.errors %}{{ error }}{% if not forloop.last %}<br />{% endif %}{% endfor %}</p>{% endif %}
+
+{% if field_type == "radio" %}
+<fieldset class="form-group">
+  <div class="row">
+    <legend class="col-form-label col-md-4{% if required %} field-required{% endif %}">{{ label }}</legend>
+    <div class="col-md-8">
+      {% for widget in field %}
+        <div class="form-check">
+          {{ widget }}
+        </div>
+      {% endfor %}
+      {% if help_text %}<small class="form-text text-muted">{{ help_text }}</small>{% endif %}
+    </div>
+  </div>
+</fieldset>
+{% elif field_type == "checkbox" %}
+<div class="form-group row{% if classes %} {{ classes }}{% endif %}">
+  <div class="col-md-8{% if horizontal %} ml-auto{% endif %}">
+    <div class="form-check">
+      <label class="form-check-label {% if required %} field-required{% endif %}">
+        {{ field }}
+        {{ label }}
+      </label>
+      {% if help_text %}<small class="form-text text-muted">{{ help_text }}</small>{% endif %}
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="form-group row{% if classes %} {{ classes }}{% endif %}">
+  {% if label %}{% if field.id_for_label %}<label class="col-md-4 col-form-label{% if required %} field-required{% endif %}" for="{{ field.id_for_label }}">{% endif %}{{ label }}{% if field.id_for_label %}</label>{% endif %}{% endif %}
+  <div class="col-md-8">
+    {{ field }}
+    {% if help_text %}<small class="form-text text-muted">{{ help_text }}</small>{% endif %}
+  </div>
+</div>
+{% endif %}
+{% endwith %}
