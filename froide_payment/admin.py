@@ -55,7 +55,10 @@ class OrderAdmin(admin.ModelAdmin):
 class PaymentAdmin(admin.ModelAdmin):
     raw_id_fields = ('order',)
     date_hierarchy = 'created'
-    list_display = ('billing_email', 'status', 'variant', 'created', 'modified')
+    list_display = (
+        'billing_email', 'status', 'variant',
+        'created', 'modified'
+    )
     list_filter = ('variant', 'status')
 
     actions = ['export_lastschrift']
