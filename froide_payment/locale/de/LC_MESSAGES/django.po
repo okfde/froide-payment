@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-04-16 23:48+0200\n"
-"PO-Revision-Date: 2019-04-16 23:49+0200\n"
+"POT-Creation-Date: 2019-10-07 13:01+0200\n"
+"PO-Revision-Date: 2019-10-07 13:06+0200\n"
 "Last-Translator: Stefan Wehrmeyer <stefan.wehrmeyer@okfn.de>\n"
 "Language-Team: \n"
 "Language: de\n"
@@ -22,122 +22,181 @@ msgstr ""
 msgid "Froide Payment App"
 msgstr "Froide Bezahlungs-App"
 
-#: forms.py:27
+#: forms.py:32
 msgid "This payment has already been processed."
 msgstr "Diese Zahlung wurde schon verarbeitet."
 
-#: models.py:19
+#: forms.py:68
+msgid "Your IBAN"
+msgstr "Ihre IBAN"
+
+#: forms.py:76
+msgid "IBAN"
+msgstr "IBAN"
+
+#: forms.py:78
+msgid "The IBAN has 20-22 digits and starts with two letters."
+msgstr "Die IBAN hat 20-22 Stellen und fängt mit zwei Buchstaben an."
+
+#: forms.py:98
+msgid "Sie müssen den Bedingungen der Lastschrift zustimmen."
+msgstr "Sie müssen den Bedingungen der Lastschrift zustimmen."
+
+#: models.py:21
+msgid "Dummy"
+msgstr "Dummy"
+
+#: models.py:22
 msgid "Credit Card"
 msgstr "Kreditkarte"
 
-#: models.py:20
+#: models.py:23
 msgid "SEPA Debit"
 msgstr "Lastschrift"
 
-#: models.py:21
+#: models.py:24
+msgid "Lastschrift"
+msgstr "Lastschrift"
+
+#: models.py:25
 msgid "SOFORT Überweisung"
 msgstr "SOFORT Überweisung"
 
-#: models.py:22
+#: models.py:26
 msgid "Paypal"
 msgstr "Paypal"
 
 #: models.py:40
+msgid "monthly"
+msgstr "monatlich"
+
+#: models.py:41
+msgid "quarterly"
+msgstr "vierteljährlich"
+
+#: models.py:42
+msgid "semiannually"
+msgstr "halbjährlich"
+
+#: models.py:43
+msgid "annually"
+msgstr "jährlich"
+
+#: models.py:71
+msgid "interval"
+msgstr "Intervall"
+
+#: models.py:305
+msgctxt "payment status"
+msgid "Waiting for confirmation"
+msgstr "Warte auf Bestätigung"
+
+#: models.py:307
+msgctxt "payment status"
+msgid "Pre-authorized"
+msgstr "Vor-Autorisiert"
+
+#: models.py:309
+msgctxt "payment status"
+msgid "Confirmed"
+msgstr "Bestätigt"
+
+#: models.py:311
+msgctxt "payment status"
+msgid "Rejected"
+msgstr "Abgewiesen"
+
+#: models.py:313
+msgctxt "payment status"
+msgid "Refunded"
+msgstr "Zurückgebucht"
+
+#: models.py:315
+msgctxt "payment status"
+msgid "Error"
+msgstr "Fehler"
+
+#: models.py:317
+msgctxt "payment status"
+msgid "Input"
+msgstr "Warte auf Eingabe"
+
+#: models.py:319
 msgctxt "payment status"
 msgid "Confirmation pending"
 msgstr "Warte auf Bestätigung"
 
-#: templates/froide_payment/order/default.html:11
+#: templates/froide_payment/order/default.html:12
 msgid "Your order"
 msgstr "Ihre Bestellung"
 
-#: templates/froide_payment/order/default.html:14
+#: templates/froide_payment/order/default.html:15
 msgid "Thank you!"
 msgstr "Vielen Dank!"
 
-#: templates/froide_payment/order/default.html:17
+#: templates/froide_payment/order/default.html:18
 msgid "Your payment has been received."
 msgstr "Ihre Zahlung wurde empfangen."
 
-#: templates/froide_payment/order/default.html:21
+#: templates/froide_payment/order/default.html:22
 msgid "We are processing your payment now."
 msgstr "Wir verarbeiten Ihre Zahlung gerade."
 
-#: templates/froide_payment/order/default.html:27
+#: templates/froide_payment/order/default.html:28
 msgid "Sorry, there was an error."
 msgstr "Entschuldigen Sie bitte, ein Fehler ist aufgetreten."
 
-#: templates/froide_payment/order/default.html:29
+#: templates/froide_payment/order/default.html:30
 msgid "Your payment was NOT received."
 msgstr "Ihre Zahlung wurde NICHT erhalten."
 
-#: templates/froide_payment/order/default.html:36
+#: templates/froide_payment/order/default.html:37
 msgid "date"
 msgstr "Datum"
 
-#: templates/froide_payment/order/default.html:42
+#: templates/froide_payment/order/default.html:44
 msgid "amount gross"
 msgstr "Betrag brutto"
 
-#: templates/froide_payment/order/default.html:48
+#: templates/froide_payment/order/default.html:50
 msgid "amount net"
 msgstr "Betrag netto"
 
-#: templates/froide_payment/order/default.html:55
+#: templates/froide_payment/order/default.html:57
+msgid "amount"
+msgstr "Betrag"
+
+#: templates/froide_payment/order/default.html:65
 msgid "Donation"
 msgstr "Spende"
 
-#: templates/froide_payment/order/default.html:58
+#: templates/froide_payment/order/default.html:68
 msgid "This is a donation"
 msgstr "Dies ist eine Spende"
 
-#: templates/froide_payment/order/default.html:63
+#: templates/froide_payment/order/default.html:73
 msgid "order details"
 msgstr "Details der Bestellung"
 
-#: templates/froide_payment/order/default.html:65
+#: templates/froide_payment/order/default.html:75
 msgid "name"
 msgstr "Name"
 
-#: templates/froide_payment/order/default.html:68
+#: templates/froide_payment/order/default.html:78
 msgid "company name"
 msgstr "Firmenname"
 
-#: templates/froide_payment/order/default.html:71
+#: templates/froide_payment/order/default.html:81
 msgid "address"
 msgstr "Adresse"
 
-#: templates/froide_payment/order/default.html:78
+#: templates/froide_payment/order/default.html:88
 msgid "email"
 msgstr "E-Mail"
 
-#: templates/froide_payment/order/default.html:81
+#: templates/froide_payment/order/default.html:91
 msgid "payment"
 msgstr "Bezahlung"
-
-#: templates/froide_payment/order/default.html:87
-msgid "status"
-msgstr "Status"
-
-#: templates/froide_payment/order/default.html:92
-msgid "status message"
-msgstr "Statusnachricht"
-
-#: templates/froide_payment/order/default.html:97
-msgid "amount due"
-msgstr "zu zahlender Betrag"
-
-#: templates/froide_payment/order/default.html:101
-msgid "amount paid"
-msgstr "Betrag gezahlt"
-
-#: templates/froide_payment/order/default.html:105
-msgid "date created"
-msgstr "Erstellt am"
-
-#: templates/froide_payment/order/default.html:109
-msgid "last updated"
-msgstr "Letzte Aktualisierung"
 
 #: templates/froide_payment/payment/base.html:12
 msgid "Finish your donation"
@@ -165,7 +224,7 @@ msgstr ""
 "Sie zahlen <strong>%(amount)s&nbsp;€</strong> für <mark>%(description)s</"
 "mark>."
 
-#: templates/froide_payment/payment/base.html:53
+#: templates/froide_payment/payment/base.html:38
 msgid "Loading..."
 msgstr "Wird geladen..."
 
@@ -208,6 +267,44 @@ msgstr ""
 "acht Wochen, beginnend mit dem Belastungsdatum, die Erstattung des "
 "belasteten Betrages verlangen. Es gelten dabei die mit meinem Kreditinstitut "
 "vereinbarten Bedingungen."
+
+#: templates/froide_payment/payment/status/base.html:8
+msgid "status"
+msgstr "Status"
+
+#: templates/froide_payment/payment/status/base.html:13
+msgid "status message"
+msgstr "Statusnachricht"
+
+#: templates/froide_payment/payment/status/base.html:18
+msgid "amount due"
+msgstr "zu zahlender Betrag"
+
+#: templates/froide_payment/payment/status/base.html:22
+msgid "amount paid"
+msgstr "Betrag gezahlt"
+
+#: templates/froide_payment/payment/status/base.html:26
+msgid "date created"
+msgstr "Erstellt am"
+
+#: templates/froide_payment/payment/status/base.html:30
+msgid "last updated"
+msgstr "Letzte Aktualisierung"
+
+#: templates/froide_payment/payment/status/lastschrift.html:8
+msgid "Your direct debit will get deducted during the next month."
+msgstr "Die Lastschrift wird im Laufe des nächsten Monat abgebucht."
+
+#: templates/froide_payment/payment/status/lastschrift.html:12
+msgid "Your direct debit was processed."
+msgstr "Ihre Lastschrift wurde abgebucht."
+
+#: templates/froide_payment/payment/status/lastschrift.html:16
+msgid "There was a problem with your payment. Your direct debit was rejected."
+msgstr ""
+"Es gab ein Problem mit Ihrer Bezahlung. Die Lastschrift wurde abgewiesen "
+"oder zurückgebucht."
 
 #~ msgid "Or choose a payment method below"
 #~ msgstr "Oder wählen Sie eine dieser Zahlungsmethoden"
