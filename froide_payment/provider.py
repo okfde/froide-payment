@@ -48,6 +48,14 @@ class StripeWebhookMixin():
         if event_dict is None:
             return None
         obj = event_dict['data']['object']
+
+        # Check if this provider handles this callback
+        payment_method_details = obj.get('payment_method_details', None)
+        if payment_method_details:
+            payment_method_type = payment_method_details.get('type')
+            if payment_method_type != self.stripe_payment_method_type:
+                return False
+
         Payment = get_payment_model()
         try:
             payment = Payment.objects.get(
@@ -60,7 +68,7 @@ class StripeWebhookMixin():
     def process_data(self, payment, request):
         if payment.variant != self.provider_name:
             # This payment reached the wrong provider implementation endpoint
-            return HttpResponse(status=201)
+            return HttpResponse(status=204)
 
         event_dict = self.decode_webhook_request(request)
         event_type = event_dict['type']
@@ -68,7 +76,7 @@ class StripeWebhookMixin():
         method_name = event_type.replace('.', '_')
         method = getattr(self, method_name, None)
         if method is None:
-            return HttpResponse(status=201)
+            return HttpResponse(status=204)
 
         result = method(payment, request, event_dict)
         if result is not None:
@@ -87,6 +95,8 @@ def get_statement_descriptor(payment):
 class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
     form_class = PaymentForm
     provider_name = 'creditcard'
+    stripe_payment_method_type = 'card'
+
 
     def update_status(self, payment):
         if payment.status not in (PaymentStatus.PENDING, PaymentStatus.INPUT):
@@ -158,6 +168,7 @@ class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
 class StripeSourceProvider(StripeProvider):
     form_class = SourcePaymentForm
     provider_name = 'sepa'
+    stripe_payment_method_type = 'sepa?'
 
     def get_form(self, payment, data=None):
         form = super().get_form(payment, data=data)
@@ -174,6 +185,7 @@ class StripeSourceProvider(StripeProvider):
 
 class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
     provider_name = 'sofort'
+    stripe_payment_method_type = 'sofort'
 
     def update_status(self, payment):
         if payment.status not in (PaymentStatus.PENDING, PaymentStatus.INPUT):
