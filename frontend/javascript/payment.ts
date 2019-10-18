@@ -1,5 +1,12 @@
 /// <reference path="./stripe-v3.augment.d.ts" />
 
+interface PaymentProcessingResponse {
+  error?: string
+  requires_action?: boolean
+  payment_intent_client_secret: string
+  success?: boolean
+}
+
 const style = {
   base: {
     color: '#32325d',
@@ -23,6 +30,7 @@ const style = {
 }
 
 const form = document.getElementById('payment-form') as HTMLFormElement
+const formButton = document.getElementById('form-button') as HTMLButtonElement
 const currency = (form.dataset.currency || 'EUR').toLowerCase()
 
 if (!form.dataset.stripepk) {
@@ -42,6 +50,59 @@ const elements = stripe.elements({
   locale: form.dataset.locale
 })
 
+const sendPaymentData = (obj: Object): Promise<PaymentProcessingResponse> => {
+  return fetch(form.action, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest'
+    },
+    body: JSON.stringify(obj)
+  }).then((response) => {
+    return response.json()
+  })
+}
+
+const handleCardAction = (clientSecret: string) => {
+  stripe.handleCardAction(
+    clientSecret
+  ).then((result) => {
+    if (result.error) {
+      showError(result.error.message)
+    } else if (result.paymentIntent) {
+      // The card action has been handled
+      // The PaymentIntent can be confirmed again on the server
+      sendPaymentData({
+        payment_intent_id: result.paymentIntent.id
+      }).then(handleServerResponse)
+    }
+  })
+}
+
+const handleCardPayment = (clientSecret: string, card?: stripe.elements.Element) => {
+  stripe.handleCardPayment(clientSecret, card).then((result) => {
+    if (result.error) {
+      showError(result.error.message)
+    } else if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
+      document.location.href = form.dataset.successurl || '/'
+    } else {
+      console.error('Missing token!')
+    }
+  })
+}
+
+const handleServerResponse = (response: PaymentProcessingResponse) => {
+  if (response.error) {
+    showError(response.error)
+    // Show error from server on payment form
+  } else if (response.requires_action) {
+    // Use Stripe.js to handle required card action
+    handleCardPayment(response.payment_intent_client_secret)
+  } else if (response.success) {
+    document.location.href = form.dataset.successurl || '/'
+  }
+}
+
 /*
  *
  *  Payment Intent with CC
@@ -50,7 +111,7 @@ const elements = stripe.elements({
 
 const cardElement = document.querySelector('#card-element')
 
-if (clientSecret && cardElement) {
+if (cardElement) {
   // Create an instance of the card Element.
   const card = elements.create('card', {
     style: style
@@ -73,21 +134,31 @@ if (clientSecret && cardElement) {
   form.addEventListener('submit', (event) => {
     event.preventDefault()
 
-    stripe.handleCardPayment(clientSecret, card).then((result) => {
-      if (result.error) {
-        // Inform the customer that there was an error.
-        const errorElement = document.getElementById('card-errors')
-        if (errorElement) {
-          errorElement.textContent = result.error.message || 'Card error'
-        }
-      } else if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
-        document.location.href = form.dataset.successurl || '/'
-      } else {
-        console.error('Missing token!')
-      }
-    })
-  })
+    setPending(true)
 
+    if (clientSecret) {
+      /* We have a payment intent */
+      handleCardPayment(clientSecret, card)
+    } else {
+      const billingDetails = {
+        billing_details: {
+          name: form.dataset.name
+        }
+      }
+      stripe.createPaymentMethod('card', card, billingDetails).then((result) => {
+        if (result.error) {
+          showError(result.error.message)
+        } else if (result.paymentMethod) {
+          // Otherwise send paymentMethod.id to your server (see Step 2)
+          sendPaymentData({
+            payment_method_id: result.paymentMethod.id
+          }).then((response) => {
+            handleServerResponse(response)
+          })
+        }
+      })
+    }
+  })
 }
 
 /*
@@ -237,35 +308,37 @@ if (prContainer && clientSecret) {
   })
 
   paymentRequest.on('paymentmethod', (ev) => {
-    stripe.confirmPaymentIntent(clientSecret, {
-      payment_method: ev.paymentMethod.id
-    }).then((confirmResult) => {
-      if (confirmResult.error) {
-        // Report to the browser that the payment failed, prompting it to
-        // re-show the payment interface, or show an error message and close
-        // the payment interface.
-        ev.complete('fail')
-      } else {
-        // Report to the browser that the confirmation was successful, prompting
-        // it to close the browser payment method collection interface.
-        ev.complete('success')
-        // Let Stripe.js handle the rest of the payment flow.
-        stripe.handleCardPayment(clientSecret).then((result) => {
-          if (result.error) {
-            // The payment failed -- ask your customer for a new payment method.
-          // Inform the customer that there was an error.
-            const errorElement = document.getElementById('card-errors')
-            if (errorElement) {
-              errorElement.textContent = result.error.message || 'Card error'
-            }
-          } else if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
-            document.location.href = form.dataset.successurl || '/'
-          } else {
-            console.error('Payment intent did not succeed.')
-          }
-        })
-      }
-    })
+
+    if (clientSecret) {
+      stripe.confirmPaymentIntent(clientSecret, {
+        payment_method: ev.paymentMethod.id
+      }).then((confirmResult) => {
+        if (confirmResult.error) {
+          // Report to the browser that the payment failed, prompting it to
+          // re-show the payment interface, or show an error message and close
+          // the payment interface.
+          ev.complete('fail')
+        } else {
+          // Report to the browser that the confirmation was successful, prompting
+          // it to close the browser payment method collection interface.
+          ev.complete('success')
+          // Let Stripe.js handle the rest of the payment flow.
+          handleCardPayment(clientSecret)
+        }
+      })
+    } else {
+      /* No client secret, need to sent payment method */
+      sendPaymentData({
+        payment_method_id: ev.paymentMethod.id
+      }).then((response) => {
+        if (response.error) {
+          ev.complete('fail')
+        } else {
+          ev.complete('success')
+        }
+        handleServerResponse(response)
+      })
+    }
   })
 }
 
@@ -277,6 +350,27 @@ if (prContainer && clientSecret) {
 
 const loading = document.getElementById('loading')
 const container = document.getElementById('container')
+
+const showError = (error: string | undefined) => {
+  // Inform the customer that there was an error.
+  const errorElement = document.getElementById('card-errors')
+  if (errorElement) {
+    errorElement.style.display = 'block'
+    errorElement.textContent = error || 'Card error'
+  }
+  setPending(false)
+}
+
+const setPending = (pending: boolean) => {
+  if (formButton) {
+    formButton.disabled = pending
+  }
+  if (pending) {
+    showLoading()
+  } else {
+    stopLoading()
+  }
+}
 
 function showLoading () {
   if (!loading) {

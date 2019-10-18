@@ -14,19 +14,31 @@
     </p>
   </div>
   <div class="form-group">
-    <label for="card-element">
-      {% trans "Please enter your credit card details" %}
-    </label>
-    <div id="card-element">
-      <!-- A Stripe Element will be inserted here. -->
+    <strong>
+      <label for="card-element">
+        <i class="fa fa-lock" aria-hidden="true"></i>
+        {% trans "Please enter your credit card details" %}
+      </label>
+    </strong>
+    <div class="p-3 border border-primary rounded">
+      <div id="card-element"></div>
     </div>
   </div>
   <!-- Used to display Element errors. -->
-  <div id="card-errors" role="alert"></div>
+  <div id="card-errors" class="alert alert-danger" style="display: none" role="alert"></div>
+
+  {% if order.is_recurring %}
+    <p class="mt-5 small">
+      {% blocktrans with site_name=SITE_NAME %}
+        I authorise {{ site_name }} to send instructions to the financial institution that issued my card to take payments from my card account in accordance with the terms stated above.
+      {% endblocktrans %}
+    </p>
+  {% endif %}
+
   <p class="text-right">
-    <button class="btn btn-success btn-lg">
+    <button class="btn btn-primary btn-lg w-50 btn-threed" id="form-button">
       {% if order.is_donation %}
-        &rarr;&nbsp;{% trans "Donate now" %}
+        &rarr;&nbsp;{% trans "Finalize donation" %}
       {% else %}
         &rarr;&nbsp;{% trans "Pay now" %}
       {% endif %}

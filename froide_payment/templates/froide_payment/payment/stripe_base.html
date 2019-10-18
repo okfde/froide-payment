@@ -9,6 +9,7 @@
   data-clientsecret="{{ form.intent_secret }}"
   data-firstname="{{ order.first_name }}"
   data-lastname="{{ order.last_name }}"
+  data-name="{{ order.get_full_name }}"
   data-email="{{ order.user_email }}"
   data-country="{{ order.country.code }}"
   data-successurl="{{ payment.get_success_url }}"

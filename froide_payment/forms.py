@@ -7,11 +7,14 @@ from django.utils.translation import ugettext_lazy as _
 import stripe
 
 from payments import FraudStatus
+from payments.core import provider_factory
 from payments.forms import PaymentForm as BasePaymentForm
 
 from localflavor.generic.forms import IBANFormField
 
-from .models import PaymentStatus
+from .models import (
+    Customer, Subscription, Order, PaymentStatus
+)
 
 
 class SourcePaymentForm(BasePaymentForm):
@@ -101,5 +104,97 @@ class LastschriftPaymentForm(BasePaymentForm):
 
     def save(self):
         self.payment.attrs.iban = self.cleaned_data['iban']
+        order = self.payment.order
+        if order.is_recurring:
+            subscription = order.subscription
+            customer = subscription.customer
+            iban_data = json.dumps({
+                'iban': self.cleaned_data['iban']
+            })
+            customer.custom_data = iban_data
+            customer.save()
         self.payment.transaction_id = str(uuid.uuid4())
         self.payment.change_status(PaymentStatus.PENDING)  # Calls .save()
+
+
+class StartPaymentMixin:
+    def get_payment_metadata(self, data):
+        raise NotImplementedError
+
+    def create_customer(self, data):
+        address_lines = data['address'].splitlines() or ['']
+        defaults = dict(
+            first_name=data['first_name'],
+            last_name=data['last_name'],
+            street_address_1=address_lines[0],
+            street_address_2='\n'.join(address_lines[1:]),
+            city=data['city'],
+            postcode=data['postcode'],
+            country=data['country'],
+            user_email=data['email'],
+        )
+        if self.user is not None:
+            customer, created = Customer.objects.get_or_create(
+                user=self.user,
+                defaults=defaults
+            )
+        else:
+            customer = Customer.objects.create(
+                **defaults
+            )
+        return customer
+
+    def create_plan(self, data):
+        metadata = self.get_payment_metadata(data)
+        provider = provider_factory(data['payment_method'])
+        plan = provider.get_or_create_plan(
+            metadata['plan_name'],
+            metadata['category'],
+            data['amount'],
+            data['interval']
+        )
+        return plan
+
+    def create_subscription(self, data):
+        customer = self.create_customer(data)
+        plan = self.create_plan(data)
+        subscription = Subscription.objects.create(
+            active=False,
+            customer=customer,
+            plan=plan
+        )
+        return subscription
+
+    def create_single_order(self, data):
+        metadata = self.get_payment_metadata(data)
+        address_lines = data['address'].splitlines() or ['']
+        order = Order.objects.create(
+            user=self.user,
+            first_name=data['first_name'],
+            last_name=data['last_name'],
+            street_address_1=address_lines[0],
+            street_address_2='\n'.join(address_lines[1:]),
+            city=data['city'],
+            postcode=data['postcode'],
+            country=data['country'],
+            user_email=data['email'],
+            total_net=data['amount'],
+            total_gross=data['amount'],
+            is_donation=data.get('is_donation', True),
+            description=metadata['description'],
+            kind=metadata['kind'],
+        )
+        return order
+
+    def create_order(self, data):
+        if data['interval'] > 0:
+            metadata = self.get_payment_metadata(data)
+            subscription = self.create_subscription(data)
+            order = subscription.create_order(
+                kind=metadata['kind'],
+                description=metadata['description'],
+                is_donation=data.get('is_donation', True),
+            )
+        else:
+            order = self.create_single_order(data)
+        return order

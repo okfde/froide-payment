@@ -1,5 +1,10 @@
 {% extends "base.html" %}
 
+{% block extra_head %}
+  <meta name="robots" content="noindex"/>
+  {{ block.super }}
+{% endblock %}
+
 {% block navbar %}{% endblock %}
 
 {% block body_extra_attributes %}{{ block.super }} data-raven="{{ RAVEN_JS_URL }}"{% endblock %}

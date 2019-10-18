@@ -69,6 +69,16 @@
           </td>
         </tr>
       {% endif %}
+      {% if order.subscription %}
+        <tr>
+          <td>{% trans "Subscription" %}</td>
+          <td>
+            <a href="{{ order.subscription.get_absolute_url }}">
+              {% trans "Subscription page" %}
+            </a>
+          </td>
+        </tr>
+      {% endif %}
     </table>
     <h4>{% trans "Your details" %}</h4>
     <dl>

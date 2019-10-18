@@ -35,10 +35,12 @@ setup(
     install_requires=[
         'django-payments',
         'django-countries',
-        'django-prices',
+        'django-prices>=2.1.0',
         'django-localflavor',
+        'python-dateutil',
         'prices',
         'stripe',
+        'requests',
     ],
     include_package_data=True,
     classifiers=[

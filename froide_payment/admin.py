@@ -5,6 +5,7 @@ from io import StringIO
 from django.contrib import admin
 from django.utils import timezone
 from django.conf.urls import url
+from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
 
@@ -19,12 +20,13 @@ class PlanAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',)}
     list_display = (
         'name', 'category', 'display_amount',
+        'provider',
         'interval', 'created'
     )
-    list_filter = ('category',)
+    list_filter = ('category', 'provider')
 
     def display_amount(self, obj):
-        return '{} {}'.format(obj.amount.amount, obj.amount.currency)
+        return '{} {}'.format(obj.amount, settings.DEFAULT_CURRENCY)
 
 
 class CustomerAdmin(admin.ModelAdmin):
@@ -41,6 +43,11 @@ class SubscriptionAdmin(admin.ModelAdmin):
     list_display = (
         'customer', 'plan', 'created',
         'active',
+    )
+    date_hierarchy = 'created'
+    list_filter = (
+        'active', 'plan__interval',
+        'plan__amount', 'plan__amount_year',
     )
     search_fields = (
         'customer__user_email',

@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.http import StreamingHttpResponse
+from django.utils.translation import ugettext_lazy as _
 
 
 def get_client_ip(request=None):
@@ -60,3 +61,17 @@ def dict_to_csv_stream(stream):
             yield fake_file._last_string
         writer.writerow(d)
         yield fake_file._last_string
+
+
+def interval_description(interval):
+    if interval == 0:
+        return _('one time')
+    elif interval == 1:
+        return _('every month')
+    elif interval == 3:
+        return _('every three months')
+    if interval == 6:
+        return _('every six months')
+    if interval == 12:
+        return _('every year')
+    return _('every {} months') % interval

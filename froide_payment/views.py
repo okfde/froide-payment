@@ -2,16 +2,13 @@ import logging
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import Http404
-from django.db import transaction
-from django.db.models import Q
 
 from payments import RedirectNeeded
 from payments.core import provider_factory
 
 from .models import (
-    Payment, Order, PaymentStatus, CHECKOUT_PAYMENT_CHOICES
+    Payment, Order, Subscription, PaymentStatus, CHECKOUT_PAYMENT_CHOICES
 )
-from .utils import get_payment_defaults
 
 
 logger = logging.getLogger(__name__)
@@ -58,19 +55,10 @@ def start_payment(request, token, variant):
     if order.is_fully_paid():
         return redirect(order.get_success_url())
 
-    defaults = get_payment_defaults(order, request=request)
     if variant not in [code for code, dummy_name in CHECKOUT_PAYMENT_CHOICES]:
         raise Http404('%r is not a valid payment variant' % (variant,))
-    with transaction.atomic():
-        payment, created = Payment.objects.filter(
-            Q(status=PaymentStatus.WAITING) |
-            Q(status=PaymentStatus.INPUT) |
-            Q(status=PaymentStatus.PENDING)
-        ).get_or_create(
-            variant=variant,
-            order=order,
-            defaults=defaults
-        )
+
+    payment = order.get_or_create_payment(variant, request=request)
 
     data = None
     if request.method == 'POST':
@@ -88,3 +76,28 @@ def start_payment(request, token, variant):
         'order': order,
     }
     return render(request, [template, default_template], ctx)
+
+
+def subscription_detail(request, token):
+    subscription = get_object_or_404(Subscription, token=token)
+    user = request.user
+    customer = subscription.customer
+    if customer.user and user != customer.user and not user.is_superuser:
+        return redirect('/')
+
+    templates = []
+    plan = subscription.plan
+    if plan.provider:
+        part = plan.provider.lower()
+        templates.append(
+            'froide_payment/subscription/%s/detail.html' % part
+        )
+    templates.append('froide_payment/subscription/default.html')
+
+    orders = Order.objects.filter(subscription=subscription)
+
+    ctx = {
+        'orders': orders,
+        'subscription': subscription,
+    }
+    return render(request, templates, ctx)
