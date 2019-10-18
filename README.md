@@ -21,6 +21,13 @@ Configure these event types:
 
 - `payment_intent.payment_failed`
 - `payment_intent.succeeded`
+- `customer.subscription.created`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+- `invoice.payment_action_required`
+- `invoice.upcoming`
+- `invoice.created`
+
 
 Use this URL on your domain:
 
@@ -41,6 +48,20 @@ Use this URL on your domain:
 
 ```
 /payments/process/sofort/
+```
+
+
+
+### Webhook for Paypal Payments
+
+Configure these event types:
+
+- 
+
+Use this URL on your domain:
+
+```
+/payments/process/paypal/
 ```
 
 
@@ -68,7 +89,8 @@ PAYMENT_VARIANTS = {
         'client_id': '',
         'secret': '',
         'endpoint': '',
-        'capture': True
+        'capture': True,
+        'webhook_id': ''
     }),
     'sofort': ('froide_payment.provider.StripeSofortProvider', {
         # Test API keys
