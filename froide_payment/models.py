@@ -3,19 +3,21 @@ import json
 import uuid
 
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.apps import apps
 from django.urls import reverse
 from django.utils.translation import pgettext_lazy, ugettext_lazy as _
 from django.utils import timezone
 
 from django_countries.fields import CountryField
-from django_prices.models import MoneyField, TaxedMoneyField
+from django_prices.models import TaxedMoneyField
 from prices import Money, TaxedMoney
 from dateutil.relativedelta import relativedelta
 
 from payments import PurchasedItem, PaymentStatus as BasePaymentStatus
 from payments.models import BasePayment
+
+from .utils import get_payment_defaults, interval_description
 
 
 CHECKOUT_PAYMENT_CHOICES = [
@@ -65,12 +67,17 @@ class Plan(models.Model):
 
     created = models.DateTimeField(
         default=timezone.now, editable=False)
-    amount = MoneyField(
-        currency=settings.DEFAULT_CURRENCY, max_digits=12,
-        decimal_places=settings.DEFAULT_DECIMAL_PLACES, default=0)
+    amount = models.DecimalField(
+        max_digits=12, decimal_places=settings.DEFAULT_DECIMAL_PLACES,
+        default=0
+    )
     interval = models.PositiveSmallIntegerField(
         verbose_name=_('interval'),
         choices=MONTHLY_INTERVALS, null=True, blank=True
+    )
+    amount_year = models.DecimalField(
+        max_digits=12,
+        decimal_places=settings.DEFAULT_DECIMAL_PLACES, default=0
     )
 
     remote_reference = models.CharField(max_length=256, blank=True)
@@ -82,6 +89,9 @@ class Plan(models.Model):
 
     def __str__(self):
         return self.name
+
+    def get_interval_description(self):
+        return interval_description(self.interval)
 
 
 class Customer(models.Model):
@@ -108,6 +118,9 @@ class Customer(models.Model):
 
     def __str__(self):
         return self.user_email
+
+    def get_full_name(self):
+        return '{} {}'.format(self.first_name, self.last_name).strip()
 
     @property
     def data(self):
@@ -140,17 +153,47 @@ class Subscription(models.Model):
     def __str__(self):
         return str(self.customer)
 
+    def get_absolute_url(self):
+        return reverse('froide_payment:subscription-detail', kwargs={
+            'token': str(self.token)
+        })
+
     def get_next_date(self):
         timestamp = self.last_date
         if self.last_date is None:
             timestamp = self.created
         return timestamp + relativedelta(months=self.plan.interval)
 
-    def create_order(self, kind='', is_donation=False):
+    def get_last_order(self):
+        return self.order_set.all().order_by(
+            '-service_end'
+        ).first()
+
+    def attach_order_info(self, remote_reference='', **extra):
+        order = self.get_last_order()
+        if not order:
+            return
+        order.remote_reference = remote_reference
+        order.save()
+
+    def create_order(self, kind='', description=None, is_donation=True,
+                     remote_reference=''):
         now = timezone.now()
-        if self.next_date and self.next_date > now.date():
-            raise ValueError
+
+        last_order = self.get_last_order()
+        service_start = None
+        if last_order:
+            service_start = last_order.service_end
+            if not kind:
+                kind = last_order.kind
+        if not service_start:
+            service_start = now
+        service_end = service_start + relativedelta(months=self.plan.interval)
+
+        if description is None:
+            description = self.plan.name
         customer = self.customer
+
         order = Order.objects.create(
             customer=customer,
             subscription=self,
@@ -167,7 +210,10 @@ class Subscription(models.Model):
             total_gross=self.plan.amount,
             is_donation=is_donation,
             kind=kind,
-            description=self.plan.name
+            description=description,
+            service_start=service_start,
+            service_end=service_end,
+            remote_reference=remote_reference
         )
         return order
 
@@ -199,13 +245,20 @@ class Order(models.Model):
 
     user_email = models.EmailField(blank=True, default='')
 
-    total_net = MoneyField(
-        currency=settings.DEFAULT_CURRENCY, max_digits=12,
+    currency = models.CharField(
+        max_length=3, default=settings.DEFAULT_CURRENCY
+    )
+    total_net = models.DecimalField(
+        max_digits=12,
         decimal_places=settings.DEFAULT_DECIMAL_PLACES, default=0)
-    total_gross = MoneyField(
-        currency=settings.DEFAULT_CURRENCY, max_digits=12,
+    total_gross = models.DecimalField(
+        max_digits=12,
         decimal_places=settings.DEFAULT_DECIMAL_PLACES, default=0)
-    total = TaxedMoneyField(net_field='total_net', gross_field='total_gross')
+    total = TaxedMoneyField(
+        net_amount_field='total_net',
+        gross_amount_field='total_gross',
+        currency="currency",
+    )
 
     # FIXME: https://github.com/mirumee/django-prices/issues/71
     total.unique = False
@@ -215,7 +268,11 @@ class Order(models.Model):
     customer_note = models.TextField(blank=True, default='')
     kind = models.CharField(max_length=255, default='', blank=True)
 
+    remote_reference = models.CharField(max_length=256, blank=True)
     token = models.UUIDField(default=uuid.uuid4, db_index=True)
+
+    service_start = models.DateTimeField(null=True, blank=True)
+    service_end = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.description
@@ -244,6 +301,10 @@ class Order(models.Model):
             '{} {}'.format(self.postcode, self.city),
             self.country.name
         ] if x)
+
+    @property
+    def is_recurring(self):
+        return bool(self.subscription_id)
 
     def get_user_or_order(self):
         if self.user:
@@ -291,8 +352,14 @@ class Order(models.Model):
 
     def get_absolute_url(self):
         return reverse('froide_payment:order-detail', kwargs={
-            'token': self.token
+            'token': str(self.token)
         })
+
+    def get_absolute_payment_url(self, variant):
+        return reverse('froide_payment:start-payment', kwargs={
+                'token': str(self.token),
+                'variant': variant
+            })
 
     def get_failure_url(self):
         obj = self.get_domain_object()
@@ -303,7 +370,7 @@ class Order(models.Model):
     def get_success_url(self):
         obj = self.get_domain_object()
         if obj is None:
-            return '/'
+            return self.get_absolute_url() + '?result=success'
         return obj.get_success_url()
 
     def get_domain_object(self):
@@ -311,7 +378,7 @@ class Order(models.Model):
         if model is None:
             return None
         try:
-            if self.subscription:
+            if self.subscription_id and hasattr(model, 'subscription'):
                 return model.objects.get(subscription=self.subscription)
             return model.objects.get(order=self)
         except model.DoesNotExist:
@@ -324,6 +391,25 @@ class Order(models.Model):
             return apps.get_model(self.kind)
         except LookupError:
             return None
+
+    def get_interval_description(self):
+        if not self.subscription:
+            return ''
+        return self.subscription.plan.get_interval_description()
+
+    def get_or_create_payment(self, variant, request=None):
+        defaults = get_payment_defaults(self, request=request)
+        with transaction.atomic():
+            payment, created = Payment.objects.filter(
+                models.Q(status=PaymentStatus.WAITING) |
+                models.Q(status=PaymentStatus.INPUT) |
+                models.Q(status=PaymentStatus.PENDING)
+            ).get_or_create(
+                variant=variant,
+                order=self,
+                defaults=defaults
+            )
+        return payment
 
 
 class PaymentStatus(BasePaymentStatus):
@@ -357,6 +443,11 @@ class Payment(BasePayment):
         Order, related_name='payments',
         on_delete=models.PROTECT
     )
+    # FIXME: transaction_id probably needs a db index
+    # transaction_id = models.CharField(
+    #     max_length=255, blank=True,
+    #     db_index=True
+    # )
 
     class Meta:
         ordering = ('-modified',)
@@ -393,8 +484,8 @@ class Payment(BasePayment):
         yield PurchasedItem(
             name=str(order.description),
             quantity=1,
-            price=order.total_gross.amount,
-            currency=order.total_gross.currency,
+            price=order.total_gross,
+            currency=order.currency,
             sku=order.id
         )
 

@@ -45,7 +45,7 @@ class Migration(migrations.Migration):
                 ('category', models.CharField(blank=True, max_length=256)),
                 ('description', models.TextField(blank=True)),
                 ('created', models.DateTimeField(default=django.utils.timezone.now, editable=False)),
-                ('amount', django_prices.models.MoneyField(currency='EUR', decimal_places=2, default=0, max_digits=12)),
+                ('amount', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
                 ('interval', models.PositiveSmallIntegerField(blank=True, choices=[(1, 'monthly'), (3, 'quarterly'), (6, 'semiannually'), (12, 'annually')], null=True, verbose_name='Montly interval')),
                 ('remote_reference', models.CharField(blank=True, max_length=256)),
             ],
