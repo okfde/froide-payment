@@ -410,6 +410,8 @@ class Order(models.Model):
                 order=self,
                 defaults=defaults
             )
+        # Trigger signal
+        payment.change_status(payment.status)
         return payment
 
 
