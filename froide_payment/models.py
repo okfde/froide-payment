@@ -27,6 +27,7 @@ CHECKOUT_PAYMENT_CHOICES = [
     ('lastschrift', _('Lastschrift')),
     ('sofort', _('SOFORT Überweisung')),
     ('paypal', _('Paypal')),
+    ('banktransfer', _('Bank transfer')),
 ]
 
 CHECKOUT_PAYMENT_CHOICES_DICT = dict(CHECKOUT_PAYMENT_CHOICES)
