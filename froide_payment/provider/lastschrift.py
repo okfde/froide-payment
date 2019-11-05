@@ -1,15 +1,13 @@
-from decimal import Decimal
-
-from django.utils.text import slugify
-
 from payments.core import BasicProvider
 from payments import RedirectNeeded
 
-from ..models import PaymentStatus, Product, Plan
+from ..models import PaymentStatus
 from ..forms import LastschriftPaymentForm
 
+from .mixins import PlanProductMixin
 
-class LastschriftProvider(BasicProvider):
+
+class LastschriftProvider(PlanProductMixin, BasicProvider):
     provider_name = 'lastschrift'
     form_class = LastschriftPaymentForm
 
@@ -44,42 +42,3 @@ class LastschriftProvider(BasicProvider):
                 raise RedirectNeeded(payment.get_success_url())
 
         return form
-
-    def get_or_create_product(self, category):
-        try:
-            product = Product.objects.get(
-                category=category,
-                provider=self.provider_name
-            )
-        except Product.DoesNotExist:
-            product = Product.objects.create(
-                name='{provider} {category}'.format(
-                    provider=self.provider_name,
-                    category=category
-                ),
-                category=category,
-                provider=self.provider_name,
-            )
-        return product
-
-    def get_or_create_plan(self, plan_name, category, amount, month_interval):
-        product = self.get_or_create_product(category)
-        try:
-            plan = Plan.objects.get(
-                product=product,
-                amount=amount,
-                interval=month_interval,
-                provider=self.provider_name
-            )
-        except Plan.DoesNotExist:
-            plan = Plan.objects.create(
-                name=plan_name,
-                slug=slugify(plan_name),
-                category=category,
-                amount=amount,
-                interval=month_interval,
-                amount_year=amount * Decimal(12 / month_interval),
-                provider=self.provider_name,
-                product=product
-            )
-        return plan
