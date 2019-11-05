@@ -420,7 +420,7 @@ class PaymentStatus(BasePaymentStatus):
 
     CHOICES = [
         (BasePaymentStatus.WAITING,
-            pgettext_lazy('payment status', 'Waiting for confirmation')),
+            pgettext_lazy('payment status', 'Waiting for input')),
         (BasePaymentStatus.PREAUTH,
             pgettext_lazy('payment status', 'Pre-authorized')),
         (BasePaymentStatus.CONFIRMED,
