@@ -1,6 +1,8 @@
 {% load i18n %}
 
-<div class="alert alert-{{ payment.status_color }}">
+{% block custom_content %}{% endblock %}
+
+<div class="{% block payment_class %}alert alert-{{ payment.status_color }}{% endblock %}">
   <h4>{{ payment.get_variant_display }}</h4>
   {% block variant_message %}{% endblock %}
   <table class="table">

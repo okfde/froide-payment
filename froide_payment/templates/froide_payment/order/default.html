@@ -10,6 +10,7 @@
 <div class="row justify-content-center">
   <div class="col-md-8">
     <h3>{% trans "Your payment" %}</h3>
+    {% block payment_status %}
     {% if result == 'success' %}
       <div class="alert alert-success mb-5 mt-5">
         <h4>{% trans "Thank you!" %}</h4>
@@ -31,6 +32,7 @@
           </p>
       </div>
     {% endif %}
+    {% endblock %}
     {% block domain_block %}{% endblock %}
     <table class="table">
       <tr>

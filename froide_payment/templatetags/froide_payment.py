@@ -11,5 +11,6 @@ def render_payment_status(payment):
         template_base.format(payment.variant),
         template_base.format('default'),
     ], {
-        'payment': payment
+        'payment': payment,
+        'order': payment.order
     })
