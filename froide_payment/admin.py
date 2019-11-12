@@ -2,12 +2,13 @@ import csv
 from decimal import Decimal
 from io import StringIO
 
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.utils import timezone
 from django.conf.urls import url
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
+from django.utils.translation import ugettext_lazy as _
 
 from .models import (
     Plan, Customer, Subscription, Payment, Order, Product,
@@ -86,26 +87,16 @@ class PaymentAdmin(admin.ModelAdmin):
         def get_lastschrift_export(payment):
             data = {
                 'id': str(payment.id),
-                'transaction_id': payment.transaction_id,
-                'transaction_label': '{} (P{})'.format(
+                'transaction_label': 'Spende {}: {} (P{})'.format(
+                    settings.SITE_NAME,
                     payment.order.description, payment.id
                 ),
                 'amount': str(payment.total),
                 'currency': payment.currency,
-                'email': payment.billing_email,
-                'first_name': payment.billing_first_name,
-                'last_name': payment.billing_last_name,
                 'name': ' '.join([
                     payment.billing_first_name,
                     payment.billing_last_name,
                 ]),
-                'address': '\n'.join([
-                    payment.billing_address_1,
-                    payment.billing_address_2
-                ]).strip(),
-                'postcode': payment.billing_postcode,
-                'city': payment.billing_city,
-                'country': payment.billing_country_code,
                 'iban': payment.attrs.iban,
                 'failed': '',
                 'captured': '',
@@ -151,13 +142,24 @@ class PaymentAdmin(admin.ModelAdmin):
         rows = [row for row in reader]
         row_map = {int(row['id']): row for row in rows}
         row_ids = list(row_map.keys())
-        payments = Payment.objects.filter(id__in=row_ids)
+        payments = Payment.objects.filter(
+            variant='lastschrift',
+            id__in=row_ids
+        )
+        if len(payments) != len(row_ids):
+            self.message_user(
+                request, _('Could not find all payments, aborting!'),
+                level=messages.ERROR
+            )
+            return redirect('admin:froide_payment_payment_changelist')
+
         for payment in payments:
             row = row_map[payment.id]
             if row['failed'].strip():
                 payment.captured_amount = Decimal(0.0)
                 payment.change_status(PaymentStatus.REJECTED)
             elif row['captured'].strip():
+                payment.attrs.mandats_id = row['Mandats-ID']
                 payment.captured_amount = payment.total
                 payment.change_status(PaymentStatus.CONFIRMED)
 
