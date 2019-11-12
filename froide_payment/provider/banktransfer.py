@@ -22,7 +22,7 @@ class BanktransferProvider(PlanProductMixin, BasicProvider):
 
     def get_form(self, payment, data=None):
         '''
-        Bank transfer gets stored and processed
+        Bank transfer gets stored and need to be done by the user
         '''
         if payment.status == PaymentStatus.WAITING:
             payment.change_status(PaymentStatus.INPUT)
@@ -51,6 +51,7 @@ class BanktransferProvider(PlanProductMixin, BasicProvider):
             order.remote_reference = transaction_id
             order.save()
 
-        if order.is_recurring:
-            raise RedirectNeeded(order.subscription.get_absolute_url())
-        raise RedirectNeeded(payment.order.get_absolute_url())
+        if payment.status == PaymentStatus.INPUT:
+            payment.change_status(PaymentStatus.PENDING)
+
+        raise RedirectNeeded(payment.get_success_url())

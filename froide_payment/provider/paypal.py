@@ -136,11 +136,10 @@ class PaypalProvider(OriginalPaypalProvider):
 
     def finalize_subscription(self, payment):
         order = payment.order
-        subscription = order.subscription
 
         if not order.is_fully_paid():
             self.capture_subscription_order(order, payment=payment)
-        return redirect(subscription.get_absolute_url())
+        return redirect(payment.get_success_url())
 
     def synchronize_orders(self, subscription):
         list_url = '{e}/v1/billing/subscriptions/{s}/transactions'.format(
