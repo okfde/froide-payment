@@ -358,21 +358,21 @@ class Order(models.Model):
 
     def get_absolute_payment_url(self, variant):
         return reverse('froide_payment:start-payment', kwargs={
-                'token': str(self.token),
-                'variant': variant
-            })
+            'token': str(self.token),
+            'variant': variant
+        })
 
     def get_failure_url(self):
         obj = self.get_domain_object()
-        if obj is None:
-            return '/'
-        return obj.get_failure_url()
+        if obj is not None and hasattr(obj, 'get_failure_url'):
+            return obj.get_failure_url()
+        return '/'
 
     def get_success_url(self):
         obj = self.get_domain_object()
-        if obj is None:
-            return self.get_absolute_url() + '?result=success'
-        return obj.get_success_url()
+        if obj is not None and hasattr(obj, 'get_success_url'):
+            return obj.get_success_url()
+        return self.get_absolute_url() + '?result=success'
 
     def get_domain_object(self):
         model = self.get_domain_model()
