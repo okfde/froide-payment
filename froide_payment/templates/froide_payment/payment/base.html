@@ -13,12 +13,12 @@
       <h2 class="bg-primary text-white px-2 pt-1 pb-2">
       {% if order.is_donation %}
         {% if order.is_recurring %}
-          {% trans "Finish your recurring donation" %}
+          {% trans "Finish your recurring donation:" %}
         {% else %}
-          {% trans "Finish your donation" %}
+          {% trans "Finish your donation:" %}
         {% endif %}
       {% else %}
-        {% trans "Finish your payment" %}
+        {% trans "Finish your payment:" %}
       {% endif %}
       </h2>
     </div>
