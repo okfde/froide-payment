@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-11-12 18:08+0100\n"
+"POT-Creation-Date: 2019-11-14 14:34+0100\n"
 "PO-Revision-Date: 2019-11-12 18:08+0100\n"
 "Last-Translator: Stefan Wehrmeyer <stefan.wehrmeyer@okfn.de>\n"
 "Language-Team: \n"
@@ -18,228 +18,228 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 2.2\n"
 
-#: froide_payment/admin.py:162
+#: admin.py:151
 msgid "Could not find all payments, aborting!"
 msgstr "Konnte nicht alle Spenden finden, Vorgang abgebrochen!"
 
-#: froide_payment/apps.py:7
+#: apps.py:7
 msgid "Froide Payment App"
 msgstr "Froide Bezahlungs-App"
 
-#: froide_payment/forms.py:35
+#: forms.py:35
 msgid "This payment has already been processed."
 msgstr "Diese Zahlung wurde schon verarbeitet."
 
-#: froide_payment/forms.py:71
+#: forms.py:71
 msgid "Your IBAN"
 msgstr "Ihre IBAN"
 
-#: froide_payment/forms.py:79
+#: forms.py:79
 msgid "IBAN"
 msgstr "IBAN"
 
-#: froide_payment/forms.py:81
+#: forms.py:81
 msgid "The IBAN has 20-22 digits and starts with two letters."
 msgstr "Die IBAN hat 20-22 Stellen und fängt mit zwei Buchstaben an."
 
-#: froide_payment/forms.py:101
+#: forms.py:101
 msgid "Sie müssen den Bedingungen der Lastschrift zustimmen."
 msgstr "Sie müssen den Bedingungen der Lastschrift zustimmen."
 
-#: froide_payment/models.py:24
+#: models.py:24
 msgid "Dummy"
 msgstr "Dummy"
 
-#: froide_payment/models.py:25
+#: models.py:25
 msgid "Credit Card"
 msgstr "Kreditkarte"
 
-#: froide_payment/models.py:26
+#: models.py:26
 msgid "SEPA Debit"
 msgstr "Lastschrift"
 
-#: froide_payment/models.py:27
+#: models.py:27
 msgid "Lastschrift"
 msgstr "Lastschrift"
 
-#: froide_payment/models.py:28
+#: models.py:28
 msgid "SOFORT Überweisung"
 msgstr "SOFORT Überweisung"
 
-#: froide_payment/models.py:29
+#: models.py:29
 msgid "Paypal"
 msgstr "Paypal"
 
-#: froide_payment/models.py:30
+#: models.py:30
 msgid "Bank transfer"
 msgstr "Überweisung"
 
-#: froide_payment/models.py:44
+#: models.py:44
 msgid "monthly"
 msgstr "monatlich"
 
-#: froide_payment/models.py:45
+#: models.py:45
 msgid "quarterly"
 msgstr "vierteljährlich"
 
-#: froide_payment/models.py:46
+#: models.py:46
 msgid "semiannually"
 msgstr "halbjährlich"
 
-#: froide_payment/models.py:47
+#: models.py:47
 msgid "annually"
 msgstr "jährlich"
 
-#: froide_payment/models.py:76
+#: models.py:76
 msgid "interval"
 msgstr "Intervall"
 
-#: froide_payment/models.py:423
+#: models.py:423
 msgctxt "payment status"
 msgid "Waiting for input"
 msgstr "Warte auf Eingabe"
 
-#: froide_payment/models.py:425
+#: models.py:425
 msgctxt "payment status"
 msgid "Pre-authorized"
 msgstr "Vor-Autorisiert"
 
-#: froide_payment/models.py:427
+#: models.py:427
 msgctxt "payment status"
 msgid "Confirmed"
 msgstr "Bestätigt"
 
-#: froide_payment/models.py:429
+#: models.py:429
 msgctxt "payment status"
 msgid "Rejected"
 msgstr "Abgewiesen"
 
-#: froide_payment/models.py:431
+#: models.py:431
 msgctxt "payment status"
 msgid "Refunded"
 msgstr "Zurückgebucht"
 
-#: froide_payment/models.py:433
+#: models.py:433
 msgctxt "payment status"
 msgid "Error"
 msgstr "Fehler"
 
-#: froide_payment/models.py:435
+#: models.py:435
 msgctxt "payment status"
 msgid "Input"
 msgstr "Eingabe"
 
-#: froide_payment/models.py:437
+#: models.py:437
 msgctxt "payment status"
 msgid "Confirmation pending"
 msgstr "Warte auf Bestätigung"
 
-#: froide_payment/templates/froide_payment/order/default.html:12
+#: templates/froide_payment/order/default.html:12
 msgid "Your payment"
 msgstr "Ihre Bezahlung"
 
-#: froide_payment/templates/froide_payment/order/default.html:16
+#: templates/froide_payment/order/default.html:16
 msgid "Thank you!"
 msgstr "Vielen Dank!"
 
-#: froide_payment/templates/froide_payment/order/default.html:19
+#: templates/froide_payment/order/default.html:19
 msgid "Your payment has been received."
 msgstr "Ihre Zahlung wurde empfangen."
 
-#: froide_payment/templates/froide_payment/order/default.html:23
+#: templates/froide_payment/order/default.html:23
 msgid "We are processing your payment now."
 msgstr "Wir verarbeiten Ihre Zahlung gerade."
 
-#: froide_payment/templates/froide_payment/order/default.html:29
+#: templates/froide_payment/order/default.html:29
 msgid "Sorry, there was an error."
 msgstr "Entschuldigen Sie bitte, ein Fehler ist aufgetreten."
 
-#: froide_payment/templates/froide_payment/order/default.html:31
+#: templates/froide_payment/order/default.html:31
 msgid "Your payment was NOT received."
 msgstr "Ihre Zahlung wurde NICHT erhalten."
 
-#: froide_payment/templates/froide_payment/order/default.html:39
-#: froide_payment/templates/froide_payment/subscription/default.html:19
+#: templates/froide_payment/order/default.html:39
+#: templates/froide_payment/subscription/default.html:19
 msgid "date"
 msgstr "Datum"
 
-#: froide_payment/templates/froide_payment/order/default.html:46
+#: templates/froide_payment/order/default.html:46
 msgid "amount gross"
 msgstr "Betrag brutto"
 
-#: froide_payment/templates/froide_payment/order/default.html:52
+#: templates/froide_payment/order/default.html:52
 msgid "amount net"
 msgstr "Betrag netto"
 
-#: froide_payment/templates/froide_payment/order/default.html:59
-#: froide_payment/templates/froide_payment/subscription/default.html:20
+#: templates/froide_payment/order/default.html:59
+#: templates/froide_payment/subscription/default.html:20
 msgid "amount"
 msgstr "Betrag"
 
-#: froide_payment/templates/froide_payment/order/default.html:67
+#: templates/froide_payment/order/default.html:67
 msgid "Donation"
 msgstr "Spende"
 
-#: froide_payment/templates/froide_payment/order/default.html:70
+#: templates/froide_payment/order/default.html:70
 msgid "This is a donation"
 msgstr "Dies ist eine Spende"
 
-#: froide_payment/templates/froide_payment/order/default.html:76
+#: templates/froide_payment/order/default.html:76
 msgid "Subscription"
 msgstr "Dauerspende"
 
-#: froide_payment/templates/froide_payment/order/default.html:79
+#: templates/froide_payment/order/default.html:79
 msgid "Subscription page"
 msgstr "Dauerspenden-Seite"
 
-#: froide_payment/templates/froide_payment/order/default.html:85
+#: templates/froide_payment/order/default.html:85
 msgid "Your details"
 msgstr "Ihre Angaben"
 
-#: froide_payment/templates/froide_payment/order/default.html:87
+#: templates/froide_payment/order/default.html:87
 msgid "name"
 msgstr "Name"
 
-#: froide_payment/templates/froide_payment/order/default.html:90
+#: templates/froide_payment/order/default.html:90
 msgid "company name"
 msgstr "Firmenname"
 
-#: froide_payment/templates/froide_payment/order/default.html:93
+#: templates/froide_payment/order/default.html:93
 msgid "address"
 msgstr "Adresse"
 
-#: froide_payment/templates/froide_payment/order/default.html:100
+#: templates/froide_payment/order/default.html:100
 msgid "email"
 msgstr "E-Mail"
 
-#: froide_payment/templates/froide_payment/order/default.html:103
+#: templates/froide_payment/order/default.html:103
 msgid "payment"
 msgstr "Bezahlung"
 
-#: froide_payment/templates/froide_payment/payment/base.html:7
-#: froide_payment/templates/froide_payment/payment/sepa.html:18
+#: templates/froide_payment/payment/base.html:7
+#: templates/froide_payment/payment/sepa.html:18
 msgid "Donate now"
 msgstr "Jetzt spenden"
 
-#: froide_payment/templates/froide_payment/payment/base.html:7
-#: froide_payment/templates/froide_payment/payment/creditcard.html:43
-#: froide_payment/templates/froide_payment/payment/sepa.html:20
+#: templates/froide_payment/payment/base.html:7
+#: templates/froide_payment/payment/creditcard.html:43
+#: templates/froide_payment/payment/sepa.html:20
 msgid "Pay now"
 msgstr "Jetzt bezahlen"
 
-#: froide_payment/templates/froide_payment/payment/base.html:16
+#: templates/froide_payment/payment/base.html:16
 msgid "Finish your recurring donation:"
 msgstr "Schließen Sie Ihre Dauerspende ab:"
 
-#: froide_payment/templates/froide_payment/payment/base.html:18
+#: templates/froide_payment/payment/base.html:18
 msgid "Finish your donation:"
 msgstr "Schließen Sie Ihre Spende ab:"
 
-#: froide_payment/templates/froide_payment/payment/base.html:21
+#: templates/froide_payment/payment/base.html:21
 msgid "Finish your payment:"
 msgstr "Schlißen Sie Ihre Bezahlung ab:"
 
-#: froide_payment/templates/froide_payment/payment/base.html:30
+#: templates/froide_payment/payment/base.html:30
 #, python-format
 msgid ""
 "\n"
@@ -252,7 +252,7 @@ msgstr ""
 "%(interval)s</mark> an %(description)s.\n"
 "            "
 
-#: froide_payment/templates/froide_payment/payment/base.html:34
+#: templates/froide_payment/payment/base.html:34
 #, python-format
 msgid ""
 "You are donating <strong>%(amount)s&nbsp;€</strong> to <mark>"
@@ -261,7 +261,7 @@ msgstr ""
 "Sie spenden <strong>%(amount)s&nbsp;€</strong> an <mark>%(description)s</"
 "mark>."
 
-#: froide_payment/templates/froide_payment/payment/base.html:37
+#: templates/froide_payment/payment/base.html:37
 #, python-format
 msgid ""
 "You are paying <strong>%(amount)s&nbsp;€</strong> for <mark>%(description)s</"
@@ -270,25 +270,25 @@ msgstr ""
 "Sie zahlen <strong>%(amount)s&nbsp;€</strong> für <mark>%(description)s</"
 "mark>."
 
-#: froide_payment/templates/froide_payment/payment/base.html:42
+#: templates/froide_payment/payment/base.html:42
 msgid "You can cancel your donation anytime online or by contacting us."
 msgstr ""
 "Sie können Ihre Dauerspende jederzeit online oder durch Kontaktaufnahme "
 "kündigen."
 
-#: froide_payment/templates/froide_payment/payment/base.html:59
+#: templates/froide_payment/payment/base.html:59
 msgid "Loading..."
 msgstr "Wird geladen..."
 
-#: froide_payment/templates/froide_payment/payment/creditcard.html:12
+#: templates/froide_payment/payment/creditcard.html:12
 msgid "Or enter your credit card details below"
 msgstr "Oder geben Sie die Details Ihrer Kreditkarte selbst ein"
 
-#: froide_payment/templates/froide_payment/payment/creditcard.html:20
+#: templates/froide_payment/payment/creditcard.html:20
 msgid "Please enter your credit card details"
 msgstr "Bitte geben Sie die Details Ihrer Kreditkarte ein"
 
-#: froide_payment/templates/froide_payment/payment/creditcard.html:32
+#: templates/froide_payment/payment/creditcard.html:32
 #, python-format
 msgid ""
 "\n"
@@ -303,15 +303,15 @@ msgstr ""
 "zuständige Institution geben darf.\n"
 "      "
 
-#: froide_payment/templates/froide_payment/payment/creditcard.html:41
+#: templates/froide_payment/payment/creditcard.html:41
 msgid "Finalize donation"
 msgstr "Spende abschließen"
 
-#: froide_payment/templates/froide_payment/payment/sepa.html:7
+#: templates/froide_payment/payment/sepa.html:7
 msgid "Please enter your IBAN"
 msgstr "Bitte geben Sie Ihre IBAN ein"
 
-#: froide_payment/templates/froide_payment/payment/sepa.html:26
+#: templates/froide_payment/payment/sepa.html:26
 msgid ""
 "By providing your IBAN and confirming this payment, you are authorizing Open "
 "Knowledge Foundation Deutschland e.V. and Stripe, our payment service "
@@ -329,69 +329,69 @@ msgstr ""
 "belasteten Betrages verlangen. Es gelten dabei die mit meinem Kreditinstitut "
 "vereinbarten Bedingungen."
 
-#: froide_payment/templates/froide_payment/payment/status/base.html:10
+#: templates/froide_payment/payment/status/base.html:10
 msgid "status"
 msgstr "Status"
 
-#: froide_payment/templates/froide_payment/payment/status/base.html:15
+#: templates/froide_payment/payment/status/base.html:15
 msgid "status message"
 msgstr "Statusnachricht"
 
-#: froide_payment/templates/froide_payment/payment/status/base.html:20
+#: templates/froide_payment/payment/status/base.html:20
 msgid "amount due"
 msgstr "zu zahlender Betrag"
 
-#: froide_payment/templates/froide_payment/payment/status/base.html:24
+#: templates/froide_payment/payment/status/base.html:24
 msgid "amount paid"
 msgstr "Betrag gezahlt"
 
-#: froide_payment/templates/froide_payment/payment/status/base.html:28
+#: templates/froide_payment/payment/status/base.html:28
 msgid "date created"
 msgstr "Erstellt am"
 
-#: froide_payment/templates/froide_payment/payment/status/base.html:32
+#: templates/froide_payment/payment/status/base.html:32
 msgid "last updated"
 msgstr "Letzte Aktualisierung"
 
-#: froide_payment/templates/froide_payment/payment/status/lastschrift.html:8
+#: templates/froide_payment/payment/status/lastschrift.html:8
 msgid "Your direct debit will get deducted during the next month."
 msgstr "Die Lastschrift wird im Laufe des nächsten Monats abgebucht."
 
-#: froide_payment/templates/froide_payment/payment/status/lastschrift.html:12
+#: templates/froide_payment/payment/status/lastschrift.html:12
 msgid "Your direct debit was processed."
 msgstr "Ihre Lastschrift wurde abgebucht."
 
-#: froide_payment/templates/froide_payment/payment/status/lastschrift.html:16
+#: templates/froide_payment/payment/status/lastschrift.html:16
 msgid "There was a problem with your payment. Your direct debit was rejected."
 msgstr ""
 "Es gab ein Problem mit Ihrer Bezahlung. Die Lastschrift wurde abgewiesen "
 "oder zurückgebucht."
 
-#: froide_payment/templates/froide_payment/subscription/default.html:12
+#: templates/froide_payment/subscription/default.html:12
 msgid "Your subscription"
 msgstr "Ihre Dauerspende"
 
-#: froide_payment/utils.py:68
+#: utils.py:68
 msgid "one time"
 msgstr "einmalig"
 
-#: froide_payment/utils.py:70
+#: utils.py:70
 msgid "every month"
 msgstr "jeden Monat"
 
-#: froide_payment/utils.py:72
+#: utils.py:72
 msgid "every three months"
 msgstr "vierteljährlich"
 
-#: froide_payment/utils.py:74
+#: utils.py:74
 msgid "every six months"
 msgstr "alle sechs Monate"
 
-#: froide_payment/utils.py:76
+#: utils.py:76
 msgid "every year"
 msgstr "jedes Jahr"
 
-#: froide_payment/utils.py:77
+#: utils.py:77
 msgid "every {} months"
 msgstr "alle {} Monate"
 
