@@ -436,6 +436,7 @@ class PaymentStatus(BasePaymentStatus):
 
         (PENDING, pgettext_lazy('payment status', 'Confirmation pending')),
     ]
+    CHOICES_DICT = dict(CHOICES)
 
 
 class Payment(BasePayment):
@@ -494,6 +495,9 @@ class Payment(BasePayment):
 
     def get_variant_display(self):
         return CHECKOUT_PAYMENT_CHOICES_DICT.get(self.variant, '')
+
+    def get_status_display(self):
+        return str(PaymentStatus.CHOICES_DICT.get(self.status, self.status))
 
     @property
     def status_color(self):
