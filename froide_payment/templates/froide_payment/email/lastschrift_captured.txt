@@ -1,18 +1,18 @@
-{% autoescape off %}Liebe*r {{ payment.first_name }} {{ payment.last_name }},
+{% autoescape off %}Liebe/r {{ order.first_name }} {{ order.last_name }},
 
 die Open Knowledge Foundation Deutschland e.V., Singerstr. 109, 10179 Berlin hat von Ihnen ein SEPA-Lastschriftmandat erhalten und zwar für: {{ order.description }}.
 
 Die Lastschrift wird mit der Gläubigeridentifikationsnummer DE17ZZZ00002091662 abgebucht. Ihre Mandatsreferenz-Nr. ist {{ payment.attrs.mandats_id }}.
 
 {% if order.is_recurring %}
-Die Abbuchung von {{ payment.total }} {{ payment.currency }} erfolgt regelmäßig {{ order.subscription.plan.get_interval_description }}, erstmalig am {{ payment.modified | date:SHORT_DATE }}.
+Die Abbuchung von {{ payment.total }} {{ payment.currency }} erfolgt regelmäßig {{ order.subscription.plan.get_interval_description }}, erstmalig am {{ payment.modified | date:"SHORT_DATE_FORMAT" }}.
 {% else %}
-Die Abbuchung von {{ payment.total }} {{ payment.currency }} erfolgte einmalig am {{ payment.modified | date:SHORT_DATE }}.
+Die Abbuchung von {{ payment.total }} {{ payment.currency }} erfolgte einmalig am {{ payment.modified | date:"SHORT_DATE_FORMAT" }}.
 {% endif %}
 
 Ihr angegebenes Konto ist:
 
-Kontoinhaber/in: {{ payment.first_name }} {{ payment.last_name }}
+Kontoinhaber/in: {{ payment.billing_first_name }} {{ payment.billing_last_name }}
 IBAN: {{ payment.attrs.iban }}
 
 

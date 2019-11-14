@@ -9,6 +9,7 @@ class FroidePaymentConfig(AppConfig):
     def ready(self):
         from payments.signals import status_changed
 
-        from .listeners import subscription_payment
+        from .listeners import subscription_payment, lastschrift_payment
 
         status_changed.connect(subscription_payment)
+        status_changed.connect(lastschrift_payment)
