@@ -57,6 +57,11 @@ class SubscriptionAdmin(admin.ModelAdmin):
 
 
 class OrderAdmin(admin.ModelAdmin):
+    list_display = (
+        'user_email', 'first_name', 'last_name', 'created', 'user',
+        'subscription', 'total_net'
+    )
+    date_hierarchy = 'created'
     raw_id_fields = ('user', 'customer', 'subscription',)
 
 
