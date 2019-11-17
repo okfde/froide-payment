@@ -467,6 +467,15 @@ class Payment(BasePayment):
         PaymentStatus.INPUT: 'light',
     }
 
+    def __str__(self):
+        return '{}: {} ({} {} - {})'.format(
+            self.order,
+            self.get_status_display(),
+            self.total,
+            self.currency,
+            self.variant
+        )
+
     def get_amount(self):
         return Money(
             self.total, self.currency or settings.DEFAULT_CURRENCY
