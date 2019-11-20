@@ -115,7 +115,7 @@ class PaypalProvider(OriginalPaypalProvider):
             return HttpResponse(status=400)
         logger.info('Paypal webhook: %s', data)
         method_name = data['event_type'].replace('.', '_').lower()
-        method = getattr('webhook_%s' % method_name, None)
+        method = getattr(self, 'webhook_%s' % method_name, None)
         if method is None:
             return HttpResponse(status=204)
 
