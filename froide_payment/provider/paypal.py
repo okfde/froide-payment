@@ -10,11 +10,12 @@ from django.utils import timezone
 
 import requests
 import pytz
+import dateutil.parser
 
 from payments.paypal import PaypalProvider as OriginalPaypalProvider
 from payments import RedirectNeeded
 
-from ..models import PaymentStatus, Plan, Product
+from ..models import PaymentStatus, Plan, Product, Subscription, Payment
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +114,42 @@ class PaypalProvider(OriginalPaypalProvider):
         if not self.verify_webhook(request, data):
             return HttpResponse(status=400)
         logger.info('Paypal webhook: %s', data)
+        method_name = data['event_type'].replace('.', '_').lower()
+        method = getattr('webhook_%s' % method_name, None)
+        if method is None:
+            return HttpResponse(status=204)
+
+        method(request, data)
+
         return HttpResponse(status=204)
+
+    def webhook_billing_subscription_activated(self, request, data):
+        resource = data['resource']
+        sub_remote_reference = resource['id']
+        try:
+            subscription = Subscription.objects.get(
+                remote_reference=sub_remote_reference
+            )
+        except Subscription.DoesNotExist:
+            return
+        subscription.active = True
+        subscription.save()
+        billing_info = resource['billing_info']
+        last_payment = billing_info['last_payment']
+        last_payment_date = last_payment['time']
+        payment_timestamp = dateutil.parser.parse(last_payment_date)
+        payment_date = payment_timestamp.date()
+        try:
+            # Get the payment from that date
+            payment = Payment.objects.get(
+                order__subscription=subscription,
+                created__date=payment_date
+            )
+        except Payment.DoesNotExist:
+            return
+        payment.attrs.paypal_resource = resource
+        payment.captured_amount = Decimal(last_payment['amount']['value'])
+        payment.change_status(PaymentStatus.CONFIRMED)
 
     def verify_webhook(self, request, data):
         def get_header(key):
