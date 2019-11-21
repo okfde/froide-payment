@@ -410,6 +410,12 @@ class Order(models.Model):
                 order=self,
                 defaults=defaults
             )
+            if created:
+                # Delete waiting/input payments from before
+                Payment.objects.filter(
+                    models.Q(status=PaymentStatus.WAITING) |
+                    models.Q(status=PaymentStatus.INPUT),
+                ).filter(order=self).exclude(id=payment.id).delete()
         # Trigger signal
         payment.change_status(payment.status)
         return payment
