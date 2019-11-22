@@ -10,7 +10,6 @@ from django.utils import timezone
 
 import requests
 import pytz
-import dateutil.parser
 
 from payments.paypal import PaypalProvider as OriginalPaypalProvider
 from payments import RedirectNeeded
@@ -134,21 +133,16 @@ class PaypalProvider(OriginalPaypalProvider):
             return
         subscription.active = True
         subscription.save()
-        billing_info = resource['billing_info']
-        last_payment = billing_info['last_payment']
-        last_payment_date = last_payment['time']
-        payment_timestamp = dateutil.parser.parse(last_payment_date)
-        payment_date = payment_timestamp.date()
+        # last payment is not always in billing info
         try:
-            # Get the payment from that date
-            payment = Payment.objects.get(
+            # Get the latest payment of subscription
+            payment = Payment.objects.filter(
                 order__subscription=subscription,
-                created__date=payment_date
-            )
-        except Payment.DoesNotExist:
+            )[0]
+        except IndexError:
             return
         payment.attrs.paypal_resource = resource
-        payment.captured_amount = Decimal(last_payment['amount']['value'])
+        payment.captured_amount = Decimal(payment.total)
         payment.change_status(PaymentStatus.CONFIRMED)
 
     def verify_webhook(self, request, data):
