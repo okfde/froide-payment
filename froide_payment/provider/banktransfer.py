@@ -1,3 +1,5 @@
+import re
+
 from django.utils.crypto import get_random_string
 
 from payments.core import BasicProvider
@@ -10,10 +12,24 @@ from .mixins import PlanProductMixin
 
 
 CODE_CHARS = 'ACDEFHJKLMNPRSTUWXY3469'
+TRANSFER_PREFIX = 'FDS '  # note trailing space
+CODE_LEN = 8
+
+TRANSFER_RE = re.compile('%s[%s]{%d}' % (
+    TRANSFER_PREFIX,
+    CODE_CHARS,
+    CODE_LEN
+), re.I)
 
 
 def generate_transfer_code():
-    return 'FDS ' + get_random_string(length=8, allowed_chars=CODE_CHARS)
+    return '%s%s' % (
+        TRANSFER_PREFIX,
+        get_random_string(
+            length=CODE_LEN,
+            allowed_chars=CODE_CHARS
+        )
+    )
 
 
 class BanktransferProvider(PlanProductMixin, BasicProvider):
