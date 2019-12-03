@@ -70,7 +70,7 @@ class PaymentAdmin(admin.ModelAdmin):
     date_hierarchy = 'created'
     list_display = (
         'billing_email', 'status', 'variant',
-        'created', 'modified'
+        'created', 'modified', 'total', 'captured_amount'
     )
     list_filter = ('variant', 'status')
 
