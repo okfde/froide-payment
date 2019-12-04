@@ -15,7 +15,7 @@ CODE_CHARS = 'ACDEFHJKLMNPRSTUWXY3469'
 TRANSFER_PREFIX = 'FDS '  # note trailing space
 CODE_LEN = 8
 
-TRANSFER_RE = re.compile('%s[%s]{%d}' % (
+TRANSFER_RE = re.compile('%s?[%s]{%d}' % (
     TRANSFER_PREFIX,
     CODE_CHARS,
     CODE_LEN
