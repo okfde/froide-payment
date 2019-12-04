@@ -73,6 +73,7 @@ class PaymentAdmin(admin.ModelAdmin):
         'created', 'modified', 'total', 'captured_amount'
     )
     list_filter = ('variant', 'status')
+    search_fields = ('transaction_id', 'billing_email', 'billing_last_name')
 
     actions = ['export_lastschrift']
 
