@@ -47,8 +47,11 @@ class SubscriptionAdmin(admin.ModelAdmin):
     )
     date_hierarchy = 'created'
     list_filter = (
-        'active', 'plan__interval',
-        'plan__amount', 'plan__amount_year',
+        'active',
+        'plan__provider',
+        'plan__interval',
+        'plan__amount',
+        'plan__amount_year',
     )
     search_fields = (
         'customer__user_email',
