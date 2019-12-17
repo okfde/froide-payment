@@ -176,6 +176,21 @@ class PaypalProvider(OriginalPaypalProvider):
         payment.captured_amount = Decimal(payment.total)
         payment.change_status(PaymentStatus.CONFIRMED)
 
+    def webhook_payment_sale_completed(self, request, data):
+        resource = data['resource']
+        payment_reference = resource['parent_payment']
+        try:
+            payment = Payment.objects.get(
+                transaction_id=payment_reference
+            )
+        except Payment.DoesNotExist:
+            return
+        payment.attrs.paypal_resource = resource
+        payment.captured_amount = Decimal(payment.total)
+        fee = Decimal(resource.get('transaction_fee', {}).get('value', '0.0'))
+        payment.received_amount = Decimal(payment.total) - fee
+        payment.save()
+
     def verify_webhook(self, request, data):
         def get_header(key):
             return request.headers.get(key, '')
