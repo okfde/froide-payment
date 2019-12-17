@@ -170,6 +170,7 @@ class PaymentAdmin(admin.ModelAdmin):
             elif row['captured'].strip():
                 payment.attrs.mandats_id = row['Mandats-ID']
                 payment.captured_amount = payment.total
+                payment.received_amount = payment.total
                 payment.change_status(PaymentStatus.CONFIRMED)
 
         return redirect('admin:froide_payment_payment_changelist')
