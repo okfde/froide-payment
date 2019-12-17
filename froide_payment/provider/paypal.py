@@ -4,7 +4,7 @@ import logging
 
 from django.conf import settings
 from django.shortcuts import redirect
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseForbidden
 from django.utils.text import slugify
 from django.utils import timezone
 
@@ -48,8 +48,39 @@ class PaypalProvider(OriginalPaypalProvider):
     def process_data(self, payment, request):
         order = payment.order
         if not order.is_recurring:
-            return super().process_data(payment, request)
+            return self.super_process_data(payment, request)
         return self.finalize_subscription(payment)
+
+    def execute_payment(self, payment, payer_id):
+        post = {'payer_id': payer_id}
+        links = self._get_links(payment)
+        if 'execute' not in links:
+            return
+        execute_url = links['execute']['href']
+        return self.post(payment, execute_url, data=post)
+
+    def super_process_data(self, payment, request):
+        success_url = payment.get_success_url()
+        if 'token' not in request.GET:
+            return HttpResponseForbidden('FAILED')
+        payer_id = request.GET.get('PayerID')
+        if not payer_id:
+            if payment.status != PaymentStatus.CONFIRMED:
+                payment.change_status(PaymentStatus.REJECTED)
+                return redirect(payment.get_failure_url())
+            else:
+                return redirect(success_url)
+        executed_payment = self.execute_payment(payment, payer_id)
+        if executed_payment is None:
+            return redirect(success_url)
+        self.set_response_links(payment, executed_payment)
+        payment.attrs.payer_info = executed_payment['payer']['payer_info']
+        if self._capture:
+            payment.captured_amount = payment.total
+            payment.change_status(PaymentStatus.CONFIRMED)
+        else:
+            payment.change_status(PaymentStatus.PREAUTH)
+        return redirect(success_url)
 
     def _get_access_token(self):
         headers = {
