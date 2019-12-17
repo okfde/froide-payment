@@ -72,6 +72,15 @@ class StripeWebhookMixin():
         except Payment.DoesNotExist:
             return None
 
+    def get_balance_transaction(self, txn_id):
+        if not txn_id:
+            return None
+        try:
+            bt = stripe.BalanceTransaction.retrieve(txn_id)
+        except stripe.error.StripeError as e:
+            return None
+        return bt
+
     def process_data(self, payment, request):
         if payment.variant != self.provider_name:
             # This payment reached the wrong provider implementation endpoint
@@ -120,6 +129,8 @@ class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
         if intent.status == 'succeeded':
             payment.change_status(PaymentStatus.CONFIRMED)
             return True
+        payment.change_status(PaymentStatus.PENDING)
+        return False
 
     def process_data(self, payment, request):
         if payment.variant != self.provider_name:
@@ -363,8 +374,14 @@ class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
         if payment is None:
             return
 
-        payment.attrs.charges = intent.charges.data
+        charges = intent.charges.data
+        payment.attrs.charges = charges
         payment.captured_amount = Decimal(intent.amount_received) / 100
+        for charge in charges:
+            txn = self.get_balance_transaction(charge.balance_transaction)
+            if txn is not None:
+                payment.received_amount = Decimal(txn.net) / 100
+                break
         payment.change_status(PaymentStatus.CONFIRMED)
 
     def payment_intent_failed(self, request, intent):
@@ -582,6 +599,9 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
 
         payment.attrs.charge = json.dumps(charge)
         payment.captured_amount = Decimal(charge.amount) / 100
+        txn = self.get_balance_transaction(charge.balance_transaction)
+        if txn is not None:
+            payment.received_amount = Decimal(txn.net) / 100
         payment.change_status(PaymentStatus.CONFIRMED)
 
     def charge_failed(self, request, charge):
