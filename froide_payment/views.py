@@ -50,6 +50,27 @@ def order_detail(request, token):
     return render(request, templates, ctx)
 
 
+def order_success(request, token):
+    order = get_object_or_404(Order, token=token)
+    user = request.user
+    if order.user and user != order.user and not user.is_superuser:
+        return redirect('/')
+
+    payments = Payment.objects.filter(order=order)
+
+    any_confirmed = any(
+        payment.status == PaymentStatus.CONFIRMED
+        for payment in payments
+    )
+    if not any_confirmed:
+        for payment in payments:
+            provider = provider_factory(payment.variant)
+            if hasattr(provider, 'update_status'):
+                provider.update_status(payment)
+
+    return redirect(order.get_success_url())
+
+
 def start_payment(request, token, variant):
     order = get_object_or_404(Order, token=token)
     if order.is_fully_paid():

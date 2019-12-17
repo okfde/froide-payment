@@ -368,6 +368,11 @@ class Order(models.Model):
             return obj.get_failure_url()
         return '/'
 
+    def get_success_check_url(self):
+        return reverse('froide_payment:order-success', kwargs={
+            'token': str(self.token)
+        })
+
     def get_success_url(self):
         obj = self.get_domain_object()
         if obj is not None and hasattr(obj, 'get_success_url'):
@@ -496,7 +501,7 @@ class Payment(BasePayment):
         return self.order.get_failure_url()
 
     def get_success_url(self):
-        return self.order.get_success_url()
+        return self.order.get_success_check_url()
 
     def get_purchased_items(self):
         order = self.order
