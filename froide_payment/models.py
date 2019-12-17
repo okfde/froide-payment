@@ -458,6 +458,11 @@ class Payment(BasePayment):
         Order, related_name='payments',
         on_delete=models.PROTECT
     )
+    received_amount = models.DecimalField(
+        null=True, blank=True,
+        max_digits=9, decimal_places=2
+    )
+
     # FIXME: transaction_id probably needs a db index
     # transaction_id = models.CharField(
     #     max_length=255, blank=True,
