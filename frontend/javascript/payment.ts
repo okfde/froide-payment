@@ -29,29 +29,29 @@ const style = {
   }
 }
 
-const form = document.getElementById('payment-form') as HTMLFormElement
+const paymentForm = document.getElementById('payment-form') as HTMLFormElement
 const formButton = document.getElementById('form-button') as HTMLButtonElement
-const currency = (form.dataset.currency || 'EUR').toLowerCase()
+const currency = (paymentForm.dataset.currency || 'EUR').toLowerCase()
 
-if (!form.dataset.stripepk) {
+if (!paymentForm.dataset.stripepk) {
   throw new Error('No Stripe Public Key')
 }
 
-const clientSecret = form.dataset.clientsecret
+const clientSecret = paymentForm.dataset.clientsecret
 let stripeOptions
 if (clientSecret) {
   stripeOptions = {
     betas: ['payment_intent_beta_3']
   }
 }
-const stripe = Stripe(form.dataset.stripepk, stripeOptions)
+const stripe = Stripe(paymentForm.dataset.stripepk, stripeOptions)
 
 const elements = stripe.elements({
-  locale: form.dataset.locale
+  locale: paymentForm.dataset.locale
 })
 
 const sendPaymentData = (obj: Object): Promise<PaymentProcessingResponse> => {
-  return fetch(form.action, {
+  return fetch(paymentForm.action, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -84,7 +84,7 @@ const handleCardPayment = (clientSecret: string, card?: stripe.elements.Element)
     if (result.error) {
       showError(result.error.message)
     } else if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
-      document.location.href = form.dataset.successurl || '/'
+      document.location.href = paymentForm.dataset.successurl || '/'
     } else {
       console.error('Missing token!')
     }
@@ -99,7 +99,7 @@ const handleServerResponse = (response: PaymentProcessingResponse) => {
     // Use Stripe.js to handle required card action
     handleCardPayment(response.payment_intent_client_secret)
   } else if (response.success) {
-    document.location.href = form.dataset.successurl || '/'
+    document.location.href = paymentForm.dataset.successurl || '/'
   }
 }
 
@@ -131,7 +131,7 @@ if (cardElement) {
     }
   })
 
-  form.addEventListener('submit', (event) => {
+  paymentForm.addEventListener('submit', (event) => {
     event.preventDefault()
 
     setPending(true)
@@ -142,7 +142,7 @@ if (cardElement) {
     } else {
       const billingDetails = {
         billing_details: {
-          name: form.dataset.name
+          name: paymentForm.dataset.name
         }
       }
       stripe.createPaymentMethod('card', card, billingDetails).then((result) => {
@@ -174,7 +174,7 @@ if (ibanElement) {
   const iban = elements.create('iban', {
     style: style,
     supportedCountries: ['SEPA'],
-    placeholderCountry: form.dataset.country
+    placeholderCountry: paymentForm.dataset.country
   })
 
   // Add an instance of the iban Element into the `iban-element` <div>.
@@ -220,14 +220,14 @@ if (ibanElement) {
       type: 'sepa_debit',
       currency: currency,
       owner: {
-        name: form.dataset.firstname + ' ' + form.dataset.lastname,
-        email: form.dataset.email
+        name: paymentForm.dataset.firstname + ' ' + paymentForm.dataset.lastname,
+        email: paymentForm.dataset.email
         // address: {
-        //   line1: form.dataset.address1,
-        //   line2: form.dataset.address2,
-        //   country: form.dataset.country,
-        //   city: form.dataset.city,
-        //   postal_code: form.dataset.postcode
+        //   line1: paymentForm.dataset.address1,
+        //   line2: paymentForm.dataset.address2,
+        //   country: paymentForm.dataset.country,
+        //   city: paymentForm.dataset.city,
+        //   postal_code: paymentForm.dataset.postcode
         // }
       },
       mandate: {
@@ -262,10 +262,10 @@ function stripeSourceHandler (source: stripe.Source) {
   hiddenInput.setAttribute('type', 'hidden')
   hiddenInput.setAttribute('name', 'stripe_source')
   hiddenInput.setAttribute('value', source.id)
-  form.appendChild(hiddenInput)
+  paymentForm.appendChild(hiddenInput)
 
-  // Submit the form.
-  form.submit()
+  // Submit the paymentForm.
+  paymentForm.submit()
 }
 
 /*
@@ -278,11 +278,11 @@ const prContainer = document.getElementById('payment-request')
 
 if (prContainer && clientSecret) {
   const paymentRequest = stripe.paymentRequest({
-    country: form.dataset.country || 'DE',
+    country: paymentForm.dataset.country || 'DE',
     currency: currency,
     total: {
-      label: form.dataset.label || '',
-      amount: parseInt(form.dataset.amount || '0', 10)
+      label: paymentForm.dataset.label || '',
+      amount: parseInt(paymentForm.dataset.amount || '0', 10)
     }
     // requestPayerName: true,
     // requestPayerEmail: true,
@@ -292,7 +292,7 @@ if (prContainer && clientSecret) {
     paymentRequest: paymentRequest,
     style: {
       paymentRequestButton: {
-        type: form.dataset.donation ? 'donate' : 'default', //  | 'donate' | 'buy', // default: 'default'
+        type: paymentForm.dataset.donation ? 'donate' : 'default', //  | 'donate' | 'buy', // default: 'default'
         theme: 'dark',
         height: '64px' // default: '40px', the width is always '100%'
       }
