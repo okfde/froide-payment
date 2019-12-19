@@ -189,11 +189,15 @@ class PaymentAdmin(admin.ModelAdmin):
 
         for payment in payments:
             row = row_map[payment.id]
+            if row.get('Mandats-ID'):
+                payment.attrs.mandats_id = row['Mandats-ID']
+                payment.save()
+
             if row['failed'].strip():
                 payment.captured_amount = Decimal(0.0)
+                payment.received_amount = Decimal(0.0)
                 payment.change_status(PaymentStatus.REJECTED)
             elif row['captured'].strip():
-                payment.attrs.mandats_id = row['Mandats-ID']
                 payment.captured_amount = payment.total
                 payment.received_amount = payment.total
                 payment.change_status(PaymentStatus.CONFIRMED)
