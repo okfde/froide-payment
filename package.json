@@ -27,12 +27,10 @@
     "eslint-plugin-import": "^2.7.0",
     "eslint-plugin-node": "^5.1.1",
     "eslint-plugin-promise": "^3.5.0",
-    "eslint-plugin-standard": "^3.0.1"
-  },
-  "dependencies": {
-    "@types/stripe-v3": "^3.0.9",
+    "eslint-plugin-standard": "^3.0.1",
     "tslint": "^5.13.1",
     "tslint-config-standard": "^8.0.1",
-    "typescript": "^3.3.3333"
+    "typescript": "^3.3.3333",
+    "@types/stripe-v3": "^3.0.9"
   }
 }
