@@ -4,6 +4,22 @@ from decimal import Decimal
 from django.conf import settings
 from django.http import StreamingHttpResponse
 from django.utils.translation import ugettext_lazy as _
+from django.template.loader import render_to_string
+from django.core.mail import send_mail
+from django.utils import timezone
+
+try:
+    from froide.helper.email_sending import mail_registry
+except ImportError:
+    mail_registry = None
+
+
+lastschrift_mail = None
+if mail_registry is not None:
+    lastschrift_mail = mail_registry.register(
+        'froide_payment/email/lastschrift_triggered',
+        ('payment', 'order', 'note')
+    )
 
 
 def get_client_ip(request=None):
@@ -75,3 +91,69 @@ def interval_description(interval):
     if interval == 12:
         return _('every year')
     return _('every {} months') % interval
+
+
+def send_lastschrift_mail(payment, note=''):
+    if payment.variant != 'lastschrift':
+        return
+
+    order = payment.order
+
+    context = {
+        'payment': payment,
+        'order': order,
+        'note': note
+    }
+    subject = 'SEPA-Lastschriftmandat: {}'.format(order.description)
+    # Send email about Lastschrift
+    if lastschrift_mail is not None:
+        lastschrift_mail.send(
+            email=payment.billing_email, context=context,
+            subject=subject,
+            priority=True
+        )
+    else:
+        send_mail(
+            subject,
+            render_to_string(
+                'froide_payment/email/lastschrift_triggered.txt',
+                context
+            ),
+            settings.DEFAULT_FROM_EMAIL,
+            [payment.billing_email],
+            fail_silently=False,
+        )
+
+
+def create_recurring_order(subscription, now=None, force=False):
+    from .models import PaymentStatus
+
+    if now is None:
+        now = timezone.now()
+
+    if not subscription.active:
+        return
+
+    provider_name = subscription.plan.provider
+
+    last_order = subscription.get_last_order()
+
+    if not force and last_order.service_end > now:
+        # Not yet due, set next_date correctly
+        subscription.next_date = last_order.service_end
+        subscription.save()
+        return
+
+    order = subscription.create_order()
+    payment = order.get_or_create_payment(provider_name)
+    subscription.last_date = order.created
+    subscription.next_date = order.service_end
+    subscription.save()
+    customer = subscription.customer
+    customer_data = customer.data
+    payment.attrs.mandats_id = customer_data.get('mandats_id', None)
+    payment.attrs.iban = customer_data.get('iban', None)
+    # Do not trigger status change, this payment is born pending
+    payment.status = PaymentStatus.PENDING
+    payment.save()
+    return payment

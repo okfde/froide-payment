@@ -1,20 +1,25 @@
 import csv
 from decimal import Decimal
 from io import StringIO
+import json
 
 from django.contrib import admin, messages
+from django.contrib.admin import helpers
 from django.utils import timezone
 from django.conf.urls import url
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
 from django.utils.translation import ugettext_lazy as _
+from django.template.response import TemplateResponse
 
 from .models import (
     Plan, Customer, Subscription, Payment, Order, Product,
     PaymentStatus
 )
-from .utils import dicts_to_csv_response
+from .utils import (
+    dicts_to_csv_response, send_lastschrift_mail, create_recurring_order
+)
 
 
 class PlanAdmin(admin.ModelAdmin):
@@ -57,6 +62,22 @@ class SubscriptionAdmin(admin.ModelAdmin):
         'customer__user_email',
         'customer__last_name', 'customer__first_name',
     )
+    actions = ['create_recurring_order']
+
+    def create_recurring_order(self, request, queryset):
+        if not self.has_change_permission(request):
+            raise PermissionDenied
+
+        count = 0
+        for sub in queryset:
+            res = create_recurring_order(sub, force=True)
+            if res:
+                count += 1
+
+        self.message_user(request, _("%d recurring orders created." % count))
+    create_recurring_order.short_description = _(
+        'Force create next recurring order'
+    )
 
 
 class OrderAdmin(admin.ModelAdmin):
@@ -66,6 +87,10 @@ class OrderAdmin(admin.ModelAdmin):
     )
     date_hierarchy = 'created'
     raw_id_fields = ('user', 'customer', 'subscription',)
+    search_fields = (
+        'user_email', 'last_name', 'first_name',
+        'remote_reference'
+    )
 
 
 class PaymentAdmin(admin.ModelAdmin):
@@ -78,7 +103,7 @@ class PaymentAdmin(admin.ModelAdmin):
     list_filter = ('variant', 'status')
     search_fields = ('transaction_id', 'billing_email', 'billing_last_name')
 
-    actions = ['export_lastschrift']
+    actions = ['export_lastschrift', 'send_lastschrift_mail']
 
     def get_urls(self):
         urls = super().get_urls()
@@ -172,8 +197,61 @@ class PaymentAdmin(admin.ModelAdmin):
                 payment.captured_amount = payment.total
                 payment.received_amount = payment.total
                 payment.change_status(PaymentStatus.CONFIRMED)
+            order = payment.order
+            if order.is_recurring:
+                # Store mandats_id with customer for future reference
+                subscription = order.subscription
+                customer = subscription.customer
+                customer_data = customer.data
+                customer_data['mandats_id'] = payment.attrs.mandats_id
+                customer.custom_data = json.dumps(customer_data)
+                customer.save()
 
         return redirect('admin:froide_payment_payment_changelist')
+
+    def send_lastschrift_mail(self, request, queryset):
+        # Check that the user has change permission for the actual model
+        if not request.method == 'POST':
+            raise PermissionDenied
+        if not self.has_change_permission(request):
+            raise PermissionDenied
+
+        if request.POST.get('note', None) is not None:
+            note = request.POST.get('note', '')
+
+            mandate_sent = str(timezone.now().isoformat())
+
+            mandate_qs = queryset.filter(
+                extra_data__contains='"mandats_id":'
+            ).exclude(
+                extra_data__contains='"mandate_sent":'
+            )
+            mandate_qs = mandate_qs.select_related('order')
+            count = 0
+            for payment in mandate_qs:
+                send_lastschrift_mail(payment, note=note)
+                payment.attrs.mandate_sent = mandate_sent
+                payment.save()
+                count += 1
+
+            self.message_user(request, _("%d mails sent." % count))
+            return None
+
+        select_across = request.POST.get('select_across', '0') == '1'
+        context = {
+            'opts': self.model._meta,
+            'action_checkbox_name': helpers.ACTION_CHECKBOX_NAME,
+            'queryset': queryset,
+            'select_across': select_across
+        }
+
+        # Display the confirmation page
+        return TemplateResponse(
+            request, 'froide_payment/admin/admin_lastschrift_email.html',
+            context)
+    send_lastschrift_mail.short_description = _(
+        "Send lastschrift mail to users"
+    )
 
 
 class ProductAdmin(admin.ModelAdmin):
