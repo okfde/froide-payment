@@ -1,4 +1,5 @@
 import csv
+from datetime import timedelta
 from decimal import Decimal
 
 from django.conf import settings
@@ -135,10 +136,11 @@ def create_recurring_order(subscription, now=None, force=False):
         return
 
     provider_name = subscription.plan.provider
+    seven_days_ago = now - timedelta(days=7)
 
     last_order = subscription.get_last_order()
 
-    if not force and last_order.service_end > now:
+    if not force and last_order.service_end > seven_days_ago:
         # Not yet due, set next_date correctly
         subscription.next_date = last_order.service_end
         subscription.save()
