@@ -151,10 +151,11 @@ def create_recurring_order(subscription, now=None, force=False):
     subscription.last_date = order.created
     subscription.next_date = order.service_end
     subscription.save()
-    customer = subscription.customer
-    customer_data = customer.data
-    payment.attrs.mandats_id = customer_data.get('mandats_id', None)
-    payment.attrs.iban = customer_data.get('iban', None)
+    if provider_name == 'lastschrift':
+        customer = subscription.customer
+        customer_data = customer.data
+        payment.attrs.mandats_id = customer_data.get('mandats_id', None)
+        payment.attrs.iban = customer_data.get('iban', None)
     # Do not trigger status change, this payment is born pending
     payment.status = PaymentStatus.PENDING
     payment.save()
