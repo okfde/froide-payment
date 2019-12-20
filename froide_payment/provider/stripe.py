@@ -409,15 +409,14 @@ class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
         '''
         try:
             subscription = Subscription.objects.get(
-                remote_reference=invoice.subscription
+                remote_reference=invoice.subscription,
+                plan__provider=self.provider_name
             )
         except Subscription.DoesNotExist:
             # Don't know this subscription!
             return
 
-        subscription.create_order(
-            remote_reference=invoice.id
-        )
+        subscription.create_recurring_order(force=True)
 
     def invoice_finalized(self, request, invoice):
         '''

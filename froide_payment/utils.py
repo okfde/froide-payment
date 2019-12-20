@@ -126,7 +126,8 @@ def send_lastschrift_mail(payment, note=''):
         )
 
 
-def create_recurring_order(subscription, now=None, force=False):
+def create_recurring_order(subscription,
+                           remote_reference=None, now=None, force=False):
     from .models import PaymentStatus
 
     if now is None:
@@ -146,7 +147,11 @@ def create_recurring_order(subscription, now=None, force=False):
         subscription.save()
         return
 
-    order = subscription.create_order()
+    if remote_reference is None:
+        remote_reference = subscription.remote_reference
+    order = subscription.create_order(
+        remote_reference=remote_reference
+    )
     payment = order.get_or_create_payment(provider_name)
     subscription.last_date = order.created
     subscription.next_date = order.service_end
