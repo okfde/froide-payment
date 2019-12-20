@@ -61,6 +61,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
     search_fields = (
         'customer__user_email',
         'customer__last_name', 'customer__first_name',
+        'remote_reference',
     )
     actions = ['create_recurring_order']
 
