@@ -177,6 +177,11 @@ class Subscription(models.Model):
         order.remote_reference = remote_reference
         order.save()
 
+    def create_recurring_order(self, force=False):
+        from .utils import create_recurring_order
+
+        return create_recurring_order(self, force=force)
+
     def create_order(self, kind='', description=None, is_donation=True,
                      remote_reference=''):
         now = timezone.now()

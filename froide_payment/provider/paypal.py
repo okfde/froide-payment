@@ -178,18 +178,30 @@ class PaypalProvider(OriginalPaypalProvider):
 
     def webhook_payment_sale_completed(self, request, data):
         resource = data['resource']
-        payment_reference = resource['parent_payment']
-        try:
-            payment = Payment.objects.get(
-                transaction_id=payment_reference
-            )
-        except Payment.DoesNotExist:
-            return
+        if 'parent_payment' in resource:
+            payment_reference = resource['parent_payment']
+            try:
+                payment = Payment.objects.get(
+                    transaction_id=payment_reference
+                )
+            except Payment.DoesNotExist:
+                return
+        elif 'billing_agreement_id' in resource:
+            sub_reference = resource['billing_agreement_id']
+            try:
+                subscription = Subscription.objects.get(
+                    remote_reference=sub_reference,
+                    plan__provider=self.provider_name
+                )
+            except Subscription.DoesNotExist:
+                return
+            payment = subscription.create_recurring_order(force=True)
+
         payment.attrs.paypal_resource = resource
         payment.captured_amount = Decimal(payment.total)
         fee = Decimal(resource.get('transaction_fee', {}).get('value', '0.0'))
         payment.received_amount = Decimal(payment.total) - fee
-        payment.save()
+        payment.change_status(PaymentStatus.CONFIRMED)
 
     def verify_webhook(self, request, data):
         def get_header(key):
