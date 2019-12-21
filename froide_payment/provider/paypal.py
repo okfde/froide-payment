@@ -1,4 +1,5 @@
 from decimal import Decimal
+from datetime import timedelta
 import json
 import logging
 
@@ -195,7 +196,15 @@ class PaypalProvider(OriginalPaypalProvider):
                 )
             except Subscription.DoesNotExist:
                 return
-            payment = subscription.create_recurring_order(force=True)
+            order = subscription.get_last_order()
+            soon = timezone.now() + timedelta(days=2)
+            if order.service_end < soon:
+                payment = subscription.create_recurring_order(force=True)
+            else:
+                # payment sale is from first billing subscription
+                return
+        else:
+            return
 
         payment.attrs.paypal_resource = resource
         payment.captured_amount = Decimal(payment.total)
