@@ -161,7 +161,6 @@ def create_recurring_order(subscription,
         customer_data = customer.data
         payment.attrs.mandats_id = customer_data.get('mandats_id', None)
         payment.attrs.iban = customer_data.get('iban', None)
-    # Do not trigger status change, this payment is born pending
-    payment.status = PaymentStatus.PENDING
-    payment.save()
+
+    payment.change_status(PaymentStatus.PENDING)
     return payment
