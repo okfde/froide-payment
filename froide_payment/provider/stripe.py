@@ -415,8 +415,11 @@ class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
         except Subscription.DoesNotExist:
             # Don't know this subscription!
             return
-
-        subscription.create_recurring_order(force=True)
+        logger.info('Creditcard webhook invoice created for subscription %s',
+                    subscription.id)
+        subscription.create_recurring_order(
+            force=True, remote_reference=invoice.id
+        )
 
     def invoice_finalized(self, request, invoice):
         '''
