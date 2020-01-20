@@ -438,6 +438,8 @@ class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
         )
         payment.transaction_id = invoice.payment_intent
         payment.save()
+        logger.info('Creditcard webhook invoice finalized for payment %s',
+                    payment.id)
 
     def invoice_payment_action_required(self, request, invoice):
         '''

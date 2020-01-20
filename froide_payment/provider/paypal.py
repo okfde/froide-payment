@@ -173,6 +173,8 @@ class PaypalProvider(OriginalPaypalProvider):
             )[0]
         except IndexError:
             return
+        logger.info('Paypal webhook subscription activated for payment %s',
+                    payment.id)
         payment.attrs.paypal_resource = resource
         payment.captured_amount = Decimal(payment.total)
         payment.change_status(PaymentStatus.CONFIRMED)
@@ -199,13 +201,16 @@ class PaypalProvider(OriginalPaypalProvider):
             order = subscription.get_last_order()
             soon = timezone.now() + timedelta(days=2)
             if order.service_end < soon:
-                payment = subscription.create_recurring_order(force=True)
+                payment = subscription.create_recurring_order(
+                    force=True
+                )
             else:
                 # payment sale is from first billing subscription
                 return
         else:
             return
 
+        logger.info('Paypal webhook sale complete for payment %s', payment.id)
         payment.attrs.paypal_resource = resource
         payment.captured_amount = Decimal(payment.total)
         fee = Decimal(resource.get('transaction_fee', {}).get('value', '0.0'))

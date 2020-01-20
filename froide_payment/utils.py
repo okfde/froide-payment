@@ -1,6 +1,7 @@
 import csv
 from datetime import timedelta
 from decimal import Decimal
+import logging
 
 from django.conf import settings
 from django.http import StreamingHttpResponse
@@ -13,6 +14,9 @@ try:
     from froide.helper.email_sending import mail_registry
 except ImportError:
     mail_registry = None
+
+
+logger = logging.getLogger(__name__)
 
 
 lastschrift_mail = None
@@ -147,6 +151,11 @@ def create_recurring_order(subscription,
         subscription.save()
         return
 
+    logger.info(
+        'Create recurring order for subscription %s based on order %s',
+        subscription.id, last_order.id
+    )
+
     if remote_reference is None:
         remote_reference = subscription.remote_reference
     order = subscription.create_order(
@@ -163,4 +172,10 @@ def create_recurring_order(subscription,
         payment.attrs.iban = customer_data.get('iban', None)
 
     payment.change_status(PaymentStatus.PENDING)
+
+    logger.info(
+        'Payment %s created for subscription %s',
+        payment.id, subscription.id
+    )
+
     return payment

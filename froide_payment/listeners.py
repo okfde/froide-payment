@@ -1,4 +1,8 @@
+import logging
+
 from .models import PaymentStatus
+
+logger = logging.getLogger(__name__)
 
 
 def subscription_payment(sender=None, instance=None, **kwargs):
@@ -6,6 +10,7 @@ def subscription_payment(sender=None, instance=None, **kwargs):
     if not order.is_recurring:
         return
 
+    logger.info('Running subscription payment listener for Order %s', order.id)
     subscription = order.subscription
     active = subscription.active
 
@@ -18,5 +23,9 @@ def subscription_payment(sender=None, instance=None, **kwargs):
         active = False
 
     if active != subscription.active:
+        logger.info(
+            'Subscription payment listener for Order %s, '
+            'setting subscription to %s', order.id, subscription.active)
+
         subscription.active = active
         subscription.save()
