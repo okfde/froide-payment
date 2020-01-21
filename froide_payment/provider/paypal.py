@@ -247,8 +247,9 @@ class PaypalProvider(OriginalPaypalProvider):
             resource['create_time']
         )
         if not resource.get('amount'):
-            start = create_time - timedelta(days=2)
-            end = create_time + timedelta(days=2)
+            buffer = timedelta(days=2)
+            start = create_time - buffer
+            end = create_time + buffer
             url = self.endpoint + (
                 '/v1/billing/subscriptions/{id}/transactions?'
                 'start_time={start}&end_time={end}'
@@ -258,8 +259,12 @@ class PaypalProvider(OriginalPaypalProvider):
                 end=utcisoformat(end)
             )
             result = self.get_api(url, {})
-            assert len(result['transactions']) == 1
-            transaction = result['transactions'][0]
+            transactions = [t for t in result['transactions'] if (
+                dateutil.parser.parse(t['time']) - buffer < create_time and
+                dateutil.parser.parse(t['time']) + buffer > create_time
+            )]
+            assert len(transactions) == 1
+            transaction = transactions[0]
             payment.transaction_id = transaction['id']
             amounts = transaction['amount_with_breakdown']
             total = amounts['gross_amount']['value']
