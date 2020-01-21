@@ -89,7 +89,7 @@ class Plan(models.Model):
     )
 
     def __str__(self):
-        return self.name
+        return '{} via {}'.format(self.name, self.provider)
 
     def get_interval_description(self):
         return interval_description(self.interval)
