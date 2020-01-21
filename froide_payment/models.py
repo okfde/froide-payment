@@ -109,13 +109,13 @@ class Customer(models.Model):
     street_address_2 = models.CharField(max_length=256, blank=True)
     city = models.CharField(max_length=256, blank=True)
     postcode = models.CharField(max_length=20, blank=True)
-    country = CountryField()
+    country = CountryField(blank=True)
 
     user_email = models.EmailField(blank=True, default='')
 
     remote_reference = models.CharField(max_length=256, blank=True)
 
-    custom_data = models.TextField()
+    custom_data = models.TextField(blank=True)
 
     def __str__(self):
         return self.user_email
