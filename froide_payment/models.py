@@ -472,6 +472,9 @@ class Payment(BasePayment):
         null=True, blank=True,
         max_digits=9, decimal_places=2
     )
+    received_timestamp = models.DateTimeField(
+        null=True, blank=True
+    )
 
     # FIXME: transaction_id probably needs a db index
     # transaction_id = models.CharField(
