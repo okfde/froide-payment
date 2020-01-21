@@ -170,6 +170,11 @@ class Subscription(models.Model):
             '-service_end'
         ).first()
 
+    def get_first_order(self):
+        return self.order_set.all().order_by(
+            'service_end'
+        ).first()
+
     def attach_order_info(self, remote_reference='', **extra):
         order = self.get_last_order()
         if not order:

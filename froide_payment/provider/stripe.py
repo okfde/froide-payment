@@ -1,13 +1,16 @@
+from datetime import datetime
 from decimal import Decimal
 import json
 import logging
 
+import pytz
 import stripe
 
 from django.conf import settings
 from django.shortcuts import redirect
 from django.http import HttpResponse, JsonResponse
 from django.utils.text import slugify
+from django.utils import timezone
 
 from payments.forms import PaymentForm
 from payments.stripe import StripeProvider
@@ -364,6 +367,66 @@ class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
             )
         return plan
 
+    def get_or_create_order_from_invoice(self, invoice):
+        try:
+            return Order.objects.get(
+                remote_reference=invoice.id
+            )
+        except Order.DoesNotExist:
+            pass
+        subscription = Subscription.objects.get(
+            remote_reference=invoice.subscription,
+            plan__provider=self.provider_name
+        )
+        first_order = subscription.get_first_order()
+        customer = subscription.customer
+        tz = timezone.get_current_timezone()
+        start_utc = datetime.utcfromtimestamp(invoice.period_start).replace(
+            tzinfo=pytz.utc
+        )
+        start_dt = tz.normalize(start_utc.astimezone(tz))
+        end_utc = datetime.utcfromtimestamp(invoice.period_end).replace(
+            tzinfo=pytz.utc
+        )
+        end_dt = tz.normalize(end_utc.astimezone(tz))
+        order = Order.objects.create(
+            customer=customer,
+            subscription=subscription,
+            user=customer.user,
+            first_name=customer.first_name,
+            last_name=customer.last_name,
+            street_address_1=customer.street_address_1,
+            street_address_2=customer.street_address_2,
+            city=customer.city,
+            postcode=customer.postcode,
+            country=customer.country,
+            user_email=customer.user_email,
+            total_net=subscription.plan.amount,
+            total_gross=subscription.plan.amount,
+            is_donation=first_order.is_donation,
+            kind=first_order.kind,
+            description=first_order.description,
+            service_start=start_dt,
+            service_end=end_dt,
+            remote_reference=invoice.id
+        )
+        payment = order.get_or_create_payment(
+            self.provider_name
+        )
+        payment.transaction_id = invoice.charge
+        intent = stripe.PaymentIntent.retrieve(invoice.payment_intent)
+
+        charges = intent.charges.data
+        payment.attrs.charges = charges
+        payment.captured_amount = Decimal(intent.amount_received) / 100
+        for charge in charges:
+            txn = self.get_balance_transaction(charge.balance_transaction)
+            if txn is not None:
+                payment.received_amount = Decimal(txn.net) / 100
+                break
+        if invoice.status == 'paid':
+            payment.change_status(PaymentStatus.CONFIRMED)
+
     # Webhook callbacks
 
     def payment_intent_succeeded(self, request, intent):
@@ -474,6 +537,9 @@ class StripeSourceProvider(StripeProvider):
 
         payment.attrs.charge = json.dumps(charge)
         payment.captured_amount = Decimal(charge.amount) / 100
+        txn = self.get_balance_transaction(charge.balance_transaction)
+        if txn is not None:
+            payment.received_amount = Decimal(txn.net) / 100
         payment.change_status(PaymentStatus.CONFIRMED)
 
 
