@@ -240,14 +240,40 @@ class PaypalProvider(OriginalPaypalProvider):
         if 'paypal_resource' not in data:
             return
         resource = data['paypal_resource']
-        total = resource['amount']['total']
-        payment.captured_amount = Decimal(total)
-        fee = Decimal(resource.get('transaction_fee', {}).get('value', '0.0'))
-        payment.received_amount = payment.captured_amount - fee
-        payment.received_timestamp = dateutil.parser.parse(
+        create_time = dateutil.parser.parse(
             resource['create_time']
         )
-        if resource['state'] == 'completed':
+        if not resource.get('amount'):
+            start = create_time - timedelta(days=2)
+            end = create_time + timedelta(days=2)
+            url = self.endpoint + (
+                '/v1/billing/subscriptions/{id}/transactions?'
+                'start_time={start}&end_time={end}'
+            ).format(
+                id=resource['id'],
+                start=utcisoformat(start),
+                end=utcisoformat(end)
+            )
+            result = self.get_api(url, {})
+            assert len(result['transactions']) == 1
+            transaction = result['transactions'][0]
+            payment.transaction_id = transaction
+            amounts = transaction['amount_with_breakdown']
+            total = amounts['gross_amount']['value']
+            payment.captured_amount = Decimal(total)
+            fee = Decimal(amounts['fee_amount']['value'])
+            payment.received_amount = payment.captured_amount - fee
+            payment.received_timestamp = create_time
+            success = transaction['status'] == 'COMPLETED'
+        else:
+            total = resource['amount']['total']
+            payment.captured_amount = Decimal(total)
+            fee = resource.get('transaction_fee', {}).get('value', '0.0')
+            fee = Decimal(fee)
+            payment.received_amount = payment.captured_amount - fee
+            payment.received_timestamp = create_time
+            success = resource['state'] == 'completed'
+        if success:
             payment.change_status(PaymentStatus.CONFIRMED)
         else:
             payment.save()
