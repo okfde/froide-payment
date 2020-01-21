@@ -260,7 +260,7 @@ class PaypalProvider(OriginalPaypalProvider):
             result = self.get_api(url, {})
             assert len(result['transactions']) == 1
             transaction = result['transactions'][0]
-            payment.transaction_id = transaction
+            payment.transaction_id = transaction['id']
             amounts = transaction['amount_with_breakdown']
             total = amounts['gross_amount']['value']
             payment.captured_amount = Decimal(total)
