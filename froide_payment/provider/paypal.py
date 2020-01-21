@@ -240,13 +240,17 @@ class PaypalProvider(OriginalPaypalProvider):
 
     def update_payment(self, payment):
         data = json.loads(payment.extra_data or '{}')
-        if 'paypal_resource' not in data:
+        if data.get('response'):
+            resource = data['response']['transactions'][0]
+            resource = resource['related_resources'][0]['sale']
+        elif 'paypal_resource' not in data:
             return
-        resource = data['paypal_resource']
+        else:
+            resource = data['paypal_resource']
         create_time = dateutil.parser.parse(
             resource['create_time']
         )
-        if not resource.get('amount'):
+        if not resource.get('amount') and not resource.get('response'):
             buffer = timedelta(days=2)
             start = create_time - buffer
             end = create_time + buffer
