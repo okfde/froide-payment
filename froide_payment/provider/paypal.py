@@ -11,6 +11,7 @@ from django.utils import timezone
 
 import requests
 import pytz
+import dateutil.parser
 
 from payments.paypal import PaypalProvider as OriginalPaypalProvider
 from payments import RedirectNeeded
@@ -165,19 +166,8 @@ class PaypalProvider(OriginalPaypalProvider):
             return
         subscription.active = True
         subscription.save()
-        # last payment is not always in billing info
-        try:
-            # Get the latest payment of subscription
-            payment = Payment.objects.filter(
-                order__subscription=subscription,
-            )[0]
-        except IndexError:
-            return
-        logger.info('Paypal webhook subscription activated for payment %s',
-                    payment.id)
-        payment.attrs.paypal_resource = resource
-        payment.captured_amount = Decimal(payment.total)
-        payment.change_status(PaymentStatus.CONFIRMED)
+        logger.info('Paypal webhook subscription activated %s',
+                    subscription.id)
 
     def webhook_payment_sale_completed(self, request, data):
         resource = data['resource']
@@ -205,8 +195,7 @@ class PaypalProvider(OriginalPaypalProvider):
                     force=True
                 )
             else:
-                # payment sale is from first billing subscription
-                return
+                payment = Payment.objects.get(order=order)
         else:
             return
 
@@ -215,6 +204,9 @@ class PaypalProvider(OriginalPaypalProvider):
         payment.captured_amount = Decimal(payment.total)
         fee = Decimal(resource.get('transaction_fee', {}).get('value', '0.0'))
         payment.received_amount = Decimal(payment.total) - fee
+        payment.received_timestamp = dateutil.parser.parse(
+            resource['create_time']
+        )
         payment.change_status(PaymentStatus.CONFIRMED)
 
     def verify_webhook(self, request, data):
@@ -242,6 +234,23 @@ class PaypalProvider(OriginalPaypalProvider):
         if not order.is_fully_paid():
             self.capture_subscription_order(order, payment=payment)
         return redirect(payment.get_success_url())
+
+    def update_payment(self, payment):
+        data = json.loads(payment.extra_data or '{}')
+        if 'paypal_resource' not in data:
+            return
+        resource = data['paypal_resource']
+        total = resource['amount']['total']
+        payment.captured_amount = Decimal(total)
+        fee = Decimal(resource.get('transaction_fee', {}).get('value', '0.0'))
+        payment.received_amount = payment.captured_amount - fee
+        payment.received_timestamp = dateutil.parser.parse(
+            resource['create_time']
+        )
+        if resource['state'] == 'completed':
+            payment.change_status(PaymentStatus.CONFIRMED)
+        else:
+            payment.save()
 
     def synchronize_orders(self, subscription):
         list_url = '{e}/v1/billing/subscriptions/{s}/transactions'.format(

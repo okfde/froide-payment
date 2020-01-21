@@ -22,6 +22,14 @@ from ..forms import SourcePaymentForm
 logger = logging.getLogger(__name__)
 
 
+def convert_utc_timestamp(timestamp):
+    tz = timezone.get_current_timezone()
+    utc_dt = datetime.utcfromtimestamp(timestamp).replace(
+        tzinfo=pytz.utc
+    )
+    return tz.normalize(utc_dt.astimezone(tz))
+
+
 class StripeWebhookMixin():
     def __init__(self, **kwargs):
         self.signing_secret = kwargs.pop('signing_secret', '')
@@ -367,6 +375,25 @@ class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
             )
         return plan
 
+    def update_payment(self, payment):
+        tn_id = payment.transaction_id
+        assert tn_id.startswith('pi_')
+        intent = stripe.PaymentIntent.retrieve(tn_id)
+        payment.captured_amount = Decimal(intent.amount_received) / 100
+        charges = intent.charges.data
+        for charge in charges:
+            txn = self.get_balance_transaction(charge.balance_transaction)
+            if txn is not None:
+                payment.received_timestamp = convert_utc_timestamp(
+                    charge.created
+                )
+                payment.received_amount = Decimal(txn.net) / 100
+                break
+        if intent.status == 'succeeded':
+            payment.change_status(PaymentStatus.CONFIRMED)
+        else:
+            payment.save()
+
     def get_or_create_order_from_invoice(self, invoice):
         try:
             return Order.objects.get(
@@ -380,15 +407,8 @@ class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
         )
         first_order = subscription.get_first_order()
         customer = subscription.customer
-        tz = timezone.get_current_timezone()
-        start_utc = datetime.utcfromtimestamp(invoice.period_start).replace(
-            tzinfo=pytz.utc
-        )
-        start_dt = tz.normalize(start_utc.astimezone(tz))
-        end_utc = datetime.utcfromtimestamp(invoice.period_end).replace(
-            tzinfo=pytz.utc
-        )
-        end_dt = tz.normalize(end_utc.astimezone(tz))
+        start_dt = convert_utc_timestamp(invoice.period_start)
+        end_dt = convert_utc_timestamp(invoice.period_end)
         order = Order.objects.create(
             customer=customer,
             subscription=subscription,
@@ -443,6 +463,9 @@ class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
         for charge in charges:
             txn = self.get_balance_transaction(charge.balance_transaction)
             if txn is not None:
+                payment.received_timestamp = convert_utc_timestamp(
+                    charge.created
+                )
                 payment.received_amount = Decimal(txn.net) / 100
                 break
         payment.change_status(PaymentStatus.CONFIRMED)
@@ -540,6 +563,9 @@ class StripeSourceProvider(StripeProvider):
         txn = self.get_balance_transaction(charge.balance_transaction)
         if txn is not None:
             payment.received_amount = Decimal(txn.net) / 100
+            payment.received_timestamp = convert_utc_timestamp(
+                charge.created
+            )
         payment.change_status(PaymentStatus.CONFIRMED)
 
 
@@ -635,6 +661,22 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
         logger.info('Incoming Sofort Webhook')
         return super().process_data(payment, request)
 
+    def update_payment(self, payment):
+        tn_id = payment.transaction_id
+        assert tn_id.startswith('ch_')
+        charge = stripe.Charge.retrieve(tn_id)
+        payment.captured_amount = Decimal(charge.amount) / 100
+        txn = self.get_balance_transaction(charge.balance_transaction)
+        if txn is not None:
+            payment.received_amount = Decimal(txn.net) / 100
+        payment.received_timestamp = convert_utc_timestamp(
+            charge.created
+        )
+        if charge.status == 'succeeded':
+            payment.change_status(PaymentStatus.CONFIRMED)
+        else:
+            payment.save()
+
     def charge_source(self, payment, source):
         try:
             charge = stripe.Charge.create(
@@ -672,6 +714,9 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
         txn = self.get_balance_transaction(charge.balance_transaction)
         if txn is not None:
             payment.received_amount = Decimal(txn.net) / 100
+            payment.received_timestamp = convert_utc_timestamp(
+                charge.created
+            )
         payment.change_status(PaymentStatus.CONFIRMED)
 
     def charge_failed(self, request, charge):
