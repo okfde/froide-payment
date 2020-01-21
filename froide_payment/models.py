@@ -231,7 +231,7 @@ class Subscription(models.Model):
 
 class Order(models.Model):
     created = models.DateTimeField(
-        default=timezone.now, editable=False)
+        default=timezone.now)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, blank=True, null=True,
         related_name='invoices',
