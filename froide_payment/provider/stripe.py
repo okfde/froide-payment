@@ -663,7 +663,7 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
 
     def update_payment(self, payment):
         tn_id = payment.transaction_id
-        assert tn_id.startswith('ch_')
+        assert tn_id.startswith(('ch_', 'py_'))
         charge = stripe.Charge.retrieve(tn_id)
         payment.captured_amount = Decimal(charge.amount) / 100
         txn = self.get_balance_transaction(charge.balance_transaction)
