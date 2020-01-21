@@ -22,10 +22,13 @@ logger = logging.getLogger(__name__)
 
 
 def utcisoformat(dt):
-    tz = timezone.get_default_timezone()
-    # Convert datetime to UTC, remove microseconds, remove timezone
-    no_us_dt = dt.replace(microsecond=0)
-    return tz.localize(no_us_dt).astimezone(pytz.utc).replace(
+    '''
+    FIXME: no tz conversion
+    '''
+    dt = dt.replace(microsecond=0)
+    if timezone.is_aware:
+        dt = dt.replace(tzinfo=None)
+    return dt.astimezone(pytz.utc).replace(
         tzinfo=None
     ).isoformat() + 'Z'
 
