@@ -14,9 +14,9 @@ def froide_payment_cleanup():
 
     now = timezone.now()
 
-    time_ago = now - timedelta(hours=48)
+    time_ago = now - timedelta(hours=12)
 
-    # Delete payments that are more than six hours old
+    # Delete payments that are more than 12 hours old
     # and still in waiting or input status
     Payment.objects.filter(
         created__lte=time_ago,
@@ -33,7 +33,7 @@ def froide_payment_cleanup():
     ).filter(
         payment_count=0
     )
-    non_payment_orders
+    non_payment_orders.delete()
     # Remove subscriptions?
     # Remove customers?
 
