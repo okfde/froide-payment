@@ -28,9 +28,11 @@
       <td>{% trans "date created" %}</td>
       <td>{{ payment.created|date:"SHORT_DATETIME_FORMAT" }}</td>
     </tr>
-    <tr>
-      <td>{% trans "last updated" %}</td>
-      <td>{{ payment.modified|date:"SHORT_DATETIME_FORMAT" }}</td>
-    </tr>
+    {% if payment.received_timestamp %}
+      <tr>
+        <td>{% trans "Amount received" %}</td>
+        <td>{{ payment.received_timestamp|date:"SHORT_DATE_FORMAT" }}</td>
+      </tr>
+    {% endif %}
   </table>
 </div>
