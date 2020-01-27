@@ -25,7 +25,7 @@ def subscription_payment(sender=None, instance=None, **kwargs):
     if active != subscription.active:
         logger.info(
             'Subscription payment listener for Order %s, '
-            'setting subscription to %s', order.id, subscription.active)
+            'setting subscription to %s', order.id, active)
 
         subscription.active = active
         subscription.save()
