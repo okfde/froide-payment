@@ -3,6 +3,8 @@ from decimal import Decimal
 from io import StringIO
 import json
 
+import dateutil.parser
+
 from django.contrib import admin, messages
 from django.contrib.admin import helpers
 from django.utils import timezone
@@ -190,6 +192,15 @@ class PaymentAdmin(admin.ModelAdmin):
 
         for payment in payments:
             row = row_map[payment.id]
+
+            if row.get('Datum'):
+                date = dateutil.parser.parse(row['Datum'], dayfirst=True)
+                date = timezone.make_aware(date)
+            else:
+                date = dateutil.parser.parse(
+                    payment.attrs.processing
+                )
+
             if row.get('Mandats-ID'):
                 payment.attrs.mandats_id = row['Mandats-ID']
                 payment.save()
@@ -201,6 +212,7 @@ class PaymentAdmin(admin.ModelAdmin):
             elif row['captured'].strip():
                 payment.captured_amount = payment.total
                 payment.received_amount = payment.total
+                payment.received_timestamp = date
                 payment.change_status(PaymentStatus.CONFIRMED)
             order = payment.order
             if order.is_recurring:
