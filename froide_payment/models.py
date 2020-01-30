@@ -182,10 +182,12 @@ class Subscription(models.Model):
         order.remote_reference = remote_reference
         order.save()
 
-    def create_recurring_order(self, force=False):
+    def create_recurring_order(self, force=False, now=None, remote_reference=None):
         from .utils import create_recurring_order
 
-        return create_recurring_order(self, force=force)
+        return create_recurring_order(
+            self, force=force, now=now, remote_reference=remote_reference
+        )
 
     def create_order(self, kind='', description=None, is_donation=True,
                      remote_reference=''):
