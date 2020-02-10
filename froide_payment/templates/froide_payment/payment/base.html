@@ -28,10 +28,10 @@
         {% if order.is_donation %}
           {% if order.is_recurring %}
             {% blocktrans with amount=order.amount description=order.description interval=order.get_interval_description %}
-              You are donating <strong>{{ amount }}&nbsp;€</strong> <mark>{{ interval }}</mark> to {{ description }}.
+              You are donating <strong>{{ amount }}&nbsp;€</strong> <mark>{{ interval }}</mark>: {{ description }}.
             {% endblocktrans %}
           {% else %}
-            {% blocktrans with amount=order.amount description=order.description %}You are donating <strong>{{ amount }}&nbsp;€</strong> to <mark>{{ description }}</mark>.{% endblocktrans %}
+            {% blocktrans with amount=order.amount description=order.description %}You are donating <strong>{{ amount }}&nbsp;€</strong>: <mark>{{ description }}</mark>.{% endblocktrans %}
           {% endif %}
         {% else %}
           {% blocktrans with amount=order.amount description=order.description %}You are paying <strong>{{ amount }}&nbsp;€</strong> for <mark>{{ description }}</mark>.{% endblocktrans %}

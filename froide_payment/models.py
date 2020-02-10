@@ -23,7 +23,7 @@ from .utils import get_payment_defaults, interval_description
 CHECKOUT_PAYMENT_CHOICES = [
     ('default', _('Dummy')),
     ('creditcard', _('Credit Card')),
-    ('sepa', _('SEPA Debit')),
+    ('sepa', _('SEPA-Lastschrift')),
     ('lastschrift', _('Lastschrift')),
     ('sofort', _('SOFORT Überweisung')),
     ('paypal', _('Paypal')),
@@ -41,10 +41,10 @@ ZERO_MONEY = Money(0, settings.DEFAULT_CURRENCY)
 ZERO_TAXED_MONEY = TaxedMoney(net=ZERO_MONEY, gross=ZERO_MONEY)
 
 MONTHLY_INTERVALS = (
-    (1, _(u'monthly')),
-    (3, _(u'quarterly')),
-    (6, _(u'semiannually')),
-    (12, _(u'annually')),
+    (1, _('monthly')),
+    (3, _('quarterly')),
+    (6, _('semiannually')),
+    (12, _('annually')),
 )
 
 
@@ -182,7 +182,8 @@ class Subscription(models.Model):
         order.remote_reference = remote_reference
         order.save()
 
-    def create_recurring_order(self, force=False, now=None, remote_reference=None):
+    def create_recurring_order(self, force=False, now=None,
+                               remote_reference=None):
         from .utils import create_recurring_order
 
         return create_recurring_order(

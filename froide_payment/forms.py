@@ -67,16 +67,27 @@ class SourcePaymentForm(BasePaymentForm):
 
 
 class LastschriftPaymentForm(BasePaymentForm):
+    owner_name = forms.CharField(
+        label=_('Account owner'),
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                'class': 'form-control',
+                'placeholder': _('Account owner'),
+            }
+        )
+    )
     iban = IBANFormField(
         label=_('Your IBAN'),
+        required=True,
         widget=forms.TextInput(
             attrs={
                 'class': 'form-control',
                 'pattern': (
-                    r"^[A-Z]{2}\d{2}[ ]\d{4}[ ]\d{4}[ ]\d{4}[ ]\d{4}[ ]*"
+                    r"^[A-Z]{2}\d{2}[ ]*\d{4}[ ]*\d{4}[ ]*\d{4}[ ]*\d{4}[ ]*"
                     r"\d{0,2}|[A-Z]{2}\d{20,22}$"
                 ),
-                'placeholder': _('IBAN'),
+                'placeholder': _('e.g. DE12...'),
                 'title': _(
                     'The IBAN has 20-22 digits and starts with two letters.'
                 )
@@ -102,19 +113,72 @@ class LastschriftPaymentForm(BasePaymentForm):
             )},
     )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['owner_name'].initial = self.payment.order.get_full_name()
+
     def save(self):
         self.payment.attrs.iban = self.cleaned_data['iban']
+        self.payment.attrs.owner = self.cleaned_data['owner_name']
         order = self.payment.order
         if order.is_recurring:
             subscription = order.subscription
             customer = subscription.customer
             iban_data = json.dumps({
+                'owner': self.cleaned_data['owner_name'],
                 'iban': self.cleaned_data['iban']
             })
             customer.custom_data = iban_data
             customer.save()
+        return self.finalize_payment()
+
+    def finalize_payment(self, payment):
         self.payment.transaction_id = str(uuid.uuid4())
         self.payment.change_status(PaymentStatus.PENDING)  # Calls .save()
+
+
+class SEPAPaymentForm(LastschriftPaymentForm):
+    terms = None  # Handled client side
+
+    def clean(self):
+        try:
+            self.payment_method = self.provider.create_payment_method(
+                self.cleaned_data['iban'], self.cleaned_data['owner_name'],
+                self.payment.billing_email
+            )
+        except ValueError as e:
+            if e.args[0] == 'invalid_bank_account_iban':
+                raise forms.ValidationError(
+                    _('The provided IBAN seems invalid.'),
+                    code=e.args[0]
+                )
+            elif e.args[0] == 'invalid_owner_name':
+                raise forms.ValidationError(
+                    _('The provided owner name seems invalid (at least '
+                      '3 characters required).'),
+                    code=e.args[0]
+                )
+            elif e.args[0] == 'payment_method_not_available':
+                raise forms.ValidationError(
+                    _('This payment method is currently unavailable.'),
+                    code=e.args[0]
+                )
+            else:
+                raise forms.ValidationError(
+                    _('An error occurred verifying your information with '
+                      'our payment provider. Please try again.'),
+                    code=e.args[0]
+                )
+        return self.cleaned_data
+
+    def finalize_payment(self):
+        intent = self.provider.handle_payment_method(
+            self.payment,
+            self.payment_method.id
+        )
+        self.payment.transaction_id = intent.id
+        self.payment.save()
+        return intent
 
 
 class StartPaymentMixin:

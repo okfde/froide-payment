@@ -33,6 +33,7 @@ declare namespace stripe {
     handleCardAction(clientSecret: string): Promise<PaymentIntentResponse>
     confirmPaymentIntent(clientSecret: string, options: PaymentIntentOptions): Promise<PaymentRequestResult>
     createPaymentMethod(type: string, element: stripe.elements.Element, data?: PaymentMethodDetails): Promise<PaymentMethodResponse>
+    confirmSepaDebitPayment(clientSecret: string, paymentMethod: object): Promise<PaymentIntentResponse>
   }
   namespace paymentRequest {
     interface StripeRequestPaymentResponse {

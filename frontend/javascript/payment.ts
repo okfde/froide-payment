@@ -4,7 +4,9 @@ interface PaymentProcessingResponse {
   error?: string
   requires_action?: boolean
   payment_intent_client_secret: string
+  payment_method?: string
   success?: boolean
+  customer?: string
 }
 
 const style = {
@@ -266,6 +268,52 @@ function stripeSourceHandler (source: stripe.Source) {
 
   // Submit the paymentForm.
   paymentForm.submit()
+}
+
+const iban = document.querySelector('input#id_iban') as HTMLInputElement
+if (iban) {
+  paymentForm.addEventListener('submit', (event) => {
+    event.preventDefault()
+    const owner = document.querySelector('input#id_owner_name') as HTMLInputElement
+    showLoading()
+    sendPaymentData({
+      iban: iban.value,
+      owner_name: owner.value
+    }).then((response) => {
+      if (response.error) {
+        showError(response.error)
+      } else {
+        const sepaData = {
+          payment_method: response.payment_method,
+          save_payment_method: false
+        } as any
+        if (response.customer) {
+          sepaData.setup_future_usage = 'off_session'
+          sepaData.save_payment_method = true
+        }
+        stripe.confirmSepaDebitPayment(
+          response.payment_intent_client_secret,
+          sepaData
+        ).then((response) => {
+          if (response.error) {
+            showError(response.error.message)
+          } else {
+            sendPaymentData({
+              success: true
+            }).then(() => {
+              document.location.href = paymentForm.dataset.successurl || '/'
+            }).catch(() => {
+              showError('Network failure.')
+            })
+          }
+        }).catch(() => {
+          showError('Network failure.')
+        })
+      }
+    }).catch(() => {
+      showError('Network failure.')
+    })
+  })
 }
 
 /*

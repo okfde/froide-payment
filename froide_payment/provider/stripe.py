@@ -17,7 +17,7 @@ from payments.stripe import StripeProvider
 from payments import RedirectNeeded, get_payment_model
 
 from ..models import PaymentStatus, Plan, Product, Subscription, Order
-from ..forms import SourcePaymentForm
+from ..forms import SEPAPaymentForm
 
 logger = logging.getLogger(__name__)
 
@@ -115,94 +115,7 @@ class StripeWebhookMixin():
         return HttpResponse(status=201)
 
 
-def get_statement_descriptor(payment):
-    return '{} {}'.format(
-            settings.SITE_NAME,
-            payment.order.id
-        )
-
-
-class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
-    form_class = PaymentForm
-    provider_name = 'creditcard'
-    stripe_payment_method_type = 'card'
-
-    def update_status(self, payment):
-        if payment.status not in (PaymentStatus.PENDING, PaymentStatus.INPUT):
-            return
-        if not payment.transaction_id:
-            return
-        try:
-            intent = stripe.PaymentIntent.retrieve(payment.transaction_id)
-        except stripe.error.InvalidRequestError:
-            # intent is not yet available
-            return
-        if intent.status == 'succeeded':
-            payment.change_status(PaymentStatus.CONFIRMED)
-            return True
-        payment.change_status(PaymentStatus.PENDING)
-        return False
-
-    def process_data(self, payment, request):
-        if payment.variant != self.provider_name:
-            # This payment reached the wrong provider implementation endpoint
-            return HttpResponse(status=204)
-        if request.is_ajax():
-            return self.handle_form_communication(payment, request)
-        return super().process_data(payment, request)
-
-    def handle_form_communication(self, payment, request):
-        try:
-            data = json.loads(request.body.decode('utf-8'))
-        except (ValueError, UnicodeDecodeError):
-            return JsonResponse({'error': ''})
-        try:
-            if 'payment_method_id' in data:
-                intent = self.handle_payment_method(
-                    payment,
-                    data['payment_method_id']
-                )
-            elif 'payment_intent_id' in data:
-                intent = stripe.PaymentIntent.confirm(
-                    data['payment_intent_id']
-                )
-        except stripe.error.CardError as e:
-            # Display error on client
-            return JsonResponse({'error': e.user_message})
-        return self.generate_intent_response(intent)
-
-    def generate_intent_response(self, intent):
-        if intent.status == 'requires_action':
-            return JsonResponse({
-                'requires_action': True,
-                'payment_intent_client_secret': intent.client_secret,
-            })
-        elif intent.status == 'succeeded':
-            # The payment didn’t need any additional actions and completed!
-            # Handle post-payment fulfillment
-            return JsonResponse({'success': True})
-        return JsonResponse({'error': 'Invalid PaymentIntent status'})
-
-    def handle_payment_method(self, payment, payment_method):
-        order = payment.order
-        if order.is_recurring:
-            intent = self.setup_subscription(
-                order.subscription, payment_method
-            )
-        else:
-            intent = stripe.PaymentIntent.create(
-                amount=int(payment.total * 100),
-                currency=payment.currency,
-                payment_method_types=['card'],
-                use_stripe_sdk=True,
-                payment_method=payment_method,
-                statement_descriptor=get_statement_descriptor(payment),
-                metadata={'order_id': str(payment.order.token)},
-            )
-        payment.transaction_id = intent.id
-        payment.save()
-        return intent
-
+class StripeSubscriptionMixin:
     def setup_customer(self, subscription, payment_method):
         customer = subscription.customer
         if not customer.remote_reference:
@@ -227,100 +140,6 @@ class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
             )
 
         return customer
-
-    def setup_subscription(self, subscription, payment_method):
-        plan = subscription.plan
-        customer = subscription.customer
-        self.setup_customer(subscription, payment_method)
-
-        if not subscription.remote_reference:
-            stripe_subscription = stripe.Subscription.create(
-                customer=customer.remote_reference,
-                default_payment_method=payment_method,
-                items=[
-                    {
-                        'plan': plan.remote_reference,
-                    },
-                ],
-                expand=[
-                    'latest_invoice',
-                    'latest_invoice.payment_intent'
-                ],
-            )
-        else:
-            stripe_subscription = stripe.Subscription.retrieve(
-                subscription.remote_reference,
-                expand=[
-                    'latest_invoice',
-                    'latest_invoice.payment_intent'
-                ],
-            )
-            if stripe_subscription.plan.id != plan.remote_reference:
-                stripe_subscription = stripe.Subscription.modify(
-                    stripe_subscription.id,
-                    cancel_at_period_end=False,
-                    items=[{
-                        'id': stripe_subscription['items']['data'][0].id,
-                        'plan': plan.remote_reference,
-                    }]
-                )
-        subscription.remote_reference = stripe_subscription.id
-        if stripe_subscription.status == 'active':
-            subscription.active = True
-        else:
-            subscription.active = False
-        subscription.save()
-        latest_invoice = stripe_subscription.latest_invoice
-        subscription.attach_order_info(
-            remote_reference=latest_invoice.id,
-        )
-        payment_intent = stripe_subscription.latest_invoice.payment_intent
-        return payment_intent
-
-    def get_form(self, payment, data=None):
-        if payment.status == PaymentStatus.WAITING:
-            payment.change_status(PaymentStatus.INPUT)
-
-        form = self.form_class(
-            data=data, payment=payment, provider=self
-        )
-        if data is not None:
-            if form.is_valid():
-                form.save()
-                raise RedirectNeeded(payment.get_success_url())
-
-        intent = None
-        if payment.transaction_id:
-            intent = stripe.PaymentIntent.retrieve(payment.transaction_id)
-        else:
-            kwargs = {}
-            order = payment.order
-            if not order.is_recurring:
-                # For non-recurring orders create payment intent directly
-                intent = stripe.PaymentIntent.create(
-                    amount=int(payment.total * 100),
-                    currency=payment.currency,
-                    payment_method_types=['card'],
-                    use_stripe_sdk=True,
-                    statement_descriptor=get_statement_descriptor(payment),
-                    metadata={'order_id': str(payment.order.token)},
-                    **kwargs
-                )
-                payment.transaction_id = intent.id
-                payment.save()
-
-        if intent is not None and intent.status == 'succeeded':
-            payment.change_status(PaymentStatus.CONFIRMED)
-            raise RedirectNeeded(payment.get_success_url())
-
-        if intent is not None:
-            form.intent_secret = intent.client_secret
-        else:
-            form.intent_secret = ''
-            form.action = self.get_return_url(payment)
-        form.public_key = self.public_key
-
-        return form
 
     def get_or_create_product(self, category):
         try:
@@ -374,6 +193,209 @@ class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
                 product=product
             )
         return plan
+
+
+def get_statement_descriptor(payment):
+    return '{} {}'.format(
+            settings.SITE_NAME,
+            payment.order.id
+        )
+
+
+class StripeIntentProvider(
+        StripeSubscriptionMixin, StripeWebhookMixin, StripeProvider):
+    form_class = PaymentForm
+    provider_name = 'creditcard'
+    stripe_payment_method_type = 'card'
+
+    def update_status(self, payment):
+        if payment.status not in (PaymentStatus.PENDING, PaymentStatus.INPUT):
+            return
+        if not payment.transaction_id:
+            return
+        try:
+            intent = stripe.PaymentIntent.retrieve(payment.transaction_id)
+        except stripe.error.InvalidRequestError:
+            # intent is not yet available
+            return
+        if intent.status == 'succeeded':
+            payment.change_status(PaymentStatus.CONFIRMED)
+            return True
+        payment.change_status(PaymentStatus.PENDING)
+        return False
+
+    def process_data(self, payment, request):
+        if payment.variant != self.provider_name:
+            # This payment reached the wrong provider implementation endpoint
+            return HttpResponse(status=204)
+        if request.is_ajax():
+            return self.handle_form_communication(payment, request)
+        return super().process_data(payment, request)
+
+    def handle_form_communication(self, payment, request):
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+        except (ValueError, UnicodeDecodeError):
+            return JsonResponse({'error': ''})
+        try:
+            intent = self.handle_form_method(payment, data)
+        except stripe.error.StripeError as e:
+            # Display error on client
+            return JsonResponse({'error': e.user_message})
+        except ValueError as e:
+            return JsonResponse({'error': str(e)})
+        if intent is True:
+            return JsonResponse({'success': True})
+        return self.generate_intent_response(intent)
+
+    def handle_form_method(self, payment, data):
+        if 'payment_method_id' in data:
+            intent = self.handle_payment_method(
+                payment,
+                data['payment_method_id']
+            )
+        elif 'payment_intent_id' in data:
+            intent = stripe.PaymentIntent.confirm(
+                data['payment_intent_id']
+            )
+        return intent
+
+    def generate_intent_response(self, intent):
+        if intent.status == 'requires_action':
+            return JsonResponse({
+                'requires_action': True,
+                'payment_intent_client_secret': intent.client_secret,
+            })
+        elif intent.status == 'requires_confirmation':
+            return JsonResponse({
+                'requires_confirmation': True,
+                'payment_intent_client_secret': intent.client_secret,
+                'payment_method': intent.payment_method,
+                'customer': True if intent.customer else False
+            })
+        elif intent.status == 'succeeded':
+            # The payment didn’t need any additional actions and completed!
+            # Handle post-payment fulfillment
+            return JsonResponse({'success': True})
+        return JsonResponse({'error': 'Invalid PaymentIntent status'})
+
+    def handle_payment_method(self, payment, payment_method):
+        order = payment.order
+        if order.is_recurring:
+            intent = self.setup_subscription(
+                order.subscription, payment_method
+            )
+        else:
+            intent = stripe.PaymentIntent.create(
+                amount=int(payment.total * 100),
+                currency=payment.currency,
+                payment_method_types=[self.stripe_payment_method_type],
+                use_stripe_sdk=True,
+                payment_method=payment_method,
+                statement_descriptor=get_statement_descriptor(payment),
+                metadata={'order_id': str(payment.order.token)},
+            )
+        payment.transaction_id = intent.id
+        payment.save()
+        return intent
+
+    def get_form(self, payment, data=None):
+        if payment.status == PaymentStatus.WAITING:
+            payment.change_status(PaymentStatus.INPUT)
+
+        form = self.form_class(
+            data=data, payment=payment, provider=self
+        )
+        if data is not None:
+            if form.is_valid():
+                form.save()
+                raise RedirectNeeded(payment.get_success_url())
+
+        intent = self.get_initial_intent(payment)
+
+        if intent is not None and intent.status == 'succeeded':
+            payment.change_status(PaymentStatus.CONFIRMED)
+            raise RedirectNeeded(payment.get_success_url())
+
+        if intent is not None:
+            form.intent_secret = intent.client_secret
+        else:
+            form.intent_secret = ''
+            form.action = self.get_return_url(payment)
+        form.public_key = self.public_key
+
+        return form
+
+    def get_initial_intent(self, payment):
+        intent = None
+        if payment.transaction_id:
+            intent = stripe.PaymentIntent.retrieve(payment.transaction_id)
+        else:
+            kwargs = {}
+            order = payment.order
+            if not order.is_recurring:
+                # For non-recurring orders create payment intent directly
+                intent = stripe.PaymentIntent.create(
+                    amount=int(payment.total * 100),
+                    currency=payment.currency,
+                    payment_method_types=[self.stripe_payment_method_type],
+                    use_stripe_sdk=True,
+                    statement_descriptor=get_statement_descriptor(payment),
+                    metadata={'order_id': str(payment.order.token)},
+                    **kwargs
+                )
+                payment.transaction_id = intent.id
+                payment.save()
+        return intent
+
+    def setup_subscription(self, subscription, payment_method):
+        plan = subscription.plan
+        customer = subscription.customer
+        self.setup_customer(subscription, payment_method)
+
+        if not subscription.remote_reference:
+            stripe_subscription = stripe.Subscription.create(
+                customer=customer.remote_reference,
+                default_payment_method=payment_method,
+                items=[
+                    {
+                        'plan': plan.remote_reference,
+                    },
+                ],
+                expand=[
+                    'latest_invoice',
+                    'latest_invoice.payment_intent'
+                ],
+            )
+        else:
+            stripe_subscription = stripe.Subscription.retrieve(
+                subscription.remote_reference,
+                expand=[
+                    'latest_invoice',
+                    'latest_invoice.payment_intent'
+                ],
+            )
+            if stripe_subscription.plan.id != plan.remote_reference:
+                stripe_subscription = stripe.Subscription.modify(
+                    stripe_subscription.id,
+                    cancel_at_period_end=False,
+                    items=[{
+                        'id': stripe_subscription['items']['data'][0].id,
+                        'plan': plan.remote_reference,
+                    }]
+                )
+        subscription.remote_reference = stripe_subscription.id
+        if stripe_subscription.status == 'active':
+            subscription.active = True
+        else:
+            subscription.active = False
+        subscription.save()
+        latest_invoice = stripe_subscription.latest_invoice
+        subscription.attach_order_info(
+            remote_reference=latest_invoice.id,
+        )
+        payment_intent = stripe_subscription.latest_invoice.payment_intent
+        return payment_intent
 
     def update_payment(self, payment):
         tn_id = payment.transaction_id
@@ -450,8 +472,8 @@ class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
     # Webhook callbacks
 
     def payment_intent_succeeded(self, request, intent):
-        logger.info('Creditcard Webhook: Payment intent succeeded: %d',
-                    intent.id)
+        logger.info('%s Webhook: Payment intent succeeded: %s',
+                    self.provider_name, intent.id)
 
         payment = self.get_payment_by_id(intent.id)
         if payment is None:
@@ -471,8 +493,8 @@ class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
         payment.change_status(PaymentStatus.CONFIRMED)
 
     def payment_intent_failed(self, request, intent):
-        logger.info('Creditcard Webhook: Payment intent failed: %d',
-                    intent.id)
+        logger.info('%s Webhook: Payment intent failed: %s',
+                    self.provider_name, intent.id)
 
         error_message = None
         if intent.get('last_payment_error'):
@@ -501,8 +523,8 @@ class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
         except Subscription.DoesNotExist:
             # Don't know this subscription!
             return
-        logger.info('Creditcard webhook invoice created for subscription %s',
-                    subscription.id)
+        logger.info('%s webhook invoice created for subscription %s',
+                    self.provider_name, subscription.id)
         subscription.create_recurring_order(
             force=True, remote_reference=invoice.id
         )
@@ -524,8 +546,8 @@ class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
         )
         payment.transaction_id = invoice.payment_intent
         payment.save()
-        logger.info('Creditcard webhook invoice finalized for payment %s',
-                    payment.id)
+        logger.info('%s webhook invoice finalized for payment %s',
+                    self.provider_name, payment.id)
 
     def invoice_payment_action_required(self, request, invoice):
         '''
@@ -543,30 +565,48 @@ class StripeIntentProvider(StripeWebhookMixin, StripeProvider):
         # TODO: do something
 
 
-class StripeSourceProvider(StripeProvider):
-    form_class = SourcePaymentForm
+class StripeSEPAProvider(StripeIntentProvider):
+    form_class = SEPAPaymentForm
     provider_name = 'sepa'
-    stripe_payment_method_type = 'sepa?'
+    stripe_payment_method_type = 'sepa_debit'
 
-    def get_form(self, payment, data=None):
-        form = super().get_form(payment, data=data)
-        form.public_key = self.public_key
-        return form
+    def get_initial_intent(self, payment):
+        intent = None
+        if payment.transaction_id:
+            intent = stripe.PaymentIntent.retrieve(payment.transaction_id)
+        return intent
 
-    def charge_succeeded(self, request, charge):
-        payment = self.get_payment_by_id(charge.id)
-        if payment is None:
-            return
-
-        payment.attrs.charge = json.dumps(charge)
-        payment.captured_amount = Decimal(charge.amount) / 100
-        txn = self.get_balance_transaction(charge.balance_transaction)
-        if txn is not None:
-            payment.received_amount = Decimal(txn.net) / 100
-            payment.received_timestamp = convert_utc_timestamp(
-                charge.created
+    def handle_form_method(self, payment, data):
+        if 'iban' in data:
+            form = self.form_class(
+                data=data, payment=payment, provider=self,
+                hidden_inputs=False
             )
-        payment.change_status(PaymentStatus.CONFIRMED)
+            if form.is_valid():
+                intent = form.save()
+                return intent
+            raise ValueError(str(form.errors))
+        if 'success' in data:
+            # confirm payment here later
+            payment.change_status(PaymentStatus.PENDING)
+            return True
+        return None
+
+    def create_payment_method(self, iban, owner_name, billing_email):
+        try:
+            return stripe.PaymentMethod.create(
+                type=self.stripe_payment_method_type,
+                sepa_debit={
+                    "iban": iban,
+                },
+                billing_details={
+                    "name": owner_name,
+                    "email": billing_email,
+                },
+            )
+        except stripe.error.StripeError as e:
+            logger.exception(e)
+            raise ValueError(e.error.code)
 
 
 class StripeSofortProvider(StripeWebhookMixin, StripeProvider):

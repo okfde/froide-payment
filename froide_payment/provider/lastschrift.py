@@ -7,10 +7,7 @@ from ..forms import LastschriftPaymentForm
 from .mixins import PlanProductMixin
 
 
-class LastschriftProvider(PlanProductMixin, BasicProvider):
-    provider_name = 'lastschrift'
-    form_class = LastschriftPaymentForm
-
+class IBANProviderMixin:
     def get_form(self, payment, data=None):
         '''
         Lastschrift gets stored and processed
@@ -42,3 +39,8 @@ class LastschriftProvider(PlanProductMixin, BasicProvider):
                 raise RedirectNeeded(payment.get_success_url())
 
         return form
+
+
+class LastschriftProvider(PlanProductMixin, IBANProviderMixin, BasicProvider):
+    provider_name = 'lastschrift'
+    form_class = LastschriftPaymentForm

@@ -4,6 +4,7 @@
 
 {% block payment_method %}
 
+  {% include "bootstrap_field.html" with field=form.owner_name %}
   {% include "bootstrap_field.html" with field=form.iban %}
   {% include "bootstrap_field.html" with field=form.terms %}
 

@@ -22,7 +22,7 @@
   data-city="{{ order.city }}"
   data-locale="{{ LANGUAGE_CODE }}"
   data-postcode="{{ order.postcode }}"
-  novalidate
+  {% block novalidate %}novalidate{% endblock %}
 {% endblock %}
 
 {% block payment_method %}

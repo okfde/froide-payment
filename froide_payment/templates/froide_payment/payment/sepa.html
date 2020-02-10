@@ -1,30 +1,25 @@
 {% extends "froide_payment/payment/stripe_base.html" %}
 
-{% load i18n %}
+{% block form_attrs %}{{ block.super }}{% block novalidate %}{% endblock %}{% endblock %}
 
 {% block payment_method %}
-  <label for="iban-element">
-    {% trans "Please enter your IBAN" %}
-  </label>
-  <div id="iban-element">
-    <!-- A Stripe Element will be inserted here. -->
-  </div>
-  <div id="bank-name"></div>
-  <!-- Used to display form errors. -->
-  <div id="error-message" role="alert"></div>
-  <p class="text-right">
-    <button class="btn btn-success btn-lg" id="sepa-submit">
-      {% if order.is_donation %}
-        &rarr;&nbsp;{% trans "Donate now" %}
-      {% else %}
-        &rarr;&nbsp;{% trans "Pay now" %}
-      {% endif %}
-    </button>
+
+{% include "bootstrap_field.html" with field=form.owner_name %}
+{% include "bootstrap_field.html" with field=form.iban %}
+
+<div id="card-errors" class="alert alert-danger" style="display: none" role="alert"></div>
+
+<div>
+  <p class="text-muted">
+    Ich ermächtige (A) Open Knowledge Foundation Deutschland e.V. und Stripe, Zahlungen von meinem Konto mittels Lastschrift einzuziehen. Zugleich (B) weise ich mein Kreditinstitut an, die von Open Knowledge Foundation auf mein Konto gezogenen Lastschriften einzulösen. Hinweis: Ich kann innerhalb von acht Wochen, beginnend mit dem Belastungsdatum, die Erstattung des belasteten Betrages verlangen. Es gelten dabei die mit meinem Kreditinstitut vereinbarten Bedingungen.
   </p>
-  <!-- Display mandate acceptance text. -->
-  <small id="mandate-acceptance">
-    {% blocktrans %}By providing your IBAN and confirming this payment, you are authorizing Open Knowledge Foundation Deutschland e.V. and Stripe, our payment service provider, to send instructions to your bank to debit your account and your bank to debit your account in accordance with those instructions.
-    You are entitled to a refund from your bank under the terms and conditions of your agreement with your bank. A refund must be claimed within 8 weeks starting from the date on which your account was debited.{% endblocktrans %}
-  </small>
-  {{ block.super }}
+</div>
+
+<div class="text-right">
+  <button id="donate-now" type="submit" class="btn btn-success btn-lg">
+    Jetzt spenden
+  </button>
+</div>
+
+{{ block.super }}
 {% endblock %}
