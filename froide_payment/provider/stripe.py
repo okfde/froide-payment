@@ -492,7 +492,7 @@ class StripeIntentProvider(
                 break
         payment.change_status(PaymentStatus.CONFIRMED)
 
-    def payment_intent_failed(self, request, intent):
+    def payment_intent_payment_failed(self, request, intent):
         logger.info('%s Webhook: Payment intent failed: %s',
                     self.provider_name, intent.id)
 
