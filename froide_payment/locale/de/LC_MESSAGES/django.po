@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-11-14 14:34+0100\n"
-"PO-Revision-Date: 2019-11-21 11:35+0100\n"
+"POT-Creation-Date: 2020-02-07 13:51+0100\n"
+"PO-Revision-Date: 2020-02-07 13:56+0100\n"
 "Last-Translator: Stefan Wehrmeyer <stefan.wehrmeyer@okfn.de>\n"
 "Language-Team: \n"
 "Language: de\n"
@@ -18,9 +18,27 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 2.2\n"
 
-#: admin.py:151
+#: admin.py:80
+#, python-format
+msgid "%d recurring orders created."
+msgstr "%d wiederkehrende Bestellungen erstellt."
+
+#: admin.py:82
+msgid "Force create next recurring order"
+msgstr "Forciere nächste wiederkehrende Bestellung"
+
+#: admin.py:188
 msgid "Could not find all payments, aborting!"
 msgstr "Konnte nicht alle Spenden finden, Vorgang abgebrochen!"
+
+#: admin.py:254
+#, python-format
+msgid "%d mails sent."
+msgstr "%d E-Mails versendet."
+
+#: admin.py:270
+msgid "Send lastschrift mail to users"
+msgstr "Sende Lastschrift-E-Mail an Nutzer"
 
 #: apps.py:7
 msgid "Froide Payment App"
@@ -30,21 +48,46 @@ msgstr "Froide Bezahlungs-App"
 msgid "This payment has already been processed."
 msgstr "Diese Zahlung wurde schon verarbeitet."
 
-#: forms.py:71
+#: forms.py:71 forms.py:76
+msgid "Account owner"
+msgstr "Kontoinhaber"
+
+#: forms.py:81
 msgid "Your IBAN"
 msgstr "Ihre IBAN"
 
-#: forms.py:79
-msgid "IBAN"
-msgstr "IBAN"
+#: forms.py:90
+msgid "e.g. DE12..."
+msgstr "z.B. DE12..."
 
-#: forms.py:81
+#: forms.py:92
 msgid "The IBAN has 20-22 digits and starts with two letters."
 msgstr "Die IBAN hat 20-22 Stellen und fängt mit zwei Buchstaben an."
 
-#: forms.py:101
+#: forms.py:112
 msgid "Sie müssen den Bedingungen der Lastschrift zustimmen."
 msgstr "Sie müssen den Bedingungen der Lastschrift zustimmen."
+
+#: forms.py:152
+msgid "The provided IBAN seems invalid."
+msgstr "Die angegeben IBAN scheint ungültig."
+
+#: forms.py:157
+msgid "The provided owner name seems invalid (at least 3 characters required)."
+msgstr ""
+"Der angegeben Kontoinhaber scheint ungültig (mind. 3 Zeichen notwendig)."
+
+#: forms.py:163
+msgid "This payment method is currently unavailable."
+msgstr "Diese Zahlungsmöglichkeit ist momentan nicht verfügbar."
+
+#: forms.py:168
+msgid ""
+"An error occurred verifying your information with our payment provider. "
+"Please try again."
+msgstr ""
+"Leider ist beim Überprüfen Ihrer Angaben bei unserem Zahlungsanbieter ein "
+"Fehler aufgetreten. Bitte versuchen Sie es noch einmal."
 
 #: models.py:24
 msgid "Dummy"
@@ -55,8 +98,8 @@ msgid "Credit Card"
 msgstr "Kreditkarte"
 
 #: models.py:26
-msgid "SEPA Debit"
-msgstr "Lastschrift"
+msgid "SEPA-Lastschrift"
+msgstr "SEPA-Lastschrift"
 
 #: models.py:27
 msgid "Lastschrift"
@@ -94,45 +137,68 @@ msgstr "jährlich"
 msgid "interval"
 msgstr "Intervall"
 
-#: models.py:423
+#: models.py:447
 msgctxt "payment status"
 msgid "Waiting for input"
 msgstr "Warte auf Eingabe"
 
-#: models.py:425
+#: models.py:449
 msgctxt "payment status"
 msgid "Pre-authorized"
 msgstr "Vor-Autorisiert"
 
-#: models.py:427
+#: models.py:451
 msgctxt "payment status"
 msgid "Confirmed"
 msgstr "Bestätigt"
 
-#: models.py:429
+#: models.py:453
 msgctxt "payment status"
 msgid "Rejected"
 msgstr "Abgewiesen"
 
-#: models.py:431
+#: models.py:455
 msgctxt "payment status"
 msgid "Refunded"
 msgstr "Zurückgebucht"
 
-#: models.py:433
+#: models.py:457
 msgctxt "payment status"
 msgid "Error"
 msgstr "Fehler"
 
-#: models.py:435
+#: models.py:459
 msgctxt "payment status"
 msgid "Input"
 msgstr "Eingabe"
 
-#: models.py:437
+#: models.py:461
 msgctxt "payment status"
 msgid "Confirmation pending"
 msgstr "Bearbeitung läuft"
+
+#: templates/froide_payment/admin/admin_lastschrift_email.html:7
+msgid "Send mail to users"
+msgstr "Sende E-Mail an Nutzer"
+
+#: templates/froide_payment/admin/admin_lastschrift_email.html:12
+msgid "Home"
+msgstr "Start"
+
+#: templates/froide_payment/admin/admin_lastschrift_email.html:15
+msgid "Send lastscrhfit mail to users"
+msgstr "Sende Lastschrift-E-Mail an Nutzer"
+
+#: templates/froide_payment/admin/admin_lastschrift_email.html:24
+msgid "Additional note to users:"
+msgstr "Weiterer Hinweis für Nutzer:"
+
+#: templates/froide_payment/admin/admin_lastschrift_email.html:28
+#, python-format
+msgid "Send mail to one user"
+msgid_plural "Send mail to %(count)s users"
+msgstr[0] "Sende E-Mail an eine Person"
+msgstr[1] "Sende E-Mail an %(count)s Personen"
 
 #: templates/froide_payment/order/default.html:12
 msgid "Your payment"
@@ -217,13 +283,11 @@ msgid "payment"
 msgstr "Bezahlung"
 
 #: templates/froide_payment/payment/base.html:7
-#: templates/froide_payment/payment/sepa.html:18
 msgid "Donate now"
 msgstr "Jetzt spenden"
 
 #: templates/froide_payment/payment/base.html:7
 #: templates/froide_payment/payment/creditcard.html:43
-#: templates/froide_payment/payment/sepa.html:20
 msgid "Pay now"
 msgstr "Jetzt bezahlen"
 
@@ -244,22 +308,21 @@ msgstr "Schlißen Sie Ihre Bezahlung ab:"
 msgid ""
 "\n"
 "              You are donating <strong>%(amount)s&nbsp;€</strong> <mark>"
-"%(interval)s</mark> to %(description)s.\n"
+"%(interval)s</mark>: %(description)s.\n"
 "            "
 msgstr ""
 "\n"
 "              Sie spenden <strong>%(amount)s&nbsp;€</strong> <mark>"
-"%(interval)s</mark> an %(description)s.\n"
+"%(interval)s</mark>: %(description)s.\n"
 "            "
 
 #: templates/froide_payment/payment/base.html:34
 #, python-format
 msgid ""
-"You are donating <strong>%(amount)s&nbsp;€</strong> to <mark>"
-"%(description)s</mark>."
-msgstr ""
-"Sie spenden <strong>%(amount)s&nbsp;€</strong> an <mark>%(description)s</"
+"You are donating <strong>%(amount)s&nbsp;€</strong>: <mark>%(description)s</"
 "mark>."
+msgstr ""
+"Sie spenden <strong>%(amount)s&nbsp;€</strong>: <mark>%(description)s</mark>."
 
 #: templates/froide_payment/payment/base.html:37
 #, python-format
@@ -307,28 +370,6 @@ msgstr ""
 msgid "Finalize donation"
 msgstr "Spende abschließen"
 
-#: templates/froide_payment/payment/sepa.html:7
-msgid "Please enter your IBAN"
-msgstr "Bitte geben Sie Ihre IBAN ein"
-
-#: templates/froide_payment/payment/sepa.html:26
-msgid ""
-"By providing your IBAN and confirming this payment, you are authorizing Open "
-"Knowledge Foundation Deutschland e.V. and Stripe, our payment service "
-"provider, to send instructions to your bank to debit your account and your "
-"bank to debit your account in accordance with those instructions.\n"
-"    You are entitled to a refund from your bank under the terms and "
-"conditions of your agreement with your bank. A refund must be claimed within "
-"8 weeks starting from the date on which your account was debited."
-msgstr ""
-"Ich ermächtige (A) Open Knowledge Foundation Deutschland e.V. und Stripe, "
-"Zahlungen von meinem Konto mittels Lastschrift einzuziehen. Zugleich (B) "
-"weise ich mein Kreditinstitut an, die von Open Knowledge Foundation auf mein "
-"Konto gezogenen Lastschriften einzulösen. Hinweis: Ich kann innerhalb von "
-"acht Wochen, beginnend mit dem Belastungsdatum, die Erstattung des "
-"belasteten Betrages verlangen. Es gelten dabei die mit meinem Kreditinstitut "
-"vereinbarten Bedingungen."
-
 #: templates/froide_payment/payment/status/base.html:10
 msgid "status"
 msgstr "Status"
@@ -349,9 +390,9 @@ msgstr "Betrag gezahlt"
 msgid "date created"
 msgstr "Erstellt am"
 
-#: templates/froide_payment/payment/status/base.html:32
-msgid "last updated"
-msgstr "Letzte Aktualisierung"
+#: templates/froide_payment/payment/status/base.html:33
+msgid "Amount received"
+msgstr "Betrag erhalten"
 
 #: templates/froide_payment/payment/status/lastschrift.html:8
 msgid "Your direct debit will get deducted during the next month."
@@ -371,29 +412,59 @@ msgstr ""
 msgid "Your subscription"
 msgstr "Ihre Dauerspende"
 
-#: utils.py:68
+#: utils.py:89
 msgid "one time"
 msgstr "einmalig"
 
-#: utils.py:70
+#: utils.py:91
 msgid "every month"
 msgstr "jeden Monat"
 
-#: utils.py:72
+#: utils.py:93
 msgid "every three months"
 msgstr "vierteljährlich"
 
-#: utils.py:74
+#: utils.py:95
 msgid "every six months"
 msgstr "alle sechs Monate"
 
-#: utils.py:76
+#: utils.py:97
 msgid "every year"
 msgstr "jedes Jahr"
 
-#: utils.py:77
+#: utils.py:98
 msgid "every {} months"
 msgstr "alle {} Monate"
+
+#~ msgid "IBAN"
+#~ msgstr "IBAN"
+
+#~ msgid "SEPA Debit"
+#~ msgstr "Lastschrift"
+
+#~ msgid "Please enter your IBAN"
+#~ msgstr "Bitte geben Sie Ihre IBAN ein"
+
+#~ msgid ""
+#~ "By providing your IBAN and confirming this payment, you are authorizing "
+#~ "Open Knowledge Foundation Deutschland e.V. and Stripe, our payment "
+#~ "service provider, to send instructions to your bank to debit your account "
+#~ "and your bank to debit your account in accordance with those "
+#~ "instructions.\n"
+#~ "    You are entitled to a refund from your bank under the terms and "
+#~ "conditions of your agreement with your bank. A refund must be claimed "
+#~ "within 8 weeks starting from the date on which your account was debited."
+#~ msgstr ""
+#~ "Ich ermächtige (A) Open Knowledge Foundation Deutschland e.V. und Stripe, "
+#~ "Zahlungen von meinem Konto mittels Lastschrift einzuziehen. Zugleich (B) "
+#~ "weise ich mein Kreditinstitut an, die von Open Knowledge Foundation auf "
+#~ "mein Konto gezogenen Lastschriften einzulösen. Hinweis: Ich kann "
+#~ "innerhalb von acht Wochen, beginnend mit dem Belastungsdatum, die "
+#~ "Erstattung des belasteten Betrages verlangen. Es gelten dabei die mit "
+#~ "meinem Kreditinstitut vereinbarten Bedingungen."
+
+#~ msgid "last updated"
+#~ msgstr "Letzte Aktualisierung"
 
 #~ msgid "Your order"
 #~ msgstr "Ihre Bestellung"
