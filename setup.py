@@ -39,7 +39,7 @@ setup(
         'django-localflavor',
         'python-dateutil',
         'prices',
-        'stripe',
+        'stripe>=2.29.4',
         'requests',
     ],
     include_package_data=True,
