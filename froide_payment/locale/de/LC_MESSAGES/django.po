@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-02-07 13:51+0100\n"
-"PO-Revision-Date: 2020-02-07 13:56+0100\n"
+"POT-Creation-Date: 2020-02-17 17:26+0100\n"
+"PO-Revision-Date: 2020-02-17 17:27+0100\n"
 "Last-Translator: Stefan Wehrmeyer <stefan.wehrmeyer@okfn.de>\n"
 "Language-Team: \n"
 "Language: de\n"
@@ -44,44 +44,44 @@ msgstr "Sende Lastschrift-E-Mail an Nutzer"
 msgid "Froide Payment App"
 msgstr "Froide Bezahlungs-App"
 
-#: forms.py:35
+#: forms.py:36
 msgid "This payment has already been processed."
 msgstr "Diese Zahlung wurde schon verarbeitet."
 
-#: forms.py:71 forms.py:76
+#: forms.py:72 forms.py:77
 msgid "Account owner"
 msgstr "Kontoinhaber"
 
-#: forms.py:81
+#: forms.py:82
 msgid "Your IBAN"
 msgstr "Ihre IBAN"
 
-#: forms.py:90
+#: forms.py:91
 msgid "e.g. DE12..."
 msgstr "z.B. DE12..."
 
-#: forms.py:92
+#: forms.py:93
 msgid "The IBAN has 20-22 digits and starts with two letters."
 msgstr "Die IBAN hat 20-22 Stellen und fängt mit zwei Buchstaben an."
 
-#: forms.py:112
+#: forms.py:113
 msgid "Sie müssen den Bedingungen der Lastschrift zustimmen."
 msgstr "Sie müssen den Bedingungen der Lastschrift zustimmen."
 
-#: forms.py:152
+#: forms.py:153
 msgid "The provided IBAN seems invalid."
 msgstr "Die angegeben IBAN scheint ungültig."
 
-#: forms.py:157
+#: forms.py:158
 msgid "The provided owner name seems invalid (at least 3 characters required)."
 msgstr ""
 "Der angegeben Kontoinhaber scheint ungültig (mind. 3 Zeichen notwendig)."
 
-#: forms.py:163
+#: forms.py:164
 msgid "This payment method is currently unavailable."
 msgstr "Diese Zahlungsmöglichkeit ist momentan nicht verfügbar."
 
-#: forms.py:168
+#: forms.py:169
 msgid ""
 "An error occurred verifying your information with our payment provider. "
 "Please try again."
@@ -89,93 +89,113 @@ msgstr ""
 "Leider ist beim Überprüfen Ihrer Angaben bei unserem Zahlungsanbieter ein "
 "Fehler aufgetreten. Bitte versuchen Sie es noch einmal."
 
-#: models.py:24
+#: models.py:26
 msgid "Dummy"
 msgstr "Dummy"
 
-#: models.py:25
+#: models.py:27
 msgid "Credit Card"
 msgstr "Kreditkarte"
 
-#: models.py:26
+#: models.py:28
 msgid "SEPA-Lastschrift"
 msgstr "SEPA-Lastschrift"
 
-#: models.py:27
+#: models.py:29
 msgid "Lastschrift"
 msgstr "Lastschrift"
 
-#: models.py:28
+#: models.py:30
 msgid "SOFORT Überweisung"
 msgstr "SOFORT Überweisung"
 
-#: models.py:29
+#: models.py:31
 msgid "Paypal"
 msgstr "Paypal"
 
-#: models.py:30
+#: models.py:32
 msgid "Bank transfer"
 msgstr "Überweisung"
 
-#: models.py:44
+#: models.py:46
 msgid "monthly"
 msgstr "monatlich"
 
-#: models.py:45
+#: models.py:47
 msgid "quarterly"
 msgstr "vierteljährlich"
 
-#: models.py:46
+#: models.py:48
 msgid "semiannually"
 msgstr "halbjährlich"
 
-#: models.py:47
+#: models.py:49
 msgid "annually"
 msgstr "jährlich"
 
-#: models.py:76
+#: models.py:78
 msgid "interval"
 msgstr "Intervall"
 
-#: models.py:447
+#: models.py:468
 msgctxt "payment status"
 msgid "Waiting for input"
 msgstr "Warte auf Eingabe"
 
-#: models.py:449
+#: models.py:470
 msgctxt "payment status"
 msgid "Pre-authorized"
 msgstr "Vor-Autorisiert"
 
-#: models.py:451
+#: models.py:472
 msgctxt "payment status"
 msgid "Confirmed"
 msgstr "Bestätigt"
 
-#: models.py:453
+#: models.py:474
 msgctxt "payment status"
 msgid "Rejected"
 msgstr "Abgewiesen"
 
-#: models.py:455
+#: models.py:476
 msgctxt "payment status"
 msgid "Refunded"
 msgstr "Zurückgebucht"
 
-#: models.py:457
+#: models.py:478
 msgctxt "payment status"
 msgid "Error"
 msgstr "Fehler"
 
-#: models.py:459
+#: models.py:480
 msgctxt "payment status"
 msgid "Input"
 msgstr "Eingabe"
 
-#: models.py:461
+#: models.py:482
 msgctxt "payment status"
 msgid "Confirmation pending"
 msgstr "Bearbeitung läuft"
+
+#: provider/banktransfer.py:44
+msgid "You need to cancel your standing order with your bank."
+msgstr "Sie können Ihren Dauerauftrag nur bei Ihrer Bank selbst abstellen."
+
+#: provider/lastschrift.py:54
+msgid "You can cancel your direct debit subscription here."
+msgstr "Sie können Ihre Dauerspende per Lastschrift hier kündigen."
+
+#: provider/paypal.py:51
+msgid "You can cancel your Paypal subscription."
+msgstr "Sie können Ihre Dauerspende per Paypal hier kündigen."
+
+#: provider/stripe.py:127
+msgid "You can cancel your credit card subscription."
+msgstr "Sie können Ihre Dauerspende per Kreditkarte hier kündigen."
+
+#: provider/stripe.py:611
+msgid "You can cancel your SEPA direct debit subscription here."
+msgstr "Sie können Ihre Dauerspende per Lastschrift hier kündigen."
 
 #: templates/froide_payment/admin/admin_lastschrift_email.html:7
 msgid "Send mail to users"
@@ -412,6 +432,29 @@ msgstr ""
 msgid "Your subscription"
 msgstr "Ihre Dauerspende"
 
+#: templates/froide_payment/subscription/default.html:52
+msgid "Cancel subscription"
+msgstr "Dauerspende kündigen"
+
+#: templates/froide_payment/subscription/default.html:69
+msgid "Are you sure you want to cancel your subscription?"
+msgstr "Sind Sie sicher, dass Sie Ihre Dauerspende kündigen wollen?"
+
+#: templates/froide_payment/subscription/default.html:88
+#, python-format
+msgid ""
+"\n"
+"            This subscription has been canceled on %(date)s.\n"
+"          "
+msgstr ""
+"\n"
+"            Diese Dauerspende wurde am %(date)s gekündigt.\n"
+"          "
+
+#: templates/froide_payment/subscription/default.html:94
+msgid "This subscription has not been marked as active yet."
+msgstr "Diese Dauerspende ist noch nicht aktiviert."
+
 #: utils.py:89
 msgid "one time"
 msgstr "einmalig"
@@ -435,6 +478,21 @@ msgstr "jedes Jahr"
 #: utils.py:98
 msgid "every {} months"
 msgstr "alle {} Monate"
+
+#: views.py:150
+msgid "Your subscription has been canceled."
+msgstr "Ihre Dauerspende wurde gekündigt."
+
+#: views.py:160
+msgid ""
+"An error occurred with our payment provider. We will investigate and make "
+"sure your subscription is properly canceled."
+msgstr ""
+"Es ist ein Fehler bei unserem Zahlungsanbieter aufgetreten. Wir kümmern uns "
+"darum, dass Ihre Dauerspende ordentlich gekündigt wurde."
+
+#~ msgid "We will no longer deduct the amount from your bank account."
+#~ msgstr "Wir werden "
 
 #~ msgid "IBAN"
 #~ msgstr "IBAN"
