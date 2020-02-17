@@ -191,6 +191,8 @@ class PaypalProvider(OriginalPaypalProvider):
                 )
             except Subscription.DoesNotExist:
                 return
+            subscription.active = True
+            subscription.save()
             order = subscription.get_last_order()
             soon = timezone.now() + timedelta(days=2)
             if order.service_end < soon:
