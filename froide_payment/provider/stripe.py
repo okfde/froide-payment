@@ -11,13 +11,17 @@ from django.shortcuts import redirect
 from django.http import HttpResponse, JsonResponse
 from django.utils.text import slugify
 from django.utils import timezone
+from django.utils.translation import ugettext_lazy as _
 
 from payments.forms import PaymentForm
 from payments.stripe import StripeProvider
 from payments import RedirectNeeded, get_payment_model
 
+from ..signals import subscription_activated, subscription_deactivated
 from ..models import PaymentStatus, Plan, Product, Subscription, Order
 from ..forms import SEPAPaymentForm
+
+from .utils import CancelInfo
 
 logger = logging.getLogger(__name__)
 
@@ -116,6 +120,30 @@ class StripeWebhookMixin():
 
 
 class StripeSubscriptionMixin:
+
+    def get_cancel_info(self, subscription):
+        return CancelInfo(
+            True,
+            _('You can cancel your credit card subscription.')
+        )
+
+    def cancel_subscription(self, subscription):
+        if not subscription.remote_reference:
+            return False
+        logger.info('Stripe cancel subscription: %s', subscription.id)
+        try:
+            stripe_sub = stripe.Subscription.delete(
+                subscription.remote_reference
+            )
+        except stripe.error.StripeError as e:
+            logger.warn(
+                'Stripe cancel subscription failed: %s', subscription.id)
+            logger.exception(e)
+            return False
+        if stripe_sub.status == 'canceled':
+            return True
+        return False
+
     def setup_customer(self, subscription, payment_method):
         customer = subscription.customer
         if not customer.remote_reference:
@@ -385,11 +413,18 @@ class StripeIntentProvider(
                     }]
                 )
         subscription.remote_reference = stripe_subscription.id
+        old_sub_status = subscription.active
         if stripe_subscription.status == 'active':
             subscription.active = True
         else:
             subscription.active = False
         subscription.save()
+        if old_sub_status != subscription.active:
+            if subscription.active:
+                subscription_activated.send(sender=subscription)
+            else:
+                subscription_deactivated.send(sender=subscription)
+
         latest_invoice = stripe_subscription.latest_invoice
         subscription.attach_order_info(
             remote_reference=latest_invoice.id,
@@ -569,6 +604,12 @@ class StripeSEPAProvider(StripeIntentProvider):
     form_class = SEPAPaymentForm
     provider_name = 'sepa'
     stripe_payment_method_type = 'sepa_debit'
+
+    def get_cancel_info(self, subscription):
+        return CancelInfo(
+            True,
+            _('You can cancel your SEPA direct debit subscription here.')
+        )
 
     def get_initial_intent(self, payment):
         intent = None

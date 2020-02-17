@@ -15,8 +15,10 @@ from prices import Money, TaxedMoney
 from dateutil.relativedelta import relativedelta
 
 from payments import PurchasedItem, PaymentStatus as BasePaymentStatus
+from payments.core import provider_factory
 from payments.models import BasePayment
 
+from .signals import subscription_canceled
 from .utils import get_payment_defaults, interval_description
 
 
@@ -233,6 +235,22 @@ class Subscription(models.Model):
             remote_reference=remote_reference
         )
         return order
+
+    def get_provider(self):
+        return provider_factory(self.plan.provider)
+
+    def get_cancel_info(self):
+        provider = self.get_provider()
+        return provider.get_cancel_info(self)
+
+    def cancel(self):
+        provider = self.get_provider()
+        success = provider.cancel_subscription(self)
+        self.active = False
+        self.canceled = timezone.now()
+        self.save()
+        subscription_canceled.send(sender=self)
+        return success
 
 
 class Order(models.Model):

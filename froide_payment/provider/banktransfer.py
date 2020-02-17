@@ -1,6 +1,7 @@
 import re
 
 from django.utils.crypto import get_random_string
+from django.utils.translation import ugettext_lazy as _
 
 from payments.core import BasicProvider
 from payments import RedirectNeeded
@@ -9,6 +10,7 @@ from ..models import PaymentStatus
 from ..forms import LastschriftPaymentForm
 
 from .mixins import PlanProductMixin
+from .utils import CancelInfo
 
 
 CODE_CHARS = 'ACDEFHJKLMNPRSTUWXY3469'
@@ -35,6 +37,15 @@ def generate_transfer_code():
 class BanktransferProvider(PlanProductMixin, BasicProvider):
     provider_name = 'banktransfer'
     form_class = LastschriftPaymentForm
+
+    def get_cancel_info(self, subscription):
+        return CancelInfo(
+            False,
+            _('You need to cancel your standing order with your bank.')
+        )
+
+    def cancel_subscription(self, subscription):
+        pass
 
     def get_form(self, payment, data=None):
         '''

@@ -1,3 +1,5 @@
+from django.utils.translation import ugettext_lazy as _
+
 from payments.core import BasicProvider
 from payments import RedirectNeeded
 
@@ -5,6 +7,7 @@ from ..models import PaymentStatus
 from ..forms import LastschriftPaymentForm
 
 from .mixins import PlanProductMixin
+from .utils import CancelInfo
 
 
 class IBANProviderMixin:
@@ -44,3 +47,12 @@ class IBANProviderMixin:
 class LastschriftProvider(PlanProductMixin, IBANProviderMixin, BasicProvider):
     provider_name = 'lastschrift'
     form_class = LastschriftPaymentForm
+
+    def get_cancel_info(self, subscription):
+        return CancelInfo(
+            True,
+            _('You can cancel your direct debit subscription here.')
+        )
+
+    def cancel_subscription(self, subscription):
+        pass

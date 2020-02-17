@@ -1,7 +1,12 @@
 import logging
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.views.decorators.http import require_POST
+from django.utils.translation import ugettext_lazy as _
+from django.core.mail import mail_admins
 from django.http import Http404
+from django.utils import timezone
+from django.contrib import messages
 
 from payments import RedirectNeeded
 from payments.core import provider_factory
@@ -120,5 +125,42 @@ def subscription_detail(request, token):
     ctx = {
         'orders': orders,
         'subscription': subscription,
+        'cancel_info': subscription.get_cancel_info()
     }
     return render(request, templates, ctx)
+
+
+@require_POST
+def subscription_cancel(request, token):
+    subscription = get_object_or_404(Subscription, token=token)
+    user = request.user
+    customer = subscription.customer
+    if customer.user and user != customer.user and not user.is_superuser:
+        return redirect('/')
+
+    cancel_info = subscription.get_cancel_info()
+    if not subscription.active or not cancel_info.can_cancel:
+        return redirect(subscription)
+
+    success = subscription.cancel()
+
+    if success:
+        messages.add_message(
+            request, messages.INFO,
+            _("Your subscription has been canceled.")
+        )
+    else:
+        mail_admins(
+            'Subscription cancelation failed',
+            'Subscription ID: %s' % subscription.id
+        )
+        messages.add_message(
+            request, messages.ERROR,
+            _(
+                "An error occurred with our payment provider. "
+                "We will investigate and make sure your subscription is "
+                "properly canceled."
+            )
+        )
+
+    return redirect(subscription)

@@ -40,6 +40,62 @@
       </tbody>
     </table>
 
+
+    {% if subscription.active %}
+      {% if cancel_info.can_cancel %}
+
+        <div class="alert alert-secondary">
+          <p>{{ cancel_info.message }}</p>
+
+          <div class="text-right">
+            <button type="button" class="btn btn-secondary" data-toggle="modal" data-target="#cancel-subscription">
+              {% trans "Cancel subscription" %}
+            </button>
+          </div>
+        </div>
+
+        <div class="modal fade" id="cancel-subscription" tabindex="-1" role="dialog" aria-labelledby="cancel-subscription-label" aria-hidden="true">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="cancel-subscription-label">Cancel subscription</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <form action="{% url 'froide_payment:subscription-cancel' token=subscription.token %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                  {% trans "Are you sure you want to cancel your subscription?" %}
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="mr-auto btn btn-secondary" data-dismiss="modal">Close</button>
+                  <button type="submit" class="btn btn-danger">Cancel subscription now</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+      {% else %}
+        <div class="alert alert-secondary">
+          {{ cancel_info.message }}
+        </div>
+      {% endif %}
+    {% else %}
+      {% if subscription.canceled %}
+        <div class="alert alert-info">
+          {% blocktrans with date=subscription.canceled|date:"SHORT_DATE_FORMAT" %}
+            This subscription has been canceled on {{ date }}.
+          {% endblocktrans %}
+        </div>
+      {% else %}
+        <div class="alert alert-secondary">
+          {% trans "This subscription has not been marked as active yet." %}
+        </div>
+      {% endif %}
+    {% endif %}
+
   </div>
 </div>
 {% endblock %}

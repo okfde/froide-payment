@@ -8,6 +8,7 @@ from django.shortcuts import redirect
 from django.http import HttpResponse, HttpResponseForbidden
 from django.utils.text import slugify
 from django.utils import timezone
+from django.utils.translation import ugettext_lazy as _
 
 import requests
 import pytz
@@ -16,7 +17,11 @@ import dateutil.parser
 from payments.paypal import PaypalProvider as OriginalPaypalProvider
 from payments import RedirectNeeded
 
+from ..signals import (
+    subscription_activated, subscription_deactivated, subscription_canceled
+)
 from ..models import PaymentStatus, Plan, Product, Subscription, Payment
+from .utils import CancelInfo
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +44,12 @@ class PaypalProvider(OriginalPaypalProvider):
     def __init__(self, **kwargs):
         self.webhook_id = kwargs.pop('webhook_id')
         super().__init__(**kwargs)
+
+    def get_cancel_info(self, subscription):
+        return CancelInfo(
+            True,
+            _('You can cancel your Paypal subscription.')
+        )
 
     def get_form(self, payment, data=None):
         '''
@@ -111,13 +122,13 @@ class PaypalProvider(OriginalPaypalProvider):
         response = requests.get(url, params=params, headers=headers)
         return response.json()
 
-    def post_api(self, url, data):
+    def post_api(self, url, request_data):
         access_token = self._get_access_token()
         headers = {
             'Content-Type': 'application/json',
             'Authorization': access_token
         }
-        response = requests.post(url, json=data, headers=headers)
+        response = requests.post(url, json=request_data, headers=headers)
         try:
             data = response.json()
         except ValueError:
@@ -146,7 +157,7 @@ class PaypalProvider(OriginalPaypalProvider):
         except (ValueError, UnicodeDecodeError):
             return HttpResponse(status=400)
 
-        if not self.verify_webhook(request, data):
+        if not self.verify_webhook(request, data) and not settings.DEBUG:
             return HttpResponse(status=400)
         logger.info('Paypal webhook: %s', data)
         method_name = data['event_type'].replace('.', '_').lower()
@@ -167,9 +178,33 @@ class PaypalProvider(OriginalPaypalProvider):
             )
         except Subscription.DoesNotExist:
             return
+        old_sub_status = subscription.active
         subscription.active = True
         subscription.save()
+        if old_sub_status != subscription.active:
+            subscription_activated.send(sender=subscription)
+
         logger.info('Paypal webhook subscription activated %s',
+                    subscription.id)
+
+    def webhook_billing_subscription_cancelled(self, request, data):
+        resource = data['resource']
+        sub_remote_reference = resource['id']
+        try:
+            subscription = Subscription.objects.get(
+                remote_reference=sub_remote_reference
+            )
+        except Subscription.DoesNotExist:
+            return
+        old_sub_status = subscription.active
+        subscription.active = False
+        if not subscription.canceled:
+            subscription.canceled = timezone.now()
+        subscription.save()
+        if old_sub_status != subscription.active:
+            subscription_canceled.send(sender=subscription)
+
+        logger.info('Paypal webhook subscription canceled %s',
                     subscription.id)
 
     def webhook_payment_sale_completed(self, request, data):
@@ -191,8 +226,16 @@ class PaypalProvider(OriginalPaypalProvider):
                 )
             except Subscription.DoesNotExist:
                 return
+            old_sub_status = subscription.active
             subscription.active = True
             subscription.save()
+
+            if old_sub_status != subscription.active:
+                if subscription.active:
+                    subscription_activated.send(sender=subscription)
+                else:
+                    subscription_deactivated.send(sender=subscription)
+
             order = subscription.get_last_order()
             soon = timezone.now() + timedelta(days=2)
             if order.service_end < soon:
@@ -310,17 +353,17 @@ class PaypalProvider(OriginalPaypalProvider):
         )
         cancel_data = {
             'reason': 'unknown'
-
         }
+        logger.info('Paypal subscription cancel %s', subscription.id)
         try:
             self.post_api(cancel_url, cancel_data)
-        except ValueError:
+        except ValueError as e:
             # canceling failed
+            logger.info(
+                'Paypal subscription cancel failed %s', subscription.id)
+            logger.exception(e)
             return False
 
-        subscription.active = False
-        subscription.remote_reference = ''
-        subscription.save()
         return True
 
     def capture_subscription_order(self, order, payment=None):

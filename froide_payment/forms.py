@@ -12,6 +12,7 @@ from payments.forms import PaymentForm as BasePaymentForm
 
 from localflavor.generic.forms import IBANFormField
 
+from .signals import subscription_created
 from .models import (
     Customer, Subscription, Order, PaymentStatus
 )
@@ -227,6 +228,7 @@ class StartPaymentMixin:
             customer=customer,
             plan=plan
         )
+        subscription_created.send(sender=subscription)
         return subscription
 
     def create_single_order(self, data):
