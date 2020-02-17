@@ -148,6 +148,9 @@ class Subscription(models.Model):
     next_date = models.DateTimeField(
         null=True, blank=True)
 
+    canceled = models.DateTimeField(
+        null=True, blank=True)
+
     remote_reference = models.CharField(max_length=256, blank=True)
     token = models.UUIDField(default=uuid.uuid4, db_index=True)
 
