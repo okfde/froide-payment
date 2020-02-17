@@ -5,8 +5,8 @@ from django.views.decorators.http import require_POST
 from django.utils.translation import ugettext_lazy as _
 from django.core.mail import mail_admins
 from django.http import Http404
-from django.utils import timezone
 from django.contrib import messages
+from django.contrib.auth import get_permission_codename
 
 from payments import RedirectNeeded
 from payments.core import provider_factory
@@ -19,10 +19,24 @@ from .models import (
 logger = logging.getLogger(__name__)
 
 
+def can_access(obj, user):
+    if user.is_superuser:
+        return True
+
+    opts = obj._meta
+    codename = get_permission_codename('change', opts)
+    perm = "%s.%s" % (opts.app_label, codename)
+    if user.is_staff and user.has_perm(perm):
+        return True
+    if obj.user and user != obj.user:
+        return False
+    return True
+
+
 def order_detail(request, token):
     order = get_object_or_404(Order, token=token)
     user = request.user
-    if order.user and user != order.user and not user.is_superuser:
+    if not can_access(order, user):
         return redirect('/')
 
     payments = Payment.objects.filter(order=order)
@@ -58,7 +72,7 @@ def order_detail(request, token):
 def order_success(request, token):
     order = get_object_or_404(Order, token=token)
     user = request.user
-    if order.user and user != order.user and not user.is_superuser:
+    if not can_access(order, user):
         return redirect('/')
 
     payments = Payment.objects.filter(order=order)
@@ -108,7 +122,7 @@ def subscription_detail(request, token):
     subscription = get_object_or_404(Subscription, token=token)
     user = request.user
     customer = subscription.customer
-    if customer.user and user != customer.user and not user.is_superuser:
+    if not can_access(customer, user):
         return redirect('/')
 
     templates = []
@@ -135,7 +149,7 @@ def subscription_cancel(request, token):
     subscription = get_object_or_404(Subscription, token=token)
     user = request.user
     customer = subscription.customer
-    if customer.user and user != customer.user and not user.is_superuser:
+    if not can_access(customer, user):
         return redirect('/')
 
     cancel_info = subscription.get_cancel_info()
