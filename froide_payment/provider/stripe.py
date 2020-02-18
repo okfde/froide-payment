@@ -104,6 +104,9 @@ class StripeWebhookMixin():
 
     def handle_webhook(self, request):
         event_dict = self.decode_webhook_request(request)
+        if event_dict is None:
+            # Webhook likely not for this endpoint (failed due to signing key)
+            return HttpResponse(status=204)
         event_type = event_dict['type']
         obj = event_dict['data']['object']
 
