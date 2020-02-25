@@ -19,7 +19,10 @@ from payments.core import provider_factory
 from payments.models import BasePayment
 
 from .signals import subscription_canceled
-from .utils import get_payment_defaults, interval_description
+from .utils import (
+    get_payment_defaults, interval_description,
+    order_service_description
+)
 
 
 CHECKOUT_PAYMENT_CHOICES = [
@@ -340,6 +343,13 @@ class Order(models.Model):
     @property
     def is_recurring(self):
         return bool(self.subscription_id)
+
+    def get_service_label(self):
+        if not self.subscription:
+            return self.description
+        return order_service_description(
+            self, self.subscription.plan.interval
+        )
 
     def get_user_or_order(self):
         if self.user:

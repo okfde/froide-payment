@@ -6,6 +6,7 @@ import logging
 from django.conf import settings
 from django.http import StreamingHttpResponse
 from django.utils.translation import ugettext_lazy as _
+from django.utils import formats
 from django.template.loader import render_to_string
 from django.core.mail import send_mail
 from django.utils import timezone
@@ -96,6 +97,19 @@ def interval_description(interval):
     if interval == 12:
         return _('every year')
     return _('every {} months') % interval
+
+
+def order_service_description(order, interval):
+    if interval == 1:
+        return formats.date_format(
+            order.service_start, "m/Y"
+        )
+    elif interval > 1:
+        return '{}-{}'.format(
+            formats.date_format(order.service_start, "m/Y"),
+            formats.date_format(order.service_end, "m/Y")
+        )
+    return ''
 
 
 def send_lastschrift_mail(payment, note=''):

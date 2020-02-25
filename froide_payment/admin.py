@@ -127,7 +127,8 @@ class PaymentAdmin(admin.ModelAdmin):
                 'id': str(payment.id),
                 'transaction_label': 'Spende {}: {} (P{})'.format(
                     settings.SITE_NAME,
-                    payment.order.description, payment.id
+                    payment.order.get_service_label(),
+                    payment.id
                 ),
                 'amount': str(payment.total),
                 'currency': payment.currency,
