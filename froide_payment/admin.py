@@ -20,7 +20,7 @@ from .models import (
     PaymentStatus
 )
 from .utils import (
-    dicts_to_csv_response, send_lastschrift_mail, create_recurring_order
+    dicts_to_csv_response, send_lastschrift_mail
 )
 
 
@@ -49,8 +49,8 @@ class CustomerAdmin(admin.ModelAdmin):
 class SubscriptionAdmin(admin.ModelAdmin):
     raw_id_fields = ('customer',)
     list_display = (
-        'customer', 'plan', 'created',
-        'active',
+        'customer', 'plan', 'created', 'next_date',
+        'active', 'canceled'
     )
     date_hierarchy = 'created'
     list_filter = (
@@ -59,6 +59,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
         'plan__interval',
         'plan__amount',
         'plan__amount_year',
+        'canceled',
     )
     search_fields = (
         'customer__user_email',
@@ -73,7 +74,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
 
         count = 0
         for sub in queryset:
-            res = create_recurring_order(sub, force=True)
+            res = sub.create_recurring_order()
             if res:
                 count += 1
 
