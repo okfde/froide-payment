@@ -80,17 +80,20 @@ class SubscriptionAdmin(admin.ModelAdmin):
 
         self.message_user(request, _("%d recurring orders created." % count))
     create_recurring_order.short_description = _(
-        'Force create next recurring order'
+        'Create next recurring order'
     )
 
 
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
         'user_email', 'first_name', 'last_name', 'created', 'user',
-        'subscription', 'total_net'
+        'total_net', 'service_start', 'service_end'
     )
     date_hierarchy = 'created'
     raw_id_fields = ('user', 'customer', 'subscription',)
+    list_filter = (
+        'subscription__plan__provider',
+    )
     search_fields = (
         'user_email', 'last_name', 'first_name',
         'remote_reference'
