@@ -36,13 +36,14 @@ def can_access(obj, user):
 def order_detail(request, token):
     order = get_object_or_404(Order, token=token)
     user = request.user
-    if not can_access(order, user):
-        return redirect('/')
 
     if 'json' in request.META.get('HTTP_ACCEPT', ''):
         return JsonResponse({
             'name': order.get_full_name()
         })
+
+    if not can_access(order, user):
+        return redirect('/')
 
     payments = Payment.objects.filter(order=order)
     templates = []
