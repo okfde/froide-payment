@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from django.utils.translation import ugettext_lazy as _
 from django.core.mail import mail_admins
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.contrib import messages
 from django.contrib.auth import get_permission_codename
 
@@ -38,6 +38,11 @@ def order_detail(request, token):
     user = request.user
     if not can_access(order, user):
         return redirect('/')
+
+    if 'json' in request.META.get('HTTP_ACCEPT', ''):
+        return JsonResponse({
+            'name': order.get_full_name()
+        })
 
     payments = Payment.objects.filter(order=order)
     templates = []
