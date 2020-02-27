@@ -15,6 +15,7 @@ from django.shortcuts import redirect
 from django.utils.translation import ugettext_lazy as _
 from django.template.response import TemplateResponse
 
+from .admin_utils import make_nullfilter
 from .models import (
     Plan, Customer, Subscription, Payment, Order, Product,
     PaymentStatus
@@ -87,7 +88,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
         'user_email', 'first_name', 'last_name', 'created', 'user',
-        'total_net', 'service_start', 'service_end'
+        'total_net', 'subscription_plan', 'service_start', 'service_end'
     )
     date_hierarchy = 'created'
     raw_id_fields = ('user', 'customer', 'subscription',)
@@ -99,6 +100,16 @@ class OrderAdmin(admin.ModelAdmin):
         'remote_reference'
     )
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related('subscription', 'user')
+
+    def subscription_plan(self, obj):
+        if obj.subscription:
+            return str(obj.subscription.plan)
+        return '-'
+    subscription_plan.short_description = _('subscription')
+
 
 class PaymentAdmin(admin.ModelAdmin):
     raw_id_fields = ('order',)
@@ -107,7 +118,10 @@ class PaymentAdmin(admin.ModelAdmin):
         'billing_email', 'status', 'variant',
         'created', 'modified', 'total', 'captured_amount'
     )
-    list_filter = ('variant', 'status')
+    list_filter = (
+        'variant', 'status',
+        make_nullfilter('order__subscription', _('subscription order')),
+    )
     search_fields = ('transaction_id', 'billing_email', 'billing_last_name')
 
     actions = ['export_lastschrift', 'send_lastschrift_mail']
