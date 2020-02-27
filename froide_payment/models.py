@@ -139,7 +139,8 @@ class Customer(models.Model):
 class Subscription(models.Model):
     active = models.BooleanField(default=False)
     customer = models.ForeignKey(
-        Customer, on_delete=models.CASCADE
+        Customer, on_delete=models.CASCADE,
+        related_name='subscriptions'
     )
     plan = models.ForeignKey(
         Plan, on_delete=models.CASCADE
@@ -265,11 +266,13 @@ class Order(models.Model):
         on_delete=models.SET_NULL)
     customer = models.ForeignKey(
         Customer, blank=True, null=True,
-        on_delete=models.SET_NULL
+        on_delete=models.SET_NULL,
+        related_name='orders'
     )
     subscription = models.ForeignKey(
         Subscription, blank=True, null=True,
-        on_delete=models.SET_NULL
+        on_delete=models.SET_NULL,
+        related_name='orders',
     )
 
     first_name = models.CharField(max_length=256, blank=True)
