@@ -4,6 +4,7 @@ from decimal import Decimal
 import logging
 
 from django.conf import settings
+from django.db.models import Q, Count
 from django.http import StreamingHttpResponse
 from django.utils.translation import ugettext_lazy as _
 from django.utils import formats
@@ -193,3 +194,62 @@ def create_recurring_order(subscription,
     )
 
     return payment
+
+
+def cleanup(time_ago=None):
+    from .models import (
+        Payment, Order, PaymentStatus, Subscription, Customer
+    )
+
+    if time_ago is None:
+        now = timezone.now()
+        time_ago = now - timedelta(hours=12)
+
+    # Delete payments that are more than 12 hours old
+    # and still in waiting or input status
+    inactive_payments = Payment.objects.filter(
+        created__lte=time_ago,
+    ).filter(
+        Q(status=PaymentStatus.WAITING) |
+        Q(status=PaymentStatus.INPUT)
+    )
+    logger.warn('Deleting %s inactive payments', inactive_payments.count())
+    inactive_payments.delete()
+
+
+    # Get old orders without payments
+    non_payment_orders = Order.objects.filter(
+        created__lte=time_ago
+    ).annotate(
+        payment_count=Count('payments')
+    ).filter(
+        payment_count=0
+    )
+    logger.warn('Deleting %s inactive orders', non_payment_orders.count())
+    non_payment_orders.delete()
+
+    # Delete older subscriptions without connected orders
+    non_order_subscriptions = Subscription.objects.filter(
+        created__lte=time_ago,
+    ).annotate(
+        order_count=Count('orders')
+    ).filter(
+        order_count=0
+    )
+    logger.warn('Deleting %s inactive subscriptions',
+                non_order_subscriptions.count())
+    non_order_subscriptions.delete()
+
+    # Delete customers without order or subscriptions
+    dangling_customers = Customer.objects.filter(
+        created__lte=time_ago
+    ).annotate(
+        order_count=Count('orders'),
+        subscription_count=Count('subscriptions'),
+    ).filter(
+        order_count=0,
+        subscription_count=0
+    )
+    logger.warn('Deleting %s obsolete customers',
+                dangling_customers.count())
+    dangling_customers.delete()
