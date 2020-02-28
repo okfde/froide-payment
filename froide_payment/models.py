@@ -175,12 +175,12 @@ class Subscription(models.Model):
         return timestamp + relativedelta(months=self.plan.interval)
 
     def get_last_order(self):
-        return self.order_set.all().order_by(
+        return self.orders.all().order_by(
             '-service_end'
         ).first()
 
     def get_first_order(self):
-        return self.order_set.all().order_by(
+        return self.orders.all().order_by(
             'service_end'
         ).first()
 
