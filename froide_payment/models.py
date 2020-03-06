@@ -475,6 +475,7 @@ class Order(models.Model):
 
 class PaymentStatus(BasePaymentStatus):
     PENDING = 'pending'
+    CANCELED = 'canceled'
 
     CHOICES = [
         (BasePaymentStatus.WAITING,
@@ -493,6 +494,7 @@ class PaymentStatus(BasePaymentStatus):
             pgettext_lazy('payment status', 'Input')),
 
         (PENDING, pgettext_lazy('payment status', 'Confirmation pending')),
+        (CANCELED, pgettext_lazy('payment status', 'Canceled')),
     ]
     CHOICES_DICT = dict(CHOICES)
 
@@ -531,6 +533,7 @@ class Payment(BasePayment):
         PaymentStatus.REFUNDED: 'warning',
         PaymentStatus.ERROR: 'danger',
         PaymentStatus.INPUT: 'light',
+        PaymentStatus.CANCELED: 'dark',
     }
 
     def __str__(self):
