@@ -158,7 +158,8 @@ class PaymentAdmin(admin.ModelAdmin):
     date_hierarchy = 'created'
     list_display = (
         'billing_email', 'status', 'variant',
-        'created', 'modified', 'total', 'captured_amount'
+        'created', 'modified', 'total', 'captured_amount',
+        'service_label'
     )
     list_filter = (
         'variant', 'status',
@@ -179,6 +180,15 @@ class PaymentAdmin(admin.ModelAdmin):
                 name='froide_payment-payment_convert_lastschrift_to_sepa'),
         ]
         return my_urls + urls
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related(
+            'order', 'order__subscription', 'order__subscription__plan'
+        )
+
+    def service_label(self, obj):
+        return obj.order.get_service_label()
 
     def export_lastschrift(self, request, queryset):
         if not self.has_change_permission(request):
