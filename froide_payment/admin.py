@@ -5,6 +5,9 @@ import json
 
 import dateutil.parser
 
+from django.db.models import (
+    F, Sum, Value, NullBooleanField, Case, When
+)
 from django.contrib import admin, messages
 from django.contrib.admin import helpers
 from django.utils import timezone
@@ -85,15 +88,35 @@ class SubscriptionAdmin(admin.ModelAdmin):
     )
 
 
+class OrderPaidFilter(admin.SimpleListFilter):
+    title = _('Is paid?')
+    parameter_name = 'is_paid'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('1', _('Yes')),
+            ('0', _('No')),
+        )
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if value == '1':
+            return queryset.filter(is_paid=True)
+        elif value == '0':
+            return queryset.filter(is_paid=False)
+        return queryset
+
+
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
         'user_email', 'first_name', 'last_name', 'created', 'user',
-        'total_net', 'subscription_plan', 'service_start', 'service_end'
+        'total_net', 'subscription_plan', 'service_start', 'service_end',
+        'is_paid', 'captured_amount'
     )
     date_hierarchy = 'created'
     raw_id_fields = ('user', 'customer', 'subscription',)
     list_filter = (
-        'subscription__plan__provider',
+        'subscription__plan__provider', OrderPaidFilter
     )
     search_fields = (
         'user_email', 'last_name', 'first_name',
@@ -102,7 +125,26 @@ class OrderAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
+        qs = qs.annotate(
+            captured_amount=Sum('payments__captured_amount'),
+        )
+        qs = qs.annotate(
+            is_paid=Case(
+                When(captured_amount__gte=F('total_gross'), then=Value(True)),
+                default=Value(False),
+                output_field=NullBooleanField()
+            )
+        )
         return qs.select_related('subscription', 'user')
+
+    def is_paid(self, obj):
+        return obj.is_paid
+    is_paid.admin_order_field = 'is_paid'
+    is_paid.boolean = True
+
+    def captured_amount(self, obj):
+        return obj.captured_amount
+    captured_amount.admin_order_field = 'captured_amount'
 
     def subscription_plan(self, obj):
         if obj.subscription:
