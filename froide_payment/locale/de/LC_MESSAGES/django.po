@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-02-17 17:26+0100\n"
-"PO-Revision-Date: 2020-02-17 17:27+0100\n"
+"POT-Creation-Date: 2020-03-06 14:51+0100\n"
+"PO-Revision-Date: 2020-03-06 14:54+0100\n"
 "Last-Translator: Stefan Wehrmeyer <stefan.wehrmeyer@okfn.de>\n"
 "Language-Team: \n"
 "Language: de\n"
@@ -18,27 +18,55 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 2.2\n"
 
-#: admin.py:80
+#: admin.py:85
 #, python-format
 msgid "%d recurring orders created."
 msgstr "%d wiederkehrende Bestellungen erstellt."
 
-#: admin.py:82
-msgid "Force create next recurring order"
-msgstr "Forciere nächste wiederkehrende Bestellung"
+#: admin.py:87
+msgid "Create next recurring order"
+msgstr "Nächste wiederkehrende Bestellung anlegen"
 
-#: admin.py:188
+#: admin.py:92
+msgid "Is paid?"
+msgstr "Bezahlt?"
+
+#: admin.py:97
+msgid "Yes"
+msgstr "Ja"
+
+#: admin.py:98
+msgid "No"
+msgstr "Nein"
+
+#: admin.py:153
+msgid "subscription"
+msgstr "Dauerspende"
+
+#: admin.py:165
+msgid "subscription order"
+msgstr "Dauerspende-Bestellung"
+
+#: admin.py:252
 msgid "Could not find all payments, aborting!"
 msgstr "Konnte nicht alle Spenden finden, Vorgang abgebrochen!"
 
-#: admin.py:254
+#: admin.py:318
 #, python-format
 msgid "%d mails sent."
 msgstr "%d E-Mails versendet."
 
-#: admin.py:270
+#: admin.py:334
 msgid "Send lastschrift mail to users"
 msgstr "Sende Lastschrift-E-Mail an Nutzer"
+
+#: admin_utils.py:17
+msgid "Has value"
+msgstr "Hat Wert"
+
+#: admin_utils.py:18
+msgid "None"
+msgstr "Nichts"
 
 #: apps.py:7
 msgid "Froide Payment App"
@@ -68,20 +96,20 @@ msgstr "Die IBAN hat 20-22 Stellen und fängt mit zwei Buchstaben an."
 msgid "Sie müssen den Bedingungen der Lastschrift zustimmen."
 msgstr "Sie müssen den Bedingungen der Lastschrift zustimmen."
 
-#: forms.py:153
+#: forms.py:158
 msgid "The provided IBAN seems invalid."
 msgstr "Die angegeben IBAN scheint ungültig."
 
-#: forms.py:158
+#: forms.py:163
 msgid "The provided owner name seems invalid (at least 3 characters required)."
 msgstr ""
 "Der angegeben Kontoinhaber scheint ungültig (mind. 3 Zeichen notwendig)."
 
-#: forms.py:164
+#: forms.py:169
 msgid "This payment method is currently unavailable."
 msgstr "Diese Zahlungsmöglichkeit ist momentan nicht verfügbar."
 
-#: forms.py:169
+#: forms.py:174
 msgid ""
 "An error occurred verifying your information with our payment provider. "
 "Please try again."
@@ -89,93 +117,98 @@ msgstr ""
 "Leider ist beim Überprüfen Ihrer Angaben bei unserem Zahlungsanbieter ein "
 "Fehler aufgetreten. Bitte versuchen Sie es noch einmal."
 
-#: models.py:26
+#: models.py:29
 msgid "Dummy"
 msgstr "Dummy"
 
-#: models.py:27
+#: models.py:30
 msgid "Credit Card"
 msgstr "Kreditkarte"
 
-#: models.py:28
+#: models.py:31
 msgid "SEPA-Lastschrift"
 msgstr "SEPA-Lastschrift"
 
-#: models.py:29
+#: models.py:32
 msgid "Lastschrift"
 msgstr "Lastschrift"
 
-#: models.py:30
+#: models.py:33
 msgid "SOFORT Überweisung"
 msgstr "SOFORT Überweisung"
 
-#: models.py:31
+#: models.py:34
 msgid "Paypal"
 msgstr "Paypal"
 
-#: models.py:32
+#: models.py:35
 msgid "Bank transfer"
 msgstr "Überweisung"
 
-#: models.py:46
+#: models.py:49
 msgid "monthly"
 msgstr "monatlich"
 
-#: models.py:47
+#: models.py:50
 msgid "quarterly"
 msgstr "vierteljährlich"
 
-#: models.py:48
+#: models.py:51
 msgid "semiannually"
 msgstr "halbjährlich"
 
-#: models.py:49
+#: models.py:52
 msgid "annually"
 msgstr "jährlich"
 
-#: models.py:78
+#: models.py:81
 msgid "interval"
 msgstr "Intervall"
 
-#: models.py:468
+#: models.py:482
 msgctxt "payment status"
 msgid "Waiting for input"
 msgstr "Warte auf Eingabe"
 
-#: models.py:470
+#: models.py:484
 msgctxt "payment status"
 msgid "Pre-authorized"
 msgstr "Vor-Autorisiert"
 
-#: models.py:472
+#: models.py:486
 msgctxt "payment status"
 msgid "Confirmed"
 msgstr "Bestätigt"
 
-#: models.py:474
+#: models.py:488
 msgctxt "payment status"
 msgid "Rejected"
 msgstr "Abgewiesen"
 
-#: models.py:476
+#: models.py:490
 msgctxt "payment status"
 msgid "Refunded"
 msgstr "Zurückgebucht"
 
-#: models.py:478
+#: models.py:492
 msgctxt "payment status"
 msgid "Error"
 msgstr "Fehler"
 
-#: models.py:480
+#: models.py:494
 msgctxt "payment status"
 msgid "Input"
 msgstr "Eingabe"
 
-#: models.py:482
+#: models.py:496
 msgctxt "payment status"
 msgid "Confirmation pending"
 msgstr "Bearbeitung läuft"
+
+#: models.py:497
+msgctxt "payment status"
+msgid "Canceled"
+msgstr "Annulliert"
 
 #: provider/banktransfer.py:44
 msgid "You need to cancel your standing order with your bank."
@@ -189,13 +222,17 @@ msgstr "Sie können Ihre Dauerspende per Lastschrift hier kündigen."
 msgid "You can cancel your Paypal subscription."
 msgstr "Sie können Ihre Dauerspende per Paypal hier kündigen."
 
-#: provider/stripe.py:127
+#: provider/stripe.py:130
 msgid "You can cancel your credit card subscription."
 msgstr "Sie können Ihre Dauerspende per Kreditkarte hier kündigen."
 
-#: provider/stripe.py:611
+#: provider/stripe.py:614
 msgid "You can cancel your SEPA direct debit subscription here."
 msgstr "Sie können Ihre Dauerspende per Lastschrift hier kündigen."
+
+#: templates/admin/froide_payment/payment/change_form.html:9
+msgid "Convert to SEPA"
+msgstr "Zu SEPA umwandeln"
 
 #: templates/froide_payment/admin/admin_lastschrift_email.html:7
 msgid "Send mail to users"
@@ -455,35 +492,35 @@ msgstr ""
 msgid "This subscription has not been marked as active yet."
 msgstr "Diese Dauerspende ist noch nicht aktiviert."
 
-#: utils.py:89
+#: utils.py:99
 msgid "one time"
 msgstr "einmalig"
 
-#: utils.py:91
+#: utils.py:101
 msgid "every month"
 msgstr "jeden Monat"
 
-#: utils.py:93
+#: utils.py:103
 msgid "every three months"
 msgstr "vierteljährlich"
 
-#: utils.py:95
+#: utils.py:105
 msgid "every six months"
 msgstr "alle sechs Monate"
 
-#: utils.py:97
+#: utils.py:107
 msgid "every year"
 msgstr "jedes Jahr"
 
-#: utils.py:98
+#: utils.py:108
 msgid "every {} months"
 msgstr "alle {} Monate"
 
-#: views.py:150
+#: views.py:170
 msgid "Your subscription has been canceled."
 msgstr "Ihre Dauerspende wurde gekündigt."
 
-#: views.py:160
+#: views.py:180
 msgid ""
 "An error occurred with our payment provider. We will investigate and make "
 "sure your subscription is properly canceled."
