@@ -160,7 +160,7 @@ def create_recurring_order(subscription,
     if now is None:
         now = timezone.now()
 
-    if not subscription.active:
+    if subscription.canceled:
         return
 
     provider_name = subscription.plan.provider
