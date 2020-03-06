@@ -164,11 +164,11 @@ def create_recurring_order(subscription,
         return
 
     provider_name = subscription.plan.provider
-    seven_days_ago = now - timedelta(days=7)
+    seven_days_from_now = now + timedelta(days=7)
 
     last_order = subscription.get_last_order()
 
-    if not force and last_order.service_end > seven_days_ago:
+    if not force and last_order.service_end > seven_days_from_now:
         # Not yet due, set next_date correctly
         subscription.next_date = last_order.service_end
         subscription.save()
