@@ -335,7 +335,11 @@ class PaymentAdmin(admin.ModelAdmin):
     )
 
     def convert_lastschrift_to_sepa(self, request, payment_id):
+        from payments.core import provider_factory
         from .utils import lastschrift_sepa_mail
+
+        SEPA = 'sepa'
+        provider = provider_factory(SEPA)
 
         if lastschrift_sepa_mail is None:
             raise PermissionDenied
@@ -361,12 +365,25 @@ class PaymentAdmin(admin.ModelAdmin):
                 owner_name = customer_data.get('owner', order.get_full_name())
                 iban = customer_data.get('iban', '')
 
-        # Mark this payment as WAITING again => not happening anymore
-        payment.status = PaymentStatus.WAITING
+        # Mark this payment as CANCELED again => not happening anymore
+        payment.status = PaymentStatus.CANCELED
         payment.save()
 
+        if order.is_recurring:
+            subscription = order.subscription
+            plan = subscription.plan
+            if plan.provider != SEPA:
+                new_plan = provider.get_or_create_plan(
+                    plan.name,
+                    plan.category,
+                    plan.amount,
+                    plan.interval
+                )
+                subscription.plan = new_plan
+                subscription.save()
+
         new_payment = order.get_or_create_payment(
-            'sepa', request=request
+            SEPA, request=request
         )
         new_payment.attrs.iban = iban
         new_payment.attrs.owner = owner_name
@@ -381,7 +398,7 @@ class PaymentAdmin(admin.ModelAdmin):
             priority=True
         )
 
-        return redirect(order.get_absolute_payment_url('sepa'))
+        return redirect(order.get_absolute_payment_url(SEPA))
 
 
 class ProductAdmin(admin.ModelAdmin):
