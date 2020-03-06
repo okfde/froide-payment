@@ -1,0 +1,14 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+{% block object-tools-items %}
+
+{% if original.pk and original.variant == "lastschrift" and "processing" not in original.extra_data and "iban"  in original.extra_data %}
+  <li>
+    <form action="{% url 'admin:froide_payment-payment_convert_lastschrift_to_sepa' payment_id=original.pk %}" method="post">
+      {% csrf_token %}
+      <button type="submit">{% trans "Convert to SEPA" %}</button>
+    </form>
+  </li>
+{% endif %}
+{{ block.super }}
+{% endblock %}

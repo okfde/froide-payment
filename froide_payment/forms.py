@@ -117,6 +117,11 @@ class LastschriftPaymentForm(BasePaymentForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['owner_name'].initial = self.payment.order.get_full_name()
+        try:
+            self.fields['iban'].initial = self.payment.attrs.iban
+            self.fields['owner_name'].initial = self.payment.attrs.owner
+        except KeyError:
+            pass
 
     def save(self):
         self.payment.attrs.iban = self.cleaned_data['iban']

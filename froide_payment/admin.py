@@ -174,6 +174,9 @@ class PaymentAdmin(admin.ModelAdmin):
             url(r'^import-lastschrift/$',
                 self.admin_site.admin_view(self.import_lastschrift_result),
                 name='froide_payment-payment-import_lastschrift_result'),
+            url(r'^convert-lastschrift-to-sepa/(?P<payment_id>\d+)/$',
+                self.admin_site.admin_view(self.convert_lastschrift_to_sepa),
+                name='froide_payment-payment_convert_lastschrift_to_sepa'),
         ]
         return my_urls + urls
 
@@ -330,6 +333,55 @@ class PaymentAdmin(admin.ModelAdmin):
     send_lastschrift_mail.short_description = _(
         "Send lastschrift mail to users"
     )
+
+    def convert_lastschrift_to_sepa(self, request, payment_id):
+        from .utils import lastschrift_sepa_mail
+
+        if lastschrift_sepa_mail is None:
+            raise PermissionDenied
+        if not request.method == 'POST':
+            raise PermissionDenied
+        if not self.has_change_permission(request):
+            raise PermissionDenied
+
+        try:
+            payment = Payment.objects.get(id=payment_id)
+        except Payment.DoesNotExist:
+            return redirect('/')
+
+        order = payment.order
+        owner_name = ''
+        iban = ''
+        try:
+            owner_name = payment.attrs.owner
+            iban = payment.attrs.iban
+        except KeyError:
+            if order.customer:
+                customer_data = order.customer.data
+                owner_name = customer_data.get('owner', order.get_full_name())
+                iban = customer_data.get('iban', '')
+
+        # Mark this payment as WAITING again => not happening anymore
+        payment.status = PaymentStatus.WAITING
+        payment.save()
+
+        new_payment = order.get_or_create_payment(
+            'sepa', request=request
+        )
+        new_payment.attrs.iban = iban
+        new_payment.attrs.owner = owner_name
+        new_payment.save()
+
+        lastschrift_sepa_mail.send(
+            email=payment.billing_email,
+            context={
+                'first_name': payment.billing_first_name,
+                'order': order
+            },
+            priority=True
+        )
+
+        return redirect(order.get_absolute_payment_url('sepa'))
 
 
 class ProductAdmin(admin.ModelAdmin):

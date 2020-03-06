@@ -22,10 +22,18 @@ logger = logging.getLogger(__name__)
 
 
 lastschrift_mail = None
+lastschrift_sepa_mail = None
 if mail_registry is not None:
     lastschrift_mail = mail_registry.register(
         'froide_payment/email/lastschrift_triggered',
         ('payment', 'order', 'note')
+    )
+
+    lastschrift_sepa_mail = mail_registry.register(
+        'froide_payment/email/lastschrift_sepa_conversion',
+        (
+            'first_name', 'order',
+        )
     )
 
 
@@ -215,7 +223,6 @@ def cleanup(time_ago=None):
     )
     logger.warn('Deleting %s inactive payments', inactive_payments.count())
     inactive_payments.delete()
-
 
     # Get old orders without payments
     non_payment_orders = Order.objects.filter(
