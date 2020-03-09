@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-03-06 14:51+0100\n"
-"PO-Revision-Date: 2020-03-06 14:54+0100\n"
+"POT-Creation-Date: 2020-03-09 15:39+0100\n"
+"PO-Revision-Date: 2020-03-09 15:40+0100\n"
 "Last-Translator: Stefan Wehrmeyer <stefan.wehrmeyer@okfn.de>\n"
 "Language-Team: \n"
 "Language: de\n"
@@ -43,20 +43,20 @@ msgstr "Nein"
 msgid "subscription"
 msgstr "Dauerspende"
 
-#: admin.py:165
+#: admin.py:166
 msgid "subscription order"
 msgstr "Dauerspende-Bestellung"
 
-#: admin.py:252
+#: admin.py:262
 msgid "Could not find all payments, aborting!"
 msgstr "Konnte nicht alle Spenden finden, Vorgang abgebrochen!"
 
-#: admin.py:318
+#: admin.py:328
 #, python-format
 msgid "%d mails sent."
 msgstr "%d E-Mails versendet."
 
-#: admin.py:334
+#: admin.py:344
 msgid "Send lastschrift mail to users"
 msgstr "Sende Lastschrift-E-Mail an Nutzer"
 
@@ -226,7 +226,7 @@ msgstr "Sie können Ihre Dauerspende per Paypal hier kündigen."
 msgid "You can cancel your credit card subscription."
 msgstr "Sie können Ihre Dauerspende per Kreditkarte hier kündigen."
 
-#: provider/stripe.py:614
+#: provider/stripe.py:619
 msgid "You can cancel your SEPA direct debit subscription here."
 msgstr "Sie können Ihre Dauerspende per Lastschrift hier kündigen."
 
@@ -470,12 +470,21 @@ msgid "Your subscription"
 msgstr "Ihre Dauerspende"
 
 #: templates/froide_payment/subscription/default.html:52
+#: templates/froide_payment/subscription/default.html:61
 msgid "Cancel subscription"
 msgstr "Dauerspende kündigen"
 
 #: templates/froide_payment/subscription/default.html:69
 msgid "Are you sure you want to cancel your subscription?"
 msgstr "Sind Sie sicher, dass Sie Ihre Dauerspende kündigen wollen?"
+
+#: templates/froide_payment/subscription/default.html:72
+msgid "Close"
+msgstr "Schließen"
+
+#: templates/froide_payment/subscription/default.html:73
+msgid "Cancel subscription now"
+msgstr "Dauerspende jetzt kündigen"
 
 #: templates/froide_payment/subscription/default.html:88
 #, python-format
