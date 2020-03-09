@@ -563,9 +563,12 @@ class StripeIntentProvider(
             return
         logger.info('%s webhook invoice created for subscription %s',
                     self.provider_name, subscription.id)
-        subscription.create_recurring_order(
-            force=True, remote_reference=invoice.id
-        )
+
+        if not Order.objects.filter(remote_reference=invoice.id).exists():
+            # Create order based on invoice
+            subscription.create_recurring_order(
+                force=True, remote_reference=invoice.id
+            )
 
     def invoice_finalized(self, request, invoice):
         '''
