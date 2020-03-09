@@ -559,7 +559,7 @@ class StripeIntentProvider(
                 plan__provider=self.provider_name
             )
         except Subscription.DoesNotExist:
-            # Don't know this subscription!
+            # Don't know this subscription on this provider
             return
         logger.info('%s webhook invoice created for subscription %s',
                     self.provider_name, subscription.id)
@@ -577,10 +577,11 @@ class StripeIntentProvider(
         '''
         try:
             order = Order.objects.get(
-                remote_reference=invoice.id
+                remote_reference=invoice.id,
+                subscription__plan__provider=self.provider_name
             )
         except Order.DoesNotExist:
-            # Don't know this invoice!
+            # Don't know this order/invoice on this provider
             return
         payment = order.get_or_create_payment(
             self.provider_name
@@ -597,7 +598,8 @@ class StripeIntentProvider(
         '''
         try:
             order = Order.objects.get(
-                remote_reference=invoice.id
+                remote_reference=invoice.id,
+                subscription__plan__provider=self.provider_name
             )
         except Order.DoesNotExist:
             # Don't know this invoice!
