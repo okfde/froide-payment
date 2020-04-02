@@ -7,6 +7,7 @@ from django.core.mail import mail_admins
 from django.http import Http404, JsonResponse
 from django.contrib import messages
 from django.contrib.auth import get_permission_codename
+from django.conf import settings
 
 from payments import RedirectNeeded
 from payments.core import provider_factory
@@ -101,8 +102,8 @@ def start_payment(request, token, variant):
     if order.is_fully_paid():
         return redirect(order.get_success_url())
 
-    if variant not in [code for code, dummy_name in CHECKOUT_PAYMENT_CHOICES]:
-        raise Http404('%r is not a valid payment variant' % (variant,))
+    if variant not in settings.PAYMENT_VARIANTS:
+        return redirect(order)
 
     payment = order.get_or_create_payment(variant, request=request)
 
