@@ -138,7 +138,7 @@ class LastschriftPaymentForm(BasePaymentForm):
             customer.save()
         return self.finalize_payment()
 
-    def finalize_payment(self, payment):
+    def finalize_payment(self):
         self.payment.transaction_id = str(uuid.uuid4())
         self.payment.change_status(PaymentStatus.PENDING)  # Calls .save()
 
