@@ -147,6 +147,8 @@ class SEPAPaymentForm(LastschriftPaymentForm):
     terms = None  # Handled client side
 
     def clean(self):
+        if 'iban' not in self.cleaned_data:
+            return self.cleaned_data
         try:
             self.payment_method = self.provider.create_payment_method(
                 self.cleaned_data['iban'], self.cleaned_data['owner_name'],

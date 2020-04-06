@@ -634,7 +634,11 @@ class StripeSEPAProvider(StripeIntentProvider):
             if form.is_valid():
                 intent = form.save()
                 return intent
-            raise ValueError(str(form.errors))
+            raise ValueError(
+                ' '.join(
+                    ' '.join(v) for v in form.errors.values()
+                )
+            )
         if 'success' in data:
             # confirm payment here later
             payment.change_status(PaymentStatus.PENDING)
