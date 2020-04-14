@@ -147,6 +147,15 @@ class StripeSubscriptionMixin:
             return True
         return False
 
+    def get_stripe_locales(self):
+        data = {
+            'de': ['de-DE'],
+            'en': ['en-US']
+        }
+        if settings.LANGUAGE_CODE in data:
+            return data[settings.LANGUAGE_CODE]
+        return []
+
     def setup_customer(self, subscription, payment_method):
         customer = subscription.customer
         if not customer.remote_reference:
@@ -154,6 +163,7 @@ class StripeSubscriptionMixin:
                 email=customer.user_email,
                 name=customer.get_full_name(),
                 payment_method=payment_method,
+                preferred_locales=self.get_stripe_locales(),
                 metadata={'customer_id': customer.id}
             )
             customer.remote_reference = stripe_customer.id
