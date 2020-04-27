@@ -18,7 +18,9 @@ from payments.stripe import StripeProvider
 from payments import RedirectNeeded, get_payment_model
 
 from ..signals import subscription_activated, subscription_deactivated
-from ..models import PaymentStatus, Plan, Product, Subscription, Order
+from ..models import (
+    PaymentStatus, Plan, Product, Subscription, Order, Payment
+)
 from ..forms import SEPAPaymentForm
 
 from .utils import CancelInfo
@@ -616,6 +618,22 @@ class StripeIntentProvider(
             return
         order
         # TODO: do something
+
+    def charge_dispute_closed(self, request, dispute):
+        if dispute["status"] != "lost":
+            return
+        try:
+            payment = Payment.objects.get(
+                remote_reference=dispute['payment_intent'],
+                variant=self.provider_name
+            )
+        except Payment.DoesNotExist:
+            logger.warning("Could not find payment for lost dispute %s",
+                           dispute['id'])
+            return
+        payment.received_amount = Decimal('0.0')
+        payment.received_timestamp = None
+        payment.change_status(PaymentStatus.REJECTED)
 
 
 class StripeSEPAProvider(StripeIntentProvider):
