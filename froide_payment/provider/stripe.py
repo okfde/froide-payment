@@ -631,6 +631,7 @@ class StripeIntentProvider(
             logger.warning("Could not find payment for lost dispute %s",
                            dispute['id'])
             return
+        payment.captured_amount = Decimal('0.0')
         payment.received_amount = Decimal('0.0')
         payment.received_timestamp = None
         payment.change_status(PaymentStatus.REJECTED)
