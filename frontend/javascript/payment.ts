@@ -1,5 +1,3 @@
-/// <reference path="./stripe-v3.augment.d.ts" />
-
 interface PaymentProcessingResponse {
   error?: string
   requires_action?: boolean
@@ -82,6 +80,7 @@ const handleCardAction = (clientSecret: string) => {
 }
 
 const handleCardPayment = (clientSecret: string, card?: stripe.elements.Element) => {
+  if (!card) { return }
   stripe.handleCardPayment(clientSecret, card).then((result) => {
     if (result.error) {
       showError(result.error.message)
