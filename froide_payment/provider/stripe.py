@@ -261,9 +261,27 @@ class StripeIntentProvider(
         except stripe.error.InvalidRequestError:
             # intent is not yet available
             return
+        charges = intent.charges.data
+        payment.attrs.charges = charges
+        payment.captured_amount = Decimal(intent.amount_received) / 100
+        for charge in charges:
+            txn = self.get_balance_transaction(charge.balance_transaction)
+            if txn is not None:
+                payment.received_timestamp = convert_utc_timestamp(
+                    charge.created
+                )
+                payment.received_amount = Decimal(txn.net) / 100
+                break
         if intent.status == 'succeeded':
             payment.change_status(PaymentStatus.CONFIRMED)
             return True
+        elif intent.status == 'failed':
+            error_message = None
+            if intent.get('last_payment_error'):
+                error_message = intent['last_payment_error']['message']
+            payment.change_status(PaymentStatus.ERROR, message=error_message)
+            return False
+
         payment.change_status(PaymentStatus.PENDING)
         return False
 
@@ -528,33 +546,17 @@ class StripeIntentProvider(
         payment = self.get_payment_by_id(intent.id)
         if payment is None:
             return
-
-        charges = intent.charges.data
-        payment.attrs.charges = charges
-        payment.captured_amount = Decimal(intent.amount_received) / 100
-        for charge in charges:
-            txn = self.get_balance_transaction(charge.balance_transaction)
-            if txn is not None:
-                payment.received_timestamp = convert_utc_timestamp(
-                    charge.created
-                )
-                payment.received_amount = Decimal(txn.net) / 100
-                break
-        payment.change_status(PaymentStatus.CONFIRMED)
+        self.update_status(payment)
 
     def payment_intent_payment_failed(self, request, intent):
         logger.info('%s Webhook: Payment intent failed: %s',
                     self.provider_name, intent.id)
 
-        error_message = None
-        if intent.get('last_payment_error'):
-            error_message = intent['last_payment_error']['message']
-
         payment = self.get_payment_by_id(intent.id)
         if payment is None:
             return
 
-        payment.change_status(PaymentStatus.ERROR, message=error_message)
+        self.update_status(payment)
 
     def invoice_upcoming(self, request, invoice):
         # Email user to check details, no invoice id yet!
@@ -602,6 +604,7 @@ class StripeIntentProvider(
         payment.save()
         logger.info('%s webhook invoice finalized for payment %s',
                     self.provider_name, payment.id)
+        self.update_status(payment)
 
     def invoice_payment_action_required(self, request, invoice):
         '''
@@ -731,7 +734,7 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
                 )
                 payment.transaction_id = source.id
                 payment.change_status(PaymentStatus.INPUT)
-            except stripe.error.StripeError as e:
+            except stripe.error.StripeError:
                 payment.change_status(PaymentStatus.ERROR)
                 # charge_id = e.json_body['error']['charge']
                 raise RedirectNeeded(payment.get_failure_url())
@@ -770,7 +773,7 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
                 source = stripe.Source.retrieve(
                     source_id, client_secret=client_secret
                 )
-            except stripe.error.StripeError as e:
+            except stripe.error.StripeError:
                 payment.change_status(PaymentStatus.ERROR)
                 return redirect(payment.get_failure_url())
             if source.status in ('canceled', 'failed'):
@@ -806,7 +809,7 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
                 currency=payment.currency,
                 source=source.id,
             )
-        except stripe.error.StripeError as e:
+        except stripe.error.StripeError:
             payment.change_status(PaymentStatus.ERROR)
             raise RedirectNeeded(payment.get_failure_url())
         payment.transaction_id = charge.id
