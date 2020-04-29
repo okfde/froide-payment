@@ -141,7 +141,9 @@ def subscription_detail(request, token):
         )
     templates.append('froide_payment/subscription/default.html')
 
-    orders = Order.objects.filter(subscription=subscription)
+    orders = Order.objects.filter(
+        subscription=subscription
+    ).order_by('-created')
 
     ctx = {
         'orders': orders,
