@@ -281,8 +281,10 @@ class StripeIntentProvider(
                 error_message = intent['last_payment_error']['message']
             payment.change_status(PaymentStatus.ERROR, message=error_message)
             return False
-
-        payment.change_status(PaymentStatus.PENDING)
+        if payment.status != PaymentStatus.PENDING:
+            payment.change_status(PaymentStatus.PENDING)
+        else:
+            payment.save()
         return False
 
     def process_data(self, payment, request):
@@ -673,7 +675,10 @@ class StripeSEPAProvider(StripeIntentProvider):
             )
         if 'success' in data:
             # confirm payment here later
-            payment.change_status(PaymentStatus.PENDING)
+            if payment.status != PaymentStatus.PENDING:
+                payment.change_status(PaymentStatus.PENDING)
+            else:
+                payment.save()
             return True
         return None
 
