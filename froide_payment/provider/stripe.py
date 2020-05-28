@@ -8,6 +8,7 @@ import stripe
 
 from django.conf import settings
 from django.shortcuts import redirect
+from django.core.mail import mail_managers
 from django.http import HttpResponse, JsonResponse
 from django.utils.text import slugify
 from django.utils import timezone
@@ -627,6 +628,7 @@ class StripeIntentProvider(
     def charge_dispute_closed(self, request, dispute):
         if dispute["status"] != "lost":
             return
+        mail_managers('Charge dipsute lost', str(dispute))
         try:
             payment = Payment.objects.get(
                 transaction_id=dispute['payment_intent'],
