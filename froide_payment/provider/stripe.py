@@ -629,7 +629,7 @@ class StripeIntentProvider(
             return
         try:
             payment = Payment.objects.get(
-                remote_reference=dispute['payment_intent'],
+                transaction_id=dispute['payment_intent'],
                 variant=self.provider_name
             )
         except Payment.DoesNotExist:
