@@ -6,7 +6,7 @@ import logging
 from django.conf import settings
 from django.db.models import Q, Count
 from django.http import StreamingHttpResponse
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.utils import formats
 from django.template.loader import render_to_string
 from django.core.mail import send_mail

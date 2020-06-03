@@ -6,7 +6,7 @@ from django.conf import settings
 from django.db import models, transaction
 from django.apps import apps
 from django.urls import reverse
-from django.utils.translation import pgettext_lazy, ugettext_lazy as _
+from django.utils.translation import pgettext_lazy, gettext_lazy as _
 from django.utils import timezone
 
 from django_countries.fields import CountryField

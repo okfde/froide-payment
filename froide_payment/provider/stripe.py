@@ -12,7 +12,7 @@ from django.core.mail import mail_managers
 from django.http import HttpResponse, JsonResponse
 from django.utils.text import slugify
 from django.utils import timezone
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from payments.forms import PaymentForm
 from payments.stripe import StripeProvider
