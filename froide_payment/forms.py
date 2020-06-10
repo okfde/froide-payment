@@ -204,13 +204,20 @@ class StartPaymentMixin:
             postcode=data['postcode'],
             country=data['country'],
             user_email=data['email'],
+            provider=data['payment_method']
         )
+        customer = None
         if self.user is not None:
-            customer, created = Customer.objects.get_or_create(
+            customers = Customer.objects.filter(
                 user=self.user,
-                defaults=defaults
+                provider=data['payment_method']
             )
-        else:
+            if len(customers) > 0:
+                customer = customers[0]
+                Customer.objects.filter(id=customer.id).update(
+                    **defaults
+                )
+        if customer is None:
             customer = Customer.objects.create(
                 **defaults
             )
