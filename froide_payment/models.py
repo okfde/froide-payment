@@ -118,9 +118,13 @@ class Customer(models.Model):
 
     user_email = models.EmailField(blank=True, default='')
 
+    provider = models.CharField(max_length=256, blank=True)
     remote_reference = models.CharField(max_length=256, blank=True)
 
     custom_data = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ('-created',)
 
     def __str__(self):
         return self.user_email
