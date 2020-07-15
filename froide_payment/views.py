@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from django.utils.translation import gettext_lazy as _
 from django.core.mail import mail_admins
-from django.http import Http404, JsonResponse
+from django.http import JsonResponse
 from django.contrib import messages
 from django.contrib.auth import get_permission_codename
 from django.conf import settings
@@ -13,7 +13,7 @@ from payments import RedirectNeeded
 from payments.core import provider_factory
 
 from .models import (
-    Payment, Order, Subscription, PaymentStatus, CHECKOUT_PAYMENT_CHOICES
+    Payment, Order, Subscription, PaymentStatus
 )
 
 
