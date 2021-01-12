@@ -70,7 +70,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
         'customer__last_name', 'customer__first_name',
         'remote_reference',
     )
-    actions = ['create_recurring_order']
+    actions = ['create_recurring_order', 'cancel_subscription']
 
     def create_recurring_order(self, request, queryset):
         if not self.has_change_permission(request):
@@ -86,6 +86,25 @@ class SubscriptionAdmin(admin.ModelAdmin):
     create_recurring_order.short_description = _(
         'Create next recurring order'
     )
+
+    def cancel_subscription(self, request, queryset):
+        if not self.has_change_permission(request):
+            raise PermissionDenied
+
+        count = 0
+        success_count = 0
+        for sub in queryset:
+            count += 1
+            if sub.cancel():
+                success_count += 1
+
+        self.message_user(
+            request,
+            _("{success}/{total} subscriptions canceled.").format(
+                success=success_count, total=count
+            )
+        )
+    cancel_subscription.short_description = _('Cancel subscription')
 
 
 class OrderPaidFilter(admin.SimpleListFilter):
