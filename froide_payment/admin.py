@@ -51,6 +51,7 @@ class CustomerAdmin(admin.ModelAdmin):
 
 
 class SubscriptionAdmin(admin.ModelAdmin):
+    readonly_fields = ('canceled', 'active')
     raw_id_fields = ('customer',)
     list_display = (
         'customer', 'plan', 'created', 'next_date',
