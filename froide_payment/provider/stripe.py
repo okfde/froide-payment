@@ -269,7 +269,7 @@ class StripeIntentProvider(
             txn = self.get_balance_transaction(charge.balance_transaction)
             if txn is not None:
                 payment.received_timestamp = convert_utc_timestamp(
-                    txn.available_on
+                    txn.created
                 )
                 payment.received_amount = Decimal(txn.net) / 100
                 break
@@ -478,7 +478,7 @@ class StripeIntentProvider(
             txn = self.get_balance_transaction(charge.balance_transaction)
             if txn is not None:
                 payment.received_timestamp = convert_utc_timestamp(
-                    txn.available_on
+                    txn.created
                 )
                 payment.received_amount = Decimal(txn.net) / 100
                 break
@@ -537,7 +537,7 @@ class StripeIntentProvider(
             if txn is not None:
                 payment.received_amount = Decimal(txn.net) / 100
                 payment.received_timestamp = convert_utc_timestamp(
-                    txn.available_on
+                    txn.created
                 )
                 payment.save()
                 break
@@ -806,7 +806,7 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
         if txn is not None:
             payment.received_amount = Decimal(txn.net) / 100
             payment.received_timestamp = convert_utc_timestamp(
-                txn.available_on
+                txn.created
             )
         if charge.status == 'succeeded':
             payment.change_status(PaymentStatus.CONFIRMED)
@@ -851,7 +851,7 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
         if txn is not None:
             payment.received_amount = Decimal(txn.net) / 100
             payment.received_timestamp = convert_utc_timestamp(
-                txn.available_on
+                txn.created
             )
         payment.change_status(PaymentStatus.CONFIRMED)
 
