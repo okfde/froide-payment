@@ -94,7 +94,10 @@ class Plan(models.Model):
     )
 
     def __str__(self):
-        return '{} via {}'.format(self.name, self.provider)
+        return '{} via {}'.format(
+            self.name,
+            CHECKOUT_PAYMENT_CHOICES_DICT.get(self.provider, '?')
+        )
 
     def get_interval_description(self):
         return interval_description(self.interval)
