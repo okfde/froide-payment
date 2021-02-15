@@ -11,6 +11,7 @@ from payments.core import provider_factory
 from payments.forms import PaymentForm as BasePaymentForm
 
 from localflavor.generic.forms import IBANFormField
+from localflavor.generic.countries.sepa import IBAN_SEPA_COUNTRIES
 
 from .signals import subscription_created
 from .models import (
@@ -81,16 +82,17 @@ class LastschriftPaymentForm(BasePaymentForm):
     iban = IBANFormField(
         label=_('Your IBAN'),
         required=True,
+        include_countries=IBAN_SEPA_COUNTRIES,
         widget=forms.TextInput(
             attrs={
                 'class': 'form-control',
                 'pattern': (
-                    r"^[A-Z]{2}\d{2}[ ]*\d{4}[ ]*\d{4}[ ]*\d{4}[ ]*\d{4}[ ]*"
-                    r"\d{0,2}|[A-Z]{2}\d{20,22}$"
+                    # 36 len includes possible spaces
+                    r"^[A-Z]{2}\d{2}[ ]*[ A-Za-z\d]{,36}"
                 ),
                 'placeholder': _('e.g. DE12...'),
                 'title': _(
-                    'The IBAN has 20-22 digits and starts with two letters.'
+                    'The IBAN starts with two letters and then two numbers. SEPA countries only.'
                 )
             }
         )
