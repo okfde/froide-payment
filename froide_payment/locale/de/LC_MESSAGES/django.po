@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-03-09 15:39+0100\n"
-"PO-Revision-Date: 2020-03-09 15:40+0100\n"
+"POT-Creation-Date: 2021-02-15 13:00+0000\n"
+"PO-Revision-Date: 2021-02-15 13:02+0000\n"
 "Last-Translator: Stefan Wehrmeyer <stefan.wehrmeyer@okfn.de>\n"
 "Language-Team: \n"
 "Language: de\n"
@@ -16,47 +16,57 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 2.2\n"
+"X-Generator: Poedit 2.3\n"
 
-#: admin.py:85
+#: admin.py:86
 #, python-format
 msgid "%d recurring orders created."
 msgstr "%d wiederkehrende Bestellungen erstellt."
 
-#: admin.py:87
+#: admin.py:88
 msgid "Create next recurring order"
 msgstr "Nächste wiederkehrende Bestellung anlegen"
 
-#: admin.py:92
+#: admin.py:104
+#, python-brace-format
+msgid "{success}/{total} subscriptions canceled."
+msgstr "{success}/{total} Dauerspenden gekündigt."
+
+#: admin.py:108 templates/froide_payment/subscription/default.html:52
+#: templates/froide_payment/subscription/default.html:61
+msgid "Cancel subscription"
+msgstr "Dauerspende kündigen"
+
+#: admin.py:112
 msgid "Is paid?"
 msgstr "Bezahlt?"
 
-#: admin.py:97
+#: admin.py:117
 msgid "Yes"
 msgstr "Ja"
 
-#: admin.py:98
+#: admin.py:118
 msgid "No"
 msgstr "Nein"
 
-#: admin.py:153
+#: admin.py:173
 msgid "subscription"
 msgstr "Dauerspende"
 
-#: admin.py:166
+#: admin.py:186
 msgid "subscription order"
 msgstr "Dauerspende-Bestellung"
 
-#: admin.py:262
+#: admin.py:282
 msgid "Could not find all payments, aborting!"
 msgstr "Konnte nicht alle Spenden finden, Vorgang abgebrochen!"
 
-#: admin.py:328
+#: admin.py:348
 #, python-format
 msgid "%d mails sent."
 msgstr "%d E-Mails versendet."
 
-#: admin.py:344
+#: admin.py:364
 msgid "Send lastschrift mail to users"
 msgstr "Sende Lastschrift-E-Mail an Nutzer"
 
@@ -72,44 +82,46 @@ msgstr "Nichts"
 msgid "Froide Payment App"
 msgstr "Froide Bezahlungs-App"
 
-#: forms.py:36
+#: forms.py:37
 msgid "This payment has already been processed."
 msgstr "Diese Zahlung wurde schon verarbeitet."
 
-#: forms.py:72 forms.py:77
+#: forms.py:73 forms.py:78
 msgid "Account owner"
 msgstr "Kontoinhaber"
 
-#: forms.py:82
+#: forms.py:83
 msgid "Your IBAN"
 msgstr "Ihre IBAN"
 
-#: forms.py:91
+#: forms.py:93
 msgid "e.g. DE12..."
 msgstr "z.B. DE12..."
 
-#: forms.py:93
-msgid "The IBAN has 20-22 digits and starts with two letters."
-msgstr "Die IBAN hat 20-22 Stellen und fängt mit zwei Buchstaben an."
+#: forms.py:95
+msgid ""
+"The IBAN starts with two letters and then two numbers. SEPA countries only."
+msgstr ""
+"Die IBAN fängt mit zwei Buchstaben und zwei Ziffern an. Nur SEPA-Länder."
 
-#: forms.py:113
+#: forms.py:115
 msgid "Sie müssen den Bedingungen der Lastschrift zustimmen."
 msgstr "Sie müssen den Bedingungen der Lastschrift zustimmen."
 
-#: forms.py:158
+#: forms.py:162
 msgid "The provided IBAN seems invalid."
 msgstr "Die angegeben IBAN scheint ungültig."
 
-#: forms.py:163
+#: forms.py:167
 msgid "The provided owner name seems invalid (at least 3 characters required)."
 msgstr ""
 "Der angegeben Kontoinhaber scheint ungültig (mind. 3 Zeichen notwendig)."
 
-#: forms.py:169
+#: forms.py:173
 msgid "This payment method is currently unavailable."
 msgstr "Diese Zahlungsmöglichkeit ist momentan nicht verfügbar."
 
-#: forms.py:174
+#: forms.py:178
 msgid ""
 "An error occurred verifying your information with our payment provider. "
 "Please try again."
@@ -165,47 +177,47 @@ msgstr "jährlich"
 msgid "interval"
 msgstr "Intervall"
 
-#: models.py:482
+#: models.py:489
 msgctxt "payment status"
 msgid "Waiting for input"
 msgstr "Warte auf Eingabe"
 
-#: models.py:484
+#: models.py:491
 msgctxt "payment status"
 msgid "Pre-authorized"
 msgstr "Vor-Autorisiert"
 
-#: models.py:486
+#: models.py:493
 msgctxt "payment status"
 msgid "Confirmed"
 msgstr "Bestätigt"
 
-#: models.py:488
+#: models.py:495
 msgctxt "payment status"
 msgid "Rejected"
 msgstr "Abgewiesen"
 
-#: models.py:490
+#: models.py:497
 msgctxt "payment status"
 msgid "Refunded"
 msgstr "Zurückgebucht"
 
-#: models.py:492
+#: models.py:499
 msgctxt "payment status"
 msgid "Error"
 msgstr "Fehler"
 
-#: models.py:494
+#: models.py:501
 msgctxt "payment status"
 msgid "Input"
 msgstr "Eingabe"
 
-#: models.py:496
+#: models.py:503
 msgctxt "payment status"
 msgid "Confirmation pending"
 msgstr "Bearbeitung läuft"
 
-#: models.py:497
+#: models.py:504
 msgctxt "payment status"
 msgid "Canceled"
 msgstr "Annulliert"
@@ -222,11 +234,11 @@ msgstr "Sie können Ihre Dauerspende per Lastschrift hier kündigen."
 msgid "You can cancel your Paypal subscription."
 msgstr "Sie können Ihre Dauerspende per Paypal hier kündigen."
 
-#: provider/stripe.py:130
+#: provider/stripe.py:133
 msgid "You can cancel your credit card subscription."
 msgstr "Sie können Ihre Dauerspende per Kreditkarte hier kündigen."
 
-#: provider/stripe.py:619
+#: provider/stripe.py:659
 msgid "You can cancel your SEPA direct debit subscription here."
 msgstr "Sie können Ihre Dauerspende per Lastschrift hier kündigen."
 
@@ -469,11 +481,6 @@ msgstr ""
 msgid "Your subscription"
 msgstr "Ihre Dauerspende"
 
-#: templates/froide_payment/subscription/default.html:52
-#: templates/froide_payment/subscription/default.html:61
-msgid "Cancel subscription"
-msgstr "Dauerspende kündigen"
-
 #: templates/froide_payment/subscription/default.html:69
 msgid "Are you sure you want to cancel your subscription?"
 msgstr "Sind Sie sicher, dass Sie Ihre Dauerspende kündigen wollen?"
@@ -525,17 +532,20 @@ msgstr "jedes Jahr"
 msgid "every {} months"
 msgstr "alle {} Monate"
 
-#: views.py:170
+#: views.py:173
 msgid "Your subscription has been canceled."
 msgstr "Ihre Dauerspende wurde gekündigt."
 
-#: views.py:180
+#: views.py:183
 msgid ""
 "An error occurred with our payment provider. We will investigate and make "
 "sure your subscription is properly canceled."
 msgstr ""
 "Es ist ein Fehler bei unserem Zahlungsanbieter aufgetreten. Wir kümmern uns "
 "darum, dass Ihre Dauerspende ordentlich gekündigt wurde."
+
+#~ msgid "The IBAN has 20-22 digits and starts with two letters."
+#~ msgstr "Die IBAN hat 20-22 Stellen und fängt mit zwei Buchstaben an."
 
 #~ msgid "We will no longer deduct the amount from your bank account."
 #~ msgstr "Wir werden "
