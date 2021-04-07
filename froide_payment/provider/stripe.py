@@ -18,11 +18,15 @@ from payments.forms import PaymentForm
 from payments.stripe import StripeProvider
 from payments import RedirectNeeded, get_payment_model
 
-from ..signals import subscription_activated, subscription_deactivated
+from ..signals import (
+    subscription_activated, subscription_deactivated,
+    sepa_notification
+)
 from ..models import (
     PaymentStatus, Plan, Product, Subscription, Order, Payment
 )
 from ..forms import SEPAPaymentForm
+from ..utils import send_sepa_mail
 
 from .utils import CancelInfo
 
@@ -51,9 +55,9 @@ class StripeWebhookMixin():
             event = stripe.Webhook.construct_event(
                 payload, sig_header, self.signing_secret
             )
-        except ValueError as e:
+        except ValueError:
             return None
-        except stripe.error.SignatureVerificationError as e:
+        except stripe.error.SignatureVerificationError:
             return None
         return event.to_dict()
 
@@ -95,7 +99,7 @@ class StripeWebhookMixin():
             return None
         try:
             bt = stripe.BalanceTransaction.retrieve(txn_id)
-        except stripe.error.StripeError as e:
+        except stripe.error.StripeError:
             return None
         return bt
 
@@ -703,6 +707,71 @@ class StripeSEPAProvider(StripeIntentProvider):
         except stripe.error.StripeError as e:
             logger.exception(e)
             raise ValueError(e.error.code)
+
+    def payment_intent_processing(self, request, intent):
+        '''
+            Send notification for recurring SEPA debits
+            - The last 4 digits of the debtor’s bank account
+            - The mandate reference (sepa_debit[reference] on the Mandate)
+            - The amount to be debited
+            - Your SEPA creditor identifier
+            - Your contact information
+        '''
+        logger.info('%s Webhook: Payment intent processing: %s',
+                    self.provider_name, intent.id)
+
+        payment = self.get_payment_by_id(intent.id)
+        if payment is None and intent.invoice:
+            order = Order.objects.filter(
+                remote_reference=intent.invoice
+            ).first()
+            if order:
+                payment = payment = order.get_or_create_payment(
+                    self.provider_name
+                )
+
+        if payment is None:
+            raise ValueError
+
+        order = payment.order
+        if not order.is_recurring:
+            # Only need to send notification for recurring debits
+            return HttpResponse(status=204)
+
+        subscription = order.subscription
+        first_order = subscription.get_first_order()
+        if order == first_order:
+            # Only need to send notification for recurring debits
+            return HttpResponse(status=204)
+
+        charges = intent.charges.data
+        data = None
+        for charge in charges:
+            payment_type = charge.payment_method_details.type
+            if payment_type != self.stripe_payment_method_type:
+                # This payment reached the wrong provider
+                # implementation endpoint
+                return HttpResponse(status=204)
+            sepa_debit = charge.payment_method_details.sepa_debit
+            mandate_id = sepa_debit.mandate
+            mandate = stripe.Mandate.retrieve(mandate_id)
+            mandate.payment_method_details.sepa_debit.reference
+            mandate_sepa_debit = mandate.payment_method_details.sepa_debit
+            mandate_reference = mandate_sepa_debit.reference
+            data = {
+                'last4': sepa_debit.last4,
+                'mandate_reference': mandate_reference,
+            }
+            break
+
+        if data is not None:
+            payment.attrs.mandats_id = data['mandate_reference']
+            payment.attrs.last4 = data['last4']
+            result = sepa_notification.send(
+                sender=payment, data=data
+            )
+            if not any([x[1] for x in result]):
+                send_sepa_mail(payment, data)
 
 
 class StripeSofortProvider(StripeWebhookMixin, StripeProvider):

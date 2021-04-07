@@ -164,7 +164,8 @@ if (cardElement) {
 
 /*
  *
- *  SEPA
+ *  Stripe Direct Sepa
+ *  == Unused ==
  *
  */
 
@@ -268,6 +269,12 @@ function stripeSourceHandler (source: stripe.Source) {
   // Submit the paymentForm.
   paymentForm.submit()
 }
+
+/*
+ *
+ *  Stripe Sepa with custom IBAN handling
+ *
+ */
 
 const iban = document.querySelector('input#id_iban') as HTMLInputElement
 if (iban) {

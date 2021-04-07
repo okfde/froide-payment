@@ -35,6 +35,25 @@ Use this URL on your domain:
 /payments/process/creditcard/
 ```
 
+### Webhook for SEPA Payments
+
+Configure these event types:
+
+- `payment_intent.processing`
+- `charge.dispute.closed`
+- `invoice.payment_action_required`
+- `invoice.upcoming`
+- `invoice.created`
+- `invoice.finalized`
+- `payment_intent.succeeded`
+- `payment_intent.payment_failed`
+
+Use this URL on your domain:
+
+```
+/payments/process/sepa/
+```
+
 ### Webhook for Sofort Payments
 
 Configure these event types:
@@ -77,14 +96,13 @@ PAYMENT_VARIANTS = {
         # separate Webhook signing secret
         'signing_secret': '',
     }),
-# Disabled, not tested
-#    'sepa': ('froide_payment.provider.StripeSourceProvider', {
-#        # Test API keys
-#        'public_key': '',
-#        'secret_key': '',
-#        # separate Webhook signing secret
-#        'signing_secret': '',
-#    }),
+   'sepa': ('froide_payment.provider.StripeSourceProvider', {
+       # Test API keys
+       'public_key': '',
+       'secret_key': '',
+       # separate Webhook signing secret
+       'signing_secret': '',
+   }),
     'paypal': ('payments.paypal.PaypalProvider', {
         'client_id': '',
         'secret': '',

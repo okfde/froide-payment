@@ -12,29 +12,8 @@ from django.template.loader import render_to_string
 from django.core.mail import send_mail
 from django.utils import timezone
 
-try:
-    from froide.helper.email_sending import mail_registry
-except ImportError:
-    mail_registry = None
-
 
 logger = logging.getLogger(__name__)
-
-
-lastschrift_mail = None
-lastschrift_sepa_mail = None
-if mail_registry is not None:
-    lastschrift_mail = mail_registry.register(
-        'froide_payment/email/lastschrift_triggered',
-        ('payment', 'order', 'note')
-    )
-
-    lastschrift_sepa_mail = mail_registry.register(
-        'froide_payment/email/lastschrift_sepa_conversion',
-        (
-            'first_name', 'order',
-        )
-    )
 
 
 def get_client_ip(request=None):
@@ -133,24 +112,40 @@ def send_lastschrift_mail(payment, note=''):
         'note': note
     }
     subject = 'SEPA-Lastschriftmandat: {}'.format(order.description)
-    # Send email about Lastschrift
-    if lastschrift_mail is not None:
-        lastschrift_mail.send(
-            email=payment.billing_email, context=context,
-            subject=subject,
-            priority=True
-        )
-    else:
-        send_mail(
-            subject,
-            render_to_string(
-                'froide_payment/email/lastschrift_triggered.txt',
-                context
-            ),
-            settings.DEFAULT_FROM_EMAIL,
-            [payment.billing_email],
-            fail_silently=False,
-        )
+    send_mail(
+        subject,
+        render_to_string(
+            'froide_payment/email/lastschrift_triggered.txt',
+            context
+        ),
+        settings.DEFAULT_FROM_EMAIL,
+        [payment.billing_email],
+        fail_silently=False,
+    )
+
+
+def send_sepa_mail(payment, data):
+    if payment.variant != 'sepa':
+        return
+
+    order = payment.order
+
+    context = {
+        'payment': payment,
+        'order': order,
+    }
+    context.update(data)
+    subject = 'SEPA-Lastschriftmandat: {}'.format(order.description)
+    send_mail(
+        subject,
+        render_to_string(
+            'froide_payment/email/sepa_notification.txt',
+            context
+        ),
+        settings.DEFAULT_FROM_EMAIL,
+        [payment.billing_email],
+        fail_silently=False,
+    )
 
 
 def create_recurring_order(subscription,
