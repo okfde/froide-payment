@@ -17,11 +17,20 @@ CODE_CHARS = 'ACDEFHJKLMNPRSTUWXY3469'
 TRANSFER_PREFIX = 'FDS '  # note trailing space
 CODE_LEN = 8
 
-TRANSFER_RE = re.compile('%s?[%s]{%d}' % (
+TRANSFER_RE = re.compile('%s?([%s]{%d})' % (
     TRANSFER_PREFIX,
     CODE_CHARS,
     CODE_LEN
 ), re.I)
+
+
+def find_transfer_code(reference):
+    match = TRANSFER_RE.search(reference)
+    if match is None:
+        return None
+    return '{}{}'.format(
+        TRANSFER_PREFIX, match.group(1).upper()
+    )
 
 
 def generate_transfer_code():
