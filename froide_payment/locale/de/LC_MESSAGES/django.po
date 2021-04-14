@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-02-15 13:00+0000\n"
-"PO-Revision-Date: 2021-02-15 13:02+0000\n"
+"POT-Creation-Date: 2021-04-14 09:52+0100\n"
+"PO-Revision-Date: 2021-04-14 09:53+0100\n"
 "Last-Translator: Stefan Wehrmeyer <stefan.wehrmeyer@okfn.de>\n"
 "Language-Team: \n"
 "Language: de\n"
@@ -146,8 +146,8 @@ msgid "Lastschrift"
 msgstr "Lastschrift"
 
 #: models.py:33
-msgid "SOFORT Überweisung"
-msgstr "SOFORT Überweisung"
+msgid "Sofortüberweisung"
+msgstr "Sofortüberweisung"
 
 #: models.py:34
 msgid "Paypal"
@@ -222,7 +222,7 @@ msgctxt "payment status"
 msgid "Canceled"
 msgstr "Annulliert"
 
-#: provider/banktransfer.py:44
+#: provider/banktransfer.py:53
 msgid "You need to cancel your standing order with your bank."
 msgstr "Sie können Ihren Dauerauftrag nur bei Ihrer Bank selbst abstellen."
 
@@ -234,11 +234,11 @@ msgstr "Sie können Ihre Dauerspende per Lastschrift hier kündigen."
 msgid "You can cancel your Paypal subscription."
 msgstr "Sie können Ihre Dauerspende per Paypal hier kündigen."
 
-#: provider/stripe.py:133
+#: provider/stripe.py:137
 msgid "You can cancel your credit card subscription."
 msgstr "Sie können Ihre Dauerspende per Kreditkarte hier kündigen."
 
-#: provider/stripe.py:659
+#: provider/stripe.py:663
 msgid "You can cancel your SEPA direct debit subscription here."
 msgstr "Sie können Ihre Dauerspende per Lastschrift hier kündigen."
 
@@ -508,27 +508,27 @@ msgstr ""
 msgid "This subscription has not been marked as active yet."
 msgstr "Diese Dauerspende ist noch nicht aktiviert."
 
-#: utils.py:99
+#: utils.py:78
 msgid "one time"
 msgstr "einmalig"
 
-#: utils.py:101
+#: utils.py:80
 msgid "every month"
 msgstr "jeden Monat"
 
-#: utils.py:103
+#: utils.py:82
 msgid "every three months"
 msgstr "vierteljährlich"
 
-#: utils.py:105
+#: utils.py:84
 msgid "every six months"
 msgstr "alle sechs Monate"
 
-#: utils.py:107
+#: utils.py:86
 msgid "every year"
 msgstr "jedes Jahr"
 
-#: utils.py:108
+#: utils.py:87
 msgid "every {} months"
 msgstr "alle {} Monate"
 
