@@ -30,7 +30,7 @@ CHECKOUT_PAYMENT_CHOICES = [
     ('creditcard', _('Credit Card')),
     ('sepa', _('SEPA-Lastschrift')),
     ('lastschrift', _('Lastschrift')),
-    ('sofort', _('SOFORT Überweisung')),
+    ('sofort', _('Sofortüberweisung')),
     ('paypal', _('Paypal')),
     ('banktransfer', _('Bank transfer')),
 ]
