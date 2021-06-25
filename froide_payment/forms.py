@@ -92,7 +92,8 @@ class LastschriftPaymentForm(BasePaymentForm):
                 ),
                 'placeholder': _('e.g. DE12...'),
                 'title': _(
-                    'The IBAN starts with two letters and then two numbers. SEPA countries only.'
+                    'The IBAN starts with two letters and then two numbers. '
+                    'SEPA countries only.'
                 )
             }
         )
@@ -122,7 +123,7 @@ class LastschriftPaymentForm(BasePaymentForm):
         try:
             self.fields['iban'].initial = self.payment.attrs.iban
             self.fields['owner_name'].initial = self.payment.attrs.owner
-        except KeyError:
+        except (KeyError, AttributeError):
             pass
 
     def save(self):
