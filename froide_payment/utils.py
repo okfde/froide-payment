@@ -190,7 +190,7 @@ def create_recurring_order(subscription,
         payment.attrs.iban = customer_data.get('iban', None)
 
     payment.change_status(PaymentStatus.PENDING)
-
+    payment.save()
     logger.info(
         'Payment %s created for subscription %s',
         payment.id, subscription.id

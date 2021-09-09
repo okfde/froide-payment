@@ -303,11 +303,13 @@ class PaymentAdmin(admin.ModelAdmin):
                 payment.captured_amount = Decimal(0.0)
                 payment.received_amount = Decimal(0.0)
                 payment.change_status(PaymentStatus.REJECTED)
+                payment.save()
             elif row['captured'].strip():
                 payment.captured_amount = payment.total
                 payment.received_amount = payment.total
                 payment.received_timestamp = date
                 payment.change_status(PaymentStatus.CONFIRMED)
+                payment.save()
             order = payment.order
             if order.is_recurring:
                 # Store mandats_id with customer for future reference

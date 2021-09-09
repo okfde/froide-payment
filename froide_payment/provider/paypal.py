@@ -94,6 +94,7 @@ class PaypalProvider(OriginalPaypalProvider):
         if self._capture:
             payment.captured_amount = payment.total
             payment.change_status(PaymentStatus.CONFIRMED)
+            payment.save()
         else:
             payment.change_status(PaymentStatus.PREAUTH)
         return redirect(success_url)
@@ -256,6 +257,7 @@ class PaypalProvider(OriginalPaypalProvider):
             resource['create_time']
         )
         payment.change_status(PaymentStatus.CONFIRMED)
+        payment.save()
 
     def verify_webhook(self, request, data):
         def get_header(key):
@@ -332,8 +334,7 @@ class PaypalProvider(OriginalPaypalProvider):
             success = resource['state'] == 'completed'
         if success:
             payment.change_status(PaymentStatus.CONFIRMED)
-        else:
-            payment.save()
+        payment.save()
 
     def synchronize_orders(self, subscription):
         list_url = '{e}/v1/billing/subscriptions/{s}/transactions'.format(
@@ -399,6 +400,7 @@ class PaypalProvider(OriginalPaypalProvider):
             payment.change_status(PaymentStatus.REFUNDED)
         else:
             payment.change_status(PaymentStatus.REJECTED)
+        payment.save()
 
     def setup_subscription(self, payment, data=None):
         order = payment.order
@@ -436,8 +438,8 @@ class PaypalProvider(OriginalPaypalProvider):
             subscription.remote_reference = data['id']
             subscription.save()
             approve_urls = [
-                l['href'] for l in data['links']
-                if l['rel'] == 'approve'
+                link['href'] for link in data['links']
+                if link['rel'] == 'approve'
             ]
             if approve_urls:
                 raise RedirectNeeded(approve_urls[0])
