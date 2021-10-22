@@ -15,7 +15,7 @@ import pytz
 import dateutil.parser
 
 from payments.paypal import PaypalProvider as OriginalPaypalProvider
-from payments import RedirectNeeded
+from payments import RedirectNeeded, PaymentError
 
 from ..signals import (
     subscription_activated, subscription_deactivated, subscription_canceled
@@ -86,7 +86,11 @@ class PaypalProvider(OriginalPaypalProvider):
                 return redirect(payment.get_failure_url())
             else:
                 return redirect(success_url)
-        executed_payment = self.execute_payment(payment, payer_id)
+        try:
+            executed_payment = self.execute_payment(payment, payer_id)
+        except PaymentError:
+            return redirect(payment.get_failure_url())
+
         if executed_payment is None:
             return redirect(success_url)
         self.set_response_links(payment, executed_payment)
