@@ -770,6 +770,7 @@ class StripeSEPAProvider(StripeIntentProvider):
         if data is not None:
             payment.attrs.mandats_id = data['mandate_reference']
             payment.attrs.last4 = data['last4']
+            payment.save()
             result = sepa_notification.send(
                 sender=payment, data=data
             )
