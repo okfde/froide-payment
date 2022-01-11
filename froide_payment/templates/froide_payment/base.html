@@ -7,7 +7,7 @@
 
 {% block navbar %}{% endblock %}
 
-{% block body_extra_attributes %}{{ block.super }} data-raven="{{ RAVEN_JS_URL }}"{% endblock %}
+{% block body_extra_attributes %}{{ block.super }} data-sentry="{{ SENTRY_JS_URL }}"{% endblock %}
 
 
 {% block body %}
