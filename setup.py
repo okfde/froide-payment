@@ -33,7 +33,7 @@ setup(
     author_email='mail@stefanwehrmeyer.com',
     packages=find_packages(),
     install_requires=[
-        'django-payments',
+        'django-payments[stripe]',
         'django-countries',
         'django-prices>=2.1.0',
         'django-localflavor',
