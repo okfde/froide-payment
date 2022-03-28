@@ -1,11 +1,12 @@
 from django.urls import path
 
 from .views import (
-    start_payment,
     order_detail,
+    order_failed,
     order_success,
-    subscription_detail,
+    start_payment,
     subscription_cancel,
+    subscription_detail,
 )
 
 app_name = "froide_payment"
@@ -19,7 +20,6 @@ urlpatterns = [
     ),
     path("<uuid:token>/", order_detail, name="order-detail"),
     path("<uuid:token>/success/", order_success, name="order-success"),
-    path(
-        "<uuid:token>/payment/<slug:variant>/", start_payment, name="start-payment"
-    ),
+    path("<uuid:token>/failed/", order_failed, name="order-failed"),
+    path("<uuid:token>/payment/<slug:variant>/", start_payment, name="start-payment"),
 ]
