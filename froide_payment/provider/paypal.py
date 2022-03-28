@@ -296,6 +296,27 @@ class PaypalProvider(BasicProvider):
 
         logger.info("Paypal webhook subscription canceled %s", subscription.id)
 
+    def webhook_payment_capture_completed(self, request, data):
+        resource = data["resource"]
+        invoide_id = resource["invoice_id"]
+        try:
+            payment = Payment.objects.get(order__token=invoide_id)
+        except Payment.DoesNotExist:
+            return
+
+        logger.info("Paypal webhook capture completed for payment %s", payment.id)
+        payment.attrs.paypal_resource = resource
+        payment.captured_amount = Decimal(payment.total)
+        fee = Decimal(
+            resource.get("seller_receivable_breakdown", {})
+            .get("paypal_fee", {})
+            .get("value", "0.0")
+        )
+        payment.received_amount = Decimal(payment.total) - fee
+        payment.received_timestamp = dateutil.parser.parse(resource["create_time"])
+        payment.change_status(PaymentStatus.CONFIRMED)
+        payment.save()
+
     def webhook_payment_sale_completed(self, request, data):
         resource = data["resource"]
         if "parent_payment" in resource:
