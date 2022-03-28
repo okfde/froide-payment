@@ -22,15 +22,16 @@
   "homepage": "https://github.com/okfde/froide-payment#readme",
   "devDependencies": {
     "@types/stripe-v3": "^3.0.9",
-    "eslint": "^4.7.1",
-    "eslint-config-standard": "^11.0.0-beta.0",
-    "eslint-plugin-html": "^4.0.1",
+    "@typescript-eslint/eslint-plugin": "^5.17.0",
+    "@typescript-eslint/parser": "^5.17.0",
+    "eslint": "^8.12.0",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-html": "^6.2.0",
     "eslint-plugin-import": "^2.7.0",
-    "eslint-plugin-node": "^5.1.1",
-    "eslint-plugin-promise": "^3.5.0",
-    "eslint-plugin-standard": "^3.0.1",
-    "tslint": "^5.13.1",
-    "tslint-config-standard": "^8.0.1",
-    "typescript": "^3.3.3333"
-  }
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^6.0.0",
+    "eslint-plugin-standard": "^5.0.0",
+    "typescript": "^4.6.3"
+  },
+  "dependencies": {}
 }

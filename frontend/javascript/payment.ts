@@ -7,6 +7,21 @@ interface PaymentProcessingResponse {
   customer?: string
 }
 
+type SuccessMessage = {
+  success: boolean
+}
+
+type PaymentMethodMessage = {
+  payment_method_id: string
+}
+
+type SepaMessage = {
+  iban: string
+  owner_name: string
+}
+
+type PaymentMessage = SuccessMessage | PaymentMethodMessage | SepaMessage
+
 const style = {
   base: {
     color: '#32325d',
@@ -50,7 +65,7 @@ const elements = stripe.elements({
   locale: paymentForm.dataset.locale
 })
 
-const sendPaymentData = (obj: Object): Promise<PaymentProcessingResponse> => {
+const sendPaymentData = (obj: PaymentMessage): Promise<PaymentProcessingResponse> => {
   return fetch(paymentForm.action, {
     method: 'POST',
     headers: {
@@ -63,29 +78,13 @@ const sendPaymentData = (obj: Object): Promise<PaymentProcessingResponse> => {
   })
 }
 
-const handleCardAction = (clientSecret: string) => {
-  stripe.handleCardAction(
-    clientSecret
-  ).then((result) => {
-    if (result.error) {
-      showError(result.error.message)
-    } else if (result.paymentIntent) {
-      // The card action has been handled
-      // The PaymentIntent can be confirmed again on the server
-      sendPaymentData({
-        payment_intent_id: result.paymentIntent.id
-      }).then(handleServerResponse)
-    }
-  })
-}
-
 const handleCardPayment = (clientSecret: string, card?: stripe.elements.Element) => {
   if (!card) { return }
   stripe.handleCardPayment(clientSecret, card).then((result) => {
     if (result.error) {
       showError(result.error.message)
     } else if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
-      document.location.href = paymentForm.dataset.successurl || '/'
+      window.location.href = paymentForm.dataset.successurl || '/'
     } else {
       console.error('Missing token!')
     }
@@ -259,7 +258,7 @@ if (ibanElement) {
   })
 }
 
-function stripeSourceHandler (source: stripe.Source) {
+function stripeSourceHandler(source: stripe.Source) {
   const hiddenInput = document.createElement('input')
   hiddenInput.setAttribute('type', 'hidden')
   hiddenInput.setAttribute('name', 'stripe_source')
@@ -307,7 +306,7 @@ if (iban) {
             sendPaymentData({
               success: true
             }).then(() => {
-              document.location.href = paymentForm.dataset.successurl || '/'
+              window.location.href = paymentForm.dataset.successurl || '/'
             }).catch(() => {
               showError('Network failure.')
             })
@@ -328,7 +327,7 @@ if (iban) {
  *
  */
 
-const prContainer = document.getElementById('payment-request')
+const prContainer = document.getElementById('payment-request') as HTMLElement
 
 if (prContainer && clientSecret) {
   const paymentRequest = stripe.paymentRequest({
@@ -402,12 +401,12 @@ if (prContainer && clientSecret) {
  *
  */
 
-const loading = document.getElementById('loading')
-const container = document.getElementById('container')
+const loading = document.getElementById('loading') as HTMLElement
+const container = document.getElementById('container') as HTMLElement
 
 const showError = (error: string | undefined) => {
   // Inform the customer that there was an error.
-  const errorElement = document.getElementById('card-errors')
+  const errorElement = document.getElementById('card-errors') as HTMLElement
   if (errorElement) {
     errorElement.style.display = 'block'
     errorElement.textContent = error || 'Card error'
@@ -426,7 +425,7 @@ const setPending = (pending: boolean) => {
   }
 }
 
-function showLoading () {
+function showLoading() {
   if (!loading) {
     throw new Error('No loading found')
   }
@@ -436,7 +435,7 @@ function showLoading () {
   loading.style.display = 'block'
   container.style.display = 'none'
 }
-function stopLoading () {
+function stopLoading() {
   if (!loading) {
     throw new Error('No loading found')
   }
