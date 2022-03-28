@@ -6,17 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('froide_payment', '0013_auto_20200528_1201'),
+        ("froide_payment", "0013_auto_20200528_1201"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='customer',
-            options={'ordering': ('-created',)},
+            name="customer",
+            options={"ordering": ("-created",)},
         ),
         migrations.AddField(
-            model_name='customer',
-            name='provider',
+            model_name="customer",
+            name="provider",
             field=models.CharField(blank=True, max_length=256),
         ),
     ]

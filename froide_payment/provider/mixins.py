@@ -2,21 +2,19 @@ from decimal import Decimal
 
 from django.utils.text import slugify
 
-from ..models import Product, Plan
+from ..models import Plan, Product
 
 
 class PlanProductMixin:
     def get_or_create_product(self, category):
         try:
             product = Product.objects.get(
-                category=category,
-                provider=self.provider_name
+                category=category, provider=self.provider_name
             )
         except Product.DoesNotExist:
             product = Product.objects.create(
-                name='{provider} {category}'.format(
-                    provider=self.provider_name,
-                    category=category
+                name="{provider} {category}".format(
+                    provider=self.provider_name, category=category
                 ),
                 category=category,
                 provider=self.provider_name,
@@ -30,7 +28,7 @@ class PlanProductMixin:
                 product=product,
                 amount=amount,
                 interval=month_interval,
-                provider=self.provider_name
+                provider=self.provider_name,
             )
         except Plan.DoesNotExist:
             plan = Plan.objects.create(
@@ -41,6 +39,6 @@ class PlanProductMixin:
                 interval=month_interval,
                 amount_year=amount * Decimal(12 / month_interval),
                 provider=self.provider_name,
-                product=product
+                product=product,
             )
         return plan

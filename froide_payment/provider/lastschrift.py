@@ -1,20 +1,19 @@
 from django.utils.translation import gettext_lazy as _
 
-from payments.core import BasicProvider
 from payments import RedirectNeeded
+from payments.core import BasicProvider
 
-from ..models import PaymentStatus
 from ..forms import LastschriftPaymentForm
-
+from ..models import PaymentStatus
 from .mixins import PlanProductMixin
 from .utils import CancelInfo
 
 
 class IBANProviderMixin:
     def get_form(self, payment, data=None):
-        '''
+        """
         Lastschrift gets stored and processed
-        '''
+        """
         if payment.status == PaymentStatus.WAITING:
             payment.change_status(PaymentStatus.INPUT)
 
@@ -25,7 +24,7 @@ class IBANProviderMixin:
             pass
         if iban is None and payment.order.customer:
             customer = payment.order.customer
-            iban = customer.data.get('iban', None)
+            iban = customer.data.get("iban", None)
 
         if iban is not None:
             if payment.status == PaymentStatus.INPUT:
@@ -33,8 +32,7 @@ class IBANProviderMixin:
             raise RedirectNeeded(payment.get_success_url())
 
         form = self.form_class(
-            data=data, payment=payment, provider=self,
-            hidden_inputs=False
+            data=data, payment=payment, provider=self, hidden_inputs=False
         )
         if data is not None:
             if form.is_valid():
@@ -45,13 +43,12 @@ class IBANProviderMixin:
 
 
 class LastschriftProvider(PlanProductMixin, IBANProviderMixin, BasicProvider):
-    provider_name = 'lastschrift'
+    provider_name = "lastschrift"
     form_class = LastschriftPaymentForm
 
     def get_cancel_info(self, subscription):
         return CancelInfo(
-            True,
-            _('You can cancel your direct debit subscription here.')
+            True, _("You can cancel your direct debit subscription here.")
         )
 
     def cancel_subscription(self, subscription):

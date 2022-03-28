@@ -6,18 +6,33 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('froide_payment', '0009_auto_20191017_1446'),
+        ("froide_payment", "0009_auto_20191017_1446"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='payment',
-            name='received_amount',
-            field=models.DecimalField(blank=True, decimal_places=2, max_digits=9, null=True),
+            model_name="payment",
+            name="received_amount",
+            field=models.DecimalField(
+                blank=True, decimal_places=2, max_digits=9, null=True
+            ),
         ),
         migrations.AlterField(
-            model_name='payment',
-            name='status',
-            field=models.CharField(choices=[('waiting', 'Waiting for input'), ('preauth', 'Pre-authorized'), ('confirmed', 'Confirmed'), ('rejected', 'Rejected'), ('refunded', 'Refunded'), ('error', 'Error'), ('input', 'Input'), ('pending', 'Confirmation pending')], default='waiting', max_length=10),
+            model_name="payment",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("waiting", "Waiting for input"),
+                    ("preauth", "Pre-authorized"),
+                    ("confirmed", "Confirmed"),
+                    ("rejected", "Rejected"),
+                    ("refunded", "Refunded"),
+                    ("error", "Error"),
+                    ("input", "Input"),
+                    ("pending", "Confirmation pending"),
+                ],
+                default="waiting",
+                max_length=10,
+            ),
         ),
     ]

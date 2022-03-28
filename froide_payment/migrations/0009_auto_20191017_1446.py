@@ -6,23 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('froide_payment', '0008_plan_amount_year'),
+        ("froide_payment", "0008_plan_amount_year"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='order',
-            name='remote_reference',
+            model_name="order",
+            name="remote_reference",
             field=models.CharField(blank=True, max_length=256),
         ),
         migrations.AddField(
-            model_name='order',
-            name='service_end',
+            model_name="order",
+            name="service_end",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='order',
-            name='service_start',
+            model_name="order",
+            name="service_start",
             field=models.DateTimeField(blank=True, null=True),
         ),
     ]

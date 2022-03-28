@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('froide_payment', '0002_order_is_donation'),
+        ("froide_payment", "0002_order_is_donation"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='order',
-            name='kind',
-            field=models.CharField(blank=True, default='', max_length=255),
+            model_name="order",
+            name="kind",
+            field=models.CharField(blank=True, default="", max_length=255),
         ),
     ]

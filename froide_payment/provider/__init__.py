@@ -1,11 +1,13 @@
-from .stripe import (
-    StripeIntentProvider, StripeSEPAProvider, StripeSofortProvider
-)
-from .paypal import PaypalProvider
-from .lastschrift import LastschriftProvider
 from .banktransfer import BanktransferProvider
+from .lastschrift import LastschriftProvider
+from .paypal import PaypalProvider
+from .stripe import StripeIntentProvider, StripeSEPAProvider, StripeSofortProvider
 
 __all__ = [
-    StripeIntentProvider, StripeSofortProvider, StripeSEPAProvider,
-    PaypalProvider, LastschriftProvider, BanktransferProvider
+    StripeIntentProvider,
+    StripeSofortProvider,
+    StripeSEPAProvider,
+    PaypalProvider,
+    LastschriftProvider,
+    BanktransferProvider,
 ]
