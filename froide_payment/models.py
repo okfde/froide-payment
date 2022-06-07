@@ -463,6 +463,7 @@ class Order(models.Model):
                 ).filter(order=self).exclude(id=payment.id).delete()
         # Trigger signal
         payment.change_status(payment.status)
+        payment.save()
         return payment
 
 

@@ -340,6 +340,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
     def get_form(self, payment, data=None):
         if payment.status == PaymentStatus.WAITING:
             payment.change_status(PaymentStatus.INPUT)
+            payment.save()
 
         form = self.form_class(data=data, payment=payment, provider=self)
         if data is not None:
@@ -351,6 +352,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
 
         if intent is not None and intent.status == "succeeded":
             payment.change_status(PaymentStatus.CONFIRMED)
+            payment.save()
             raise RedirectNeeded(payment.get_success_url())
 
         if intent is not None:
@@ -740,6 +742,7 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
             return
         if charge.status == "succeeded":
             payment.change_status(PaymentStatus.CONFIRMED)
+            payment.save()
             return True
 
     def get_form(self, payment, data=None):
@@ -764,6 +767,7 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
                 payment.save()
             except stripe.error.StripeError:
                 payment.change_status(PaymentStatus.ERROR)
+                payment.save()
                 # charge_id = e.json_body['error']['charge']
                 raise RedirectNeeded(payment.get_failure_url())
         if source.status == "chargeable":
@@ -796,17 +800,21 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
                 client_secret = request.GET["client_secret"]
             except KeyError:
                 payment.change_status(PaymentStatus.ERROR)
+                payment.save()
                 return redirect(payment.get_failure_url())
             try:
                 source = stripe.Source.retrieve(source_id, client_secret=client_secret)
             except stripe.error.StripeError:
                 payment.change_status(PaymentStatus.ERROR)
+                payment.save()
                 return redirect(payment.get_failure_url())
             if source.status in ("canceled", "failed"):
+                payment.save()
                 payment.change_status(PaymentStatus.REJECTED)
                 return redirect(payment.get_failure_url())
             # Charging takes place in webhook
             payment.change_status(PaymentStatus.PENDING)
+            payment.save()
             return redirect(payment.get_success_url())
         # Process web hook
         logger.info("Incoming Sofort Webhook")
@@ -834,6 +842,7 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
             )
         except stripe.error.StripeError:
             payment.change_status(PaymentStatus.ERROR)
+            payment.save()
             raise RedirectNeeded(payment.get_failure_url())
         payment.transaction_id = charge.id
         payment.change_status(PaymentStatus.PENDING)
@@ -863,8 +872,8 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
         if txn is not None:
             payment.received_amount = Decimal(txn.net) / 100
             payment.received_timestamp = convert_utc_timestamp(txn.created)
-            payment.save()
         payment.change_status(PaymentStatus.CONFIRMED)
+        payment.save()
 
     def charge_failed(self, request, charge):
         logger.info("Sofort Webhook: charge failed: %d", charge.id)

@@ -81,6 +81,7 @@ class PaypalProvider(BasicProvider):
         else:
             approve_url = redirect_to["href"]
         payment.change_status(PaymentStatus.INPUT)
+        payment.save()
         raise RedirectNeeded(approve_url)
 
     def create_order(self, payment, extra_data=None):
@@ -170,6 +171,7 @@ class PaypalProvider(BasicProvider):
         if not payer_id:
             if payment.status != PaymentStatus.CONFIRMED:
                 payment.change_status(PaymentStatus.REJECTED)
+                payment.save()
                 return redirect(failure_url)
             else:
                 return redirect(success_url)
@@ -186,6 +188,7 @@ class PaypalProvider(BasicProvider):
             payment.save()
         else:
             payment.change_status(PaymentStatus.PREAUTH)
+            payment.save()
         return redirect(success_url)
 
     def _get_access_token(self):

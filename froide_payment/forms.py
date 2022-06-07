@@ -51,6 +51,7 @@ class SourcePaymentForm(BasePaymentForm):
             self._handle_potentially_fraudulent_charge(self.charge, commit=False)
 
             self.payment.change_status(PaymentStatus.REJECTED, str(e))
+            self.payment.save()
             return
 
         self.payment.transaction_id = self.charge.id
