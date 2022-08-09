@@ -10,9 +10,9 @@
 <div class="row justify-content-center">
   <div class="col-md-8">
     <h3>{% trans "Your subscription" %}</h3>
- 
+
     {% block custom_content %}{% endblock %}
- 
+
     <table class="table">
       <thead>
         <tr>
@@ -32,7 +32,7 @@
             </td>
             <td>
               <a href="{{ order.get_absolute_url }}">
-                Details
+                {% translate "Details" %}
               </a>
             </td>
           </tr>
@@ -47,8 +47,8 @@
         <div class="alert alert-secondary">
           <p>{{ cancel_info.message }}</p>
 
-          <div class="text-right">
-            <button type="button" class="btn btn-secondary" data-toggle="modal" data-target="#cancel-subscription">
+          <div class="text-end">
+            <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#cancel-subscription">
               {% trans "Cancel subscription" %}
             </button>
           </div>
@@ -59,8 +59,7 @@
             <div class="modal-content">
               <div class="modal-header">
                 <h5 class="modal-title" id="cancel-subscription-label">{% trans "Cancel subscription" %}</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                  <span aria-hidden="true">&times;</span>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate 'Close' %}">
                 </button>
               </div>
               <form action="{% url 'froide_payment:subscription-cancel' token=subscription.token %}" method="post">
@@ -69,7 +68,7 @@
                   {% trans "Are you sure you want to cancel your subscription?" %}
                 </div>
                 <div class="modal-footer">
-                  <button type="button" class="mr-auto btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
+                  <button type="button" class="me-auto btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
                   <button type="submit" class="btn btn-danger">{% trans "Cancel subscription now" %}</button>
                 </div>
               </form>
