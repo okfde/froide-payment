@@ -4,63 +4,13 @@ import uuid
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-import stripe
 from localflavor.generic.countries.sepa import IBAN_SEPA_COUNTRIES
 from localflavor.generic.forms import IBANFormField
-from payments import FraudStatus
 from payments.core import provider_factory
 from payments.forms import PaymentForm as BasePaymentForm
 
 from .models import Customer, Order, PaymentStatus, Subscription
 from .signals import subscription_created
-
-
-class SourcePaymentForm(BasePaymentForm):
-    stripe_source = forms.CharField(widget=forms.HiddenInput)
-
-    def _handle_potentially_fraudulent_charge(self, charge, commit=True):
-        fraud_details = charge["fraud_details"]
-        if fraud_details.get("stripe_report", None) == "fraudulent":
-            self.payment.change_fraud_status(FraudStatus.REJECT, commit=commit)
-        else:
-            self.payment.change_fraud_status(FraudStatus.ACCEPT, commit=commit)
-
-    def clean(self):
-        data = self.cleaned_data
-
-        if not self.errors:
-            if self.payment.transaction_id:
-                msg = _("This payment has already been processed.")
-                self.add_error(None, msg)
-
-        return data
-
-    def save(self):
-        try:
-            self.charge = stripe.Charge.create(
-                amount=int(self.payment.total * 100),
-                currency=self.payment.currency,
-                source=self.cleaned_data["stripe_source"],
-                description="%s %s"
-                % (self.payment.billing_last_name, self.payment.billing_first_name),
-            )
-        except stripe.error.StripeError as e:
-            charge_id = e.json_body["error"]["charge"]
-            self.charge = stripe.Charge.retrieve(charge_id)
-            # Checking if the charge was fraudulent
-            self._handle_potentially_fraudulent_charge(self.charge, commit=False)
-
-            self.payment.change_status(PaymentStatus.REJECTED, str(e))
-            self.payment.save()
-            return
-
-        self.payment.transaction_id = self.charge.id
-        self.payment.attrs.charge = json.dumps(self.charge)
-        # self.payment.change_status(PaymentStatus.PREAUTH)
-        self.payment.save()
-
-        # Make sure we store the info of the charge being marked as fraudulent
-        self._handle_potentially_fraudulent_charge(self.charge)
 
 
 class LastschriftPaymentForm(BasePaymentForm):
@@ -139,12 +89,24 @@ class LastschriftPaymentForm(BasePaymentForm):
 
     def finalize_payment(self):
         self.payment.transaction_id = str(uuid.uuid4())
-        self.payment.change_status(PaymentStatus.PENDING)  # Calls .save()
+        self.payment.change_status(PaymentStatus.PENDING)
         self.payment.save()
 
 
 class SEPAPaymentForm(LastschriftPaymentForm):
     terms = None  # Handled client side
+    SEPA_MANDATE = _(
+        "By providing your payment information and confirming this payment, you "
+        "authorise (A) Open Knowledge Foundation Deutschland e.V. and Stripe, our "
+        "payment service provider and/or PPRO, its local service provider, to send "
+        "instructions to your bank to debit your account and (B) your bank to debit "
+        "your account in accordance with those instructions. As part of your rights, "
+        "you are entitled to a refund from your bank under the terms and conditions of "
+        "your agreement with your bank. A refund must be claimed within 8 weeks "
+        "starting from the date on which your account was debited. Your rights are "
+        "explained in a statement that you can obtain from your bank. You agree to "
+        "receive notifications for future debits up to 2 days before they occur."
+    )
 
     def clean(self):
         if "iban" not in self.cleaned_data:
@@ -183,12 +145,7 @@ class SEPAPaymentForm(LastschriftPaymentForm):
         return self.cleaned_data
 
     def finalize_payment(self):
-        intent = self.provider.handle_payment_method(
-            self.payment, self.payment_method.id
-        )
-        self.payment.transaction_id = intent.id
-        self.payment.save()
-        return intent
+        pass
 
 
 class StartPaymentMixin:

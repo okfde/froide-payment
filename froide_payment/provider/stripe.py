@@ -17,6 +17,8 @@ from payments import RedirectNeeded, get_payment_model
 from payments.forms import PaymentForm
 from payments.stripe import StripeProvider
 
+from froide.helper.spam import suspicious_ip
+
 from ..forms import SEPAPaymentForm
 from ..models import Order, Payment, PaymentStatus, Plan, Product, Subscription
 from ..signals import (
@@ -34,6 +36,20 @@ def convert_utc_timestamp(timestamp):
     tz = timezone.get_current_timezone()
     utc_dt = datetime.utcfromtimestamp(timestamp).replace(tzinfo=pytz.utc)
     return tz.normalize(utc_dt.astimezone(tz))
+
+
+def requires_confirmation(request, payment, data):
+    if payment.variant != "sepa":
+        return False
+    if suspicious_ip(request):
+        return True
+    target_countries = settings.FROIDE_CONFIG.get("target_countries", None)
+    if target_countries and not data["iban"].startswith(target_countries):
+        return True
+    check_threshold = getattr(settings, "PAYMENT_CHECK_THRESHOLD", 1000)
+    if payment.total >= check_threshold:
+        return True
+    return False
 
 
 class StripeWebhookMixin:
@@ -155,6 +171,7 @@ class StripeSubscriptionMixin:
                 email=customer.user_email,
                 name=customer.get_full_name(),
                 payment_method=payment_method,
+                invoice_settings={"default_payment_method": payment_method},
                 preferred_locales=self.get_stripe_locales(),
                 metadata={"customer_id": customer.id},
             )
@@ -279,17 +296,19 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
         except ValueError:
             return JsonResponse({"error": ""})
         try:
-            intent = self.handle_form_method(payment, data)
+            intent = self.handle_form_method(payment, data, request=request)
         except stripe.error.StripeError as e:
             # Display error on client
+            logger.exception(e)
             return JsonResponse({"error": e.user_message})
         except ValueError as e:
+            logger.exception(e)
             return JsonResponse({"error": str(e)})
         if intent is True:
             return JsonResponse({"success": True})
         return self.generate_intent_response(intent)
 
-    def handle_form_method(self, payment, data):
+    def handle_form_method(self, payment, data, request=None):
         if "payment_method_id" in data:
             intent = self.handle_payment_method(payment, data["payment_method_id"])
         elif "payment_intent_id" in data:
@@ -308,7 +327,10 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
             return JsonResponse(
                 {
                     "requires_confirmation": True,
-                    "payment_intent_client_secret": intent.client_secret,
+                    "type": intent.object,
+                    "payment_intent_client_secret": ""
+                    if getattr(intent, "confirmation_method", "") == "manual"
+                    else intent.client_secret,
                     "payment_method": intent.payment_method,
                     "customer": True if intent.customer else False,
                 }
@@ -319,10 +341,14 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
             return JsonResponse({"success": True})
         return JsonResponse({"error": "Invalid PaymentIntent status"})
 
-    def handle_payment_method(self, payment, payment_method):
+    def handle_payment_method(self, payment, payment_method, delay_confirmation=False):
         order = payment.order
         if order.is_recurring:
-            intent = self.setup_subscription(order.subscription, payment_method)
+            intent = self.setup_subscription(
+                order.subscription,
+                payment_method,
+                delay_confirmation=delay_confirmation,
+            )
         else:
             intent = stripe.PaymentIntent.create(
                 amount=int(payment.total * 100),
@@ -330,9 +356,11 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
                 payment_method_types=[self.stripe_payment_method_type],
                 use_stripe_sdk=True,
                 payment_method=payment_method,
+                confirmation_method="manual" if delay_confirmation else "automatic",
                 statement_descriptor=get_statement_descriptor(payment),
                 metadata={"order_id": str(payment.order.token)},
             )
+
         payment.transaction_id = intent.id
         payment.save()
         return intent
@@ -384,12 +412,23 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
                 )
                 payment.transaction_id = intent.id
                 payment.save()
+
         return intent
 
-    def setup_subscription(self, subscription, payment_method):
+    def setup_subscription(
+        self, subscription, payment_method, delay_confirmation=False
+    ):
         plan = subscription.plan
         customer = subscription.customer
         self.setup_customer(subscription, payment_method)
+
+        if delay_confirmation:
+            setup_intent = stripe.SetupIntent.create(
+                payment_method_types=[self.stripe_payment_method_type],
+                payment_method=payment_method,
+                customer=customer.remote_reference,
+            )
+            return setup_intent
 
         if not subscription.remote_reference:
             stripe_subscription = stripe.Subscription.create(
@@ -568,7 +607,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
             # Don't know this order/invoice on this provider
             return
         payment = order.get_or_create_payment(self.provider_name)
-        payment.transaction_id = invoice.payment_intent
+        payment.transaction_id = invoice.payment_intent or ""
         payment.save()
         logger.info(
             "%s webhook invoice finalized for payment %s",
@@ -615,6 +654,7 @@ class StripeSEPAProvider(StripeIntentProvider):
     form_class = SEPAPaymentForm
     provider_name = "sepa"
     stripe_payment_method_type = "sepa_debit"
+    stripe_setup_intent_prefix = "seti_"
 
     def get_cancel_info(self, subscription):
         return CancelInfo(
@@ -624,26 +664,117 @@ class StripeSEPAProvider(StripeIntentProvider):
     def get_initial_intent(self, payment):
         intent = None
         if payment.transaction_id:
-            intent = stripe.PaymentIntent.retrieve(payment.transaction_id)
+            if payment.transaction_id.startswith(self.stripe_setup_intent_prefix):
+                intent = stripe.SetupIntent.retrieve(payment.transaction_id)
+            else:
+                intent = stripe.PaymentIntent.retrieve(payment.transaction_id)
         return intent
 
-    def handle_form_method(self, payment, data):
+    def confirm_payment(self, payment):
+        order = payment.order
+        if order.is_recurring:
+            subscription = order.subscription
+            plan = subscription.plan
+            customer = subscription.customer
+            stripe_subscription = stripe.Subscription.create(
+                customer=customer.remote_reference,
+                items=[
+                    {
+                        "plan": plan.remote_reference,
+                    },
+                ],
+                expand=["latest_invoice", "latest_invoice.payment_intent"],
+            )
+            latest_invoice = stripe_subscription.latest_invoice
+            subscription.attach_order_info(
+                remote_reference=latest_invoice.id,
+            )
+            payment_intent = stripe_subscription.latest_invoice.payment_intent
+            payment.transaction_id = payment_intent.id
+            payment.change_status(PaymentStatus.PENDING)
+            payment.save()
+            return
+
+        try:
+            user_agent = payment.attrs.user_agent
+        except AttributeError:
+            user_agent = "-"
+
+        stripe.PaymentIntent.confirm(
+            payment.transaction_id,
+            mandate_data={
+                "customer_acceptance": {
+                    "type": "online",
+                    "accepted_at": int(payment.modified.timestamp()),
+                    "online": {
+                        "ip_address": payment.customer_ip_address,
+                        "user_agent": user_agent,
+                    },
+                }
+            },
+        )
+        payment.change_status(PaymentStatus.PENDING)
+        payment.save()
+
+    def cancel_payment(self, payment):
+        """
+        Cancel PaymentIntent
+        SetupIntent is already successful
+        """
+        order = payment.order
+        try:
+            if order.is_recurring:
+                setup_intent = stripe.SetupIntent.retrieve(payment.transaction_id)
+                stripe.PaymentMethod.detach(
+                    setup_intent["payment_method"],
+                )
+            else:
+                stripe.PaymentIntent.cancel(
+                    payment.transaction_id, cancellation_reason="fraudulent"
+                )
+        except stripe.error.StripeError as e:
+            logger.exception(e)
+        payment.change_status(PaymentStatus.CANCELED)
+        payment.save()
+
+    def handle_form_method(self, payment, data, request=None):
         if "iban" in data:
             form = self.form_class(
-                data=data, payment=payment, provider=self, hidden_inputs=False
+                data=data,
+                payment=payment,
+                provider=self,
+                hidden_inputs=False,
             )
             if form.is_valid():
-                intent = form.save()
+                form.save()
+
+                needs_confirmation = self.check_confirmation(
+                    request, payment, form.cleaned_data
+                )
+                intent = self.handle_payment_method(
+                    payment,
+                    form.payment_method.id,
+                    delay_confirmation=needs_confirmation,
+                )
+                payment.modified = timezone.now()
+                payment.attrs.needs_confirmation = needs_confirmation
+                payment.attrs.user_agent = request.META.get("HTTP_USER_AGENT", "")
+                payment.save()
+
                 return intent
             raise ValueError(" ".join(" ".join(v) for v in form.errors.values()))
         if "success" in data:
-            # confirm payment here later
-            if payment.status != PaymentStatus.PENDING:
-                payment.change_status(PaymentStatus.PENDING)
-
-            payment.save()
+            if payment.status not in (PaymentStatus.PENDING, PaymentStatus.DEFERRED):
+                if payment.attrs.needs_confirmation:
+                    payment.change_status(PaymentStatus.DEFERRED)
+                else:
+                    payment.change_status(PaymentStatus.PENDING)
+                payment.save()
             return True
         return None
+
+    def check_confirmation(self, request, payment, data):
+        return requires_confirmation(request, payment, data)
 
     def create_payment_method(self, iban, owner_name, billing_email):
         try:
