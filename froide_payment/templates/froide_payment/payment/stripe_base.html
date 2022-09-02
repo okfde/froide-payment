@@ -15,6 +15,7 @@
   data-successurl="{{ payment.get_success_url }}"
   data-currency="{{ order.currency }}"
   data-donation="{% if order.is_donation %}1{% endif %}"
+  data-recurring="{% if order.is_recurring %}1{% endif %}"
   data-amount="{{ order.amount_cents }}"
   data-label="{{ order.description }}"
   data-address1="{{ order.street_address_1 }}"

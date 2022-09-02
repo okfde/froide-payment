@@ -203,7 +203,12 @@ class PaymentAdmin(admin.ModelAdmin):
     )
     search_fields = ("transaction_id", "billing_email", "billing_last_name")
 
-    actions = ["export_lastschrift", "send_lastschrift_mail"]
+    actions = [
+        "export_lastschrift",
+        "send_lastschrift_mail",
+        "confirm_payments",
+        "cancel_payments",
+    ]
 
     def get_urls(self):
         urls = super().get_urls()
@@ -229,6 +234,18 @@ class PaymentAdmin(admin.ModelAdmin):
 
     def service_label(self, obj):
         return obj.order.get_service_label()
+
+    def confirm_payments(self, request, queryset):
+        queryset = queryset.filter(status=PaymentStatus.DEFERRED)
+        for obj in queryset:
+            provider = obj.get_provider()
+            provider.confirm_payment(obj)
+
+    def cancel_payments(self, request, queryset):
+        queryset = queryset.filter(status=PaymentStatus.DEFERRED)
+        for obj in queryset:
+            provider = obj.get_provider()
+            provider.cancel_payment(obj)
 
     def export_lastschrift(self, request, queryset):
         if not self.has_change_permission(request):

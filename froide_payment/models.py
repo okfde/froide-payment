@@ -470,6 +470,7 @@ class Order(models.Model):
 class PaymentStatus(BasePaymentStatus):
     PENDING = "pending"
     CANCELED = "canceled"
+    DEFERRED = "deferred"
 
     CHOICES = [
         (
@@ -483,6 +484,7 @@ class PaymentStatus(BasePaymentStatus):
         (BasePaymentStatus.ERROR, pgettext_lazy("payment status", "Error")),
         (BasePaymentStatus.INPUT, pgettext_lazy("payment status", "Input")),
         (PENDING, pgettext_lazy("payment status", "Confirmation pending")),
+        (DEFERRED, pgettext_lazy("payment status", "Capture deferred")),
         (CANCELED, pgettext_lazy("payment status", "Canceled")),
     ]
     CHOICES_DICT = dict(CHOICES)
@@ -511,6 +513,7 @@ class Payment(BasePayment):
         PaymentStatus.WAITING: "secondary",
         PaymentStatus.PREAUTH: "light",
         PaymentStatus.PENDING: "secondary",
+        PaymentStatus.DEFERRED: "secondary",
         PaymentStatus.CONFIRMED: "success",
         PaymentStatus.REJECTED: "danger",
         PaymentStatus.REFUNDED: "warning",
@@ -527,6 +530,11 @@ class Payment(BasePayment):
             self.currency,
             self.variant,
         )
+
+    def get_provider(self):
+        from payments.core import provider_factory
+
+        return provider_factory(self.variant)
 
     def get_amount(self):
         return Money(self.total, self.currency or settings.DEFAULT_CURRENCY)
@@ -561,10 +569,13 @@ class Payment(BasePayment):
         return self.STATUS_COLORS[self.status]
 
     def is_pending(self):
-        return self.status in (PaymentStatus.PENDING)
+        return self.status in (PaymentStatus.PENDING, PaymentStatus.DEFERRED)
 
     def is_confirmed(self):
-        return self.status in (PaymentStatus.CONFIRMED)
+        return self.status in (PaymentStatus.CONFIRMED,)
 
     def is_rejected(self):
-        return self.status in (PaymentStatus.REJECTED)
+        return self.status in (PaymentStatus.REJECTED,)
+
+    def is_deferred(self):
+        return self.status in (PaymentStatus.DEFERRED,)

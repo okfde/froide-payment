@@ -6,7 +6,6 @@ from django.utils.translation import gettext_lazy as _
 from payments import RedirectNeeded
 from payments.core import BasicProvider
 
-from ..forms import LastschriftPaymentForm
 from ..models import PaymentStatus
 from .mixins import PlanProductMixin
 from .utils import CancelInfo
@@ -36,7 +35,6 @@ def generate_transfer_code():
 
 class BanktransferProvider(PlanProductMixin, BasicProvider):
     provider_name = "banktransfer"
-    form_class = LastschriftPaymentForm
 
     def get_cancel_info(self, subscription):
         return CancelInfo(

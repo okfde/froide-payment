@@ -78,26 +78,29 @@ const sendPaymentData = (obj: PaymentMessage): Promise<PaymentProcessingResponse
   })
 }
 
-const handleCardPayment = (clientSecret: string, card?: stripe.elements.Element) => {
+const handleCardPayment = async (clientSecret: string, card: stripe.elements.Element) => {
   if (!card) { return }
-  stripe.handleCardPayment(clientSecret, card).then((result) => {
-    if (result.error) {
-      showError(result.error.message)
-    } else if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
-      window.location.href = paymentForm.dataset.successurl || '/'
-    } else {
-      console.error('Missing token!')
-    }
+  const result = await stripe.confirmCardPayment(clientSecret, {
+      payment_method: {
+        card,
+      }
   })
+  if (result.error) {
+    showError(result.error.message)
+  } else if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
+    window.location.href = paymentForm.dataset.successurl || '/'
+  } else {
+    console.error('Missing token!')
+  }
 }
 
-const handleServerResponse = (response: PaymentProcessingResponse) => {
+const handleServerResponse = (response: PaymentProcessingResponse, card: stripe.elements.Element) => {
   if (response.error) {
     showError(response.error)
     // Show error from server on payment form
   } else if (response.requires_action) {
     // Use Stripe.js to handle required card action
-    handleCardPayment(response.payment_intent_client_secret)
+    handleCardPayment(response.payment_intent_client_secret, card)
   } else if (response.success) {
     document.location.href = paymentForm.dataset.successurl || '/'
   }
@@ -153,120 +156,12 @@ if (cardElement) {
           sendPaymentData({
             payment_method_id: result.paymentMethod.id
           }).then((response) => {
-            handleServerResponse(response)
+            handleServerResponse(response, card)
           })
         }
       })
     }
   })
-}
-
-/*
- *
- *  Stripe Direct Sepa
- *  == Unused ==
- *
- */
-
-const ibanElement = document.querySelector('#iban-element')
-
-if (ibanElement) {
-  // Create an instance of the iban Element.
-  const iban = elements.create('iban', {
-    style: style,
-    supportedCountries: ['SEPA'],
-    placeholderCountry: paymentForm.dataset.country
-  })
-
-  // Add an instance of the iban Element into the `iban-element` <div>.
-  iban.mount('#iban-element')
-
-  const errorMessage = document.getElementById('error-message')
-  if (!errorMessage) {
-    throw new Error('Missing error message field')
-  }
-
-  iban.on('change', (event) => {
-    // Handle real-time validation errors from the iban Element.
-    if (event && event.error) {
-      errorMessage.textContent = event.error.message || 'IBAN error'
-      errorMessage.classList.add('visible')
-    } else {
-      errorMessage.classList.remove('visible')
-    }
-
-    const bankName = document.getElementById('bank-name')
-    if (bankName) {
-      // Display bank name corresponding to IBAN, if available.
-      if (event && event.bankName) {
-        bankName.textContent = event.bankName
-        bankName.classList.add('visible')
-      } else {
-        bankName.classList.remove('visible')
-      }
-    } else {
-      console.error('Missing bank name field')
-    }
-  })
-
-  const sepaSubmit = document.getElementById('sepa-submit')
-  if (!sepaSubmit) {
-    throw new Error('Missing sepa submit')
-  }
-  sepaSubmit.addEventListener('click', (event) => {
-    event.preventDefault()
-    showLoading()
-
-    const sourceData = {
-      type: 'sepa_debit',
-      currency: currency,
-      owner: {
-        name: paymentForm.dataset.firstname + ' ' + paymentForm.dataset.lastname,
-        email: paymentForm.dataset.email
-        // address: {
-        //   line1: paymentForm.dataset.address1,
-        //   line2: paymentForm.dataset.address2,
-        //   country: paymentForm.dataset.country,
-        //   city: paymentForm.dataset.city,
-        //   postal_code: paymentForm.dataset.postcode
-        // }
-      },
-      mandate: {
-        // Automatically send a mandate notification email to your customer
-        // once the source is charged.
-        notification_method: 'email'
-      }
-    }
-
-    // Call `stripe.createSource` with the iban Element and additional options.
-    stripe.createSource(iban, sourceData).then((result) => {
-      if (result.error) {
-        // Inform the customer that there was an error.
-        errorMessage.textContent = result.error.message || 'source error'
-        errorMessage.classList.add('visible')
-        stopLoading()
-      } else {
-        // Send the Source to your server to create a charge.
-        errorMessage.classList.remove('visible')
-        if (result.source) {
-          stripeSourceHandler(result.source)
-        } else {
-          console.error('No source given')
-        }
-      }
-    })
-  })
-}
-
-function stripeSourceHandler(source: stripe.Source) {
-  const hiddenInput = document.createElement('input')
-  hiddenInput.setAttribute('type', 'hidden')
-  hiddenInput.setAttribute('name', 'stripe_source')
-  hiddenInput.setAttribute('value', source.id)
-  paymentForm.appendChild(hiddenInput)
-
-  // Submit the paymentForm.
-  paymentForm.submit()
 }
 
 /*
@@ -277,47 +172,52 @@ function stripeSourceHandler(source: stripe.Source) {
 
 const iban = document.querySelector('input#id_iban') as HTMLInputElement
 if (iban) {
-  paymentForm.addEventListener('submit', (event) => {
+  paymentForm.addEventListener('submit', async (event) => {
     event.preventDefault()
     const owner = document.querySelector('input#id_owner_name') as HTMLInputElement
     showLoading()
-    sendPaymentData({
-      iban: iban.value,
-      owner_name: owner.value
-    }).then((response) => {
-      if (response.error) {
-        showError(response.error)
-      } else {
-        const sepaData = {
-          payment_method: response.payment_method,
-          save_payment_method: false
-        } as any
-        if (response.customer) {
-          sepaData.setup_future_usage = 'off_session'
-          sepaData.save_payment_method = true
-        }
-        stripe.confirmSepaDebitPayment(
-          response.payment_intent_client_secret,
-          sepaData
-        ).then((response) => {
-          if (response.error) {
-            showError(response.error.message)
-          } else {
-            sendPaymentData({
-              success: true
-            }).then(() => {
-              window.location.href = paymentForm.dataset.successurl || '/'
-            }).catch(() => {
-              showError('Network failure.')
-            })
-          }
-        }).catch(() => {
-          showError('Network failure.')
-        })
+    try {
+      const setupResponse = await sendPaymentData({
+        iban: iban.value,
+        owner_name: owner.value
+      })
+      if (setupResponse.error) {
+        showError(setupResponse.error)
+        return
       }
-    }).catch(() => {
+
+      let sepaData, confirmMethod
+      if (setupResponse.customer) {
+        sepaData = {
+          payment_method: setupResponse.payment_method,
+        } as stripe.ConfirmSepaDebitSetupData
+        confirmMethod = stripe.confirmSepaDebitSetup
+      } else {
+        sepaData = {
+          payment_method: setupResponse.payment_method,
+          save_payment_method: false
+        } as stripe.ConfirmSepaDebitPaymentData
+        confirmMethod = stripe.confirmSepaDebitPayment  
+      }
+
+      if (setupResponse.payment_intent_client_secret) {
+        const confirmResponse = await confirmMethod(
+          setupResponse.payment_intent_client_secret,
+          sepaData
+        )
+        if (confirmResponse.error) {
+          showError(confirmResponse.error.message)
+          return
+        }
+      }
+      await sendPaymentData({
+        success: true
+      })
+      window.location.href = paymentForm.dataset.successurl || '/'
+    } catch (e) {
+      console.error(e)
       showError('Network failure.')
-    })
+    }
   })
 }
 
@@ -360,37 +260,39 @@ if (prContainer && clientSecret) {
     }
   })
 
-  paymentRequest.on('paymentmethod', (ev) => {
-
-    if (clientSecret) {
-      stripe.confirmPaymentIntent(clientSecret, {
-        payment_method: ev.paymentMethod.id
-      }).then((confirmResult) => {
-        if (confirmResult.error) {
-          // Report to the browser that the payment failed, prompting it to
-          // re-show the payment interface, or show an error message and close
-          // the payment interface.
-          ev.complete('fail')
-        } else {
-          // Report to the browser that the confirmation was successful, prompting
-          // it to close the browser payment method collection interface.
-          ev.complete('success')
-          // Let Stripe.js handle the rest of the payment flow.
-          handleCardPayment(clientSecret)
-        }
-      })
+  paymentRequest.on('paymentmethod', async (ev) => {
+    setPending(true)
+    const data = {
+        payment_method: ev.paymentMethod.id,
+        return_url: paymentForm.dataset.successurl,
+    } as stripe.ConfirmCardPaymentData
+    if (paymentForm.dataset.recurring) {
+      data.setup_future_usage = "off_session"
+    }
+    const confirmResult = await stripe.confirmCardPayment(clientSecret, data)
+    if (confirmResult.error) {
+      // Report to the browser that the payment failed, prompting it to
+      // re-show the payment interface, or show an error message and close
+      // the payment interface.
+      ev.complete('fail')
+      showError("Network failure")
     } else {
-      /* No client secret, need to sent payment method */
-      sendPaymentData({
-        payment_method_id: ev.paymentMethod.id
-      }).then((response) => {
-        if (response.error) {
-          ev.complete('fail')
-        } else {
-          ev.complete('success')
+      // Report to the browser that the confirmation was successful, prompting
+      // it to close the browser payment method collection interface.
+      ev.complete('success')
+
+      if (confirmResult.paymentIntent && confirmResult.paymentIntent.status === "requires_action") {
+      // Let Stripe.js handle the rest of the payment flow.
+        const actionResult = await stripe.confirmCardPayment(clientSecret)
+        if (actionResult.error) {
+          showError(actionResult.error.message)
+          return
         }
-        handleServerResponse(response)
+      }
+      await sendPaymentData({
+        success: true
       })
+      window.location.href = paymentForm.dataset.successurl || '/'
     }
   })
 }
