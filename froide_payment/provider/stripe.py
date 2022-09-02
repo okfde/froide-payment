@@ -384,12 +384,14 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
 
         intent = self.get_initial_intent(payment)
 
-        if intent.status == "succeeded":
+        if intent and intent.status == "succeeded":
             payment.change_status(PaymentStatus.CONFIRMED)
             payment.save()
             raise RedirectNeeded(payment.get_success_url())
 
-        form.intent_secret = intent.client_secret
+        if intent:
+            form.intent_secret = intent.client_secret
+
         form.action = self.get_return_url(payment)
         form.public_key = self.public_key
 
