@@ -134,12 +134,13 @@ if (cardElement) {
     }
   })
 
-  paymentForm.addEventListener('submit', (event) => {
+  paymentForm.addEventListener('submit', async (event) => {
     event.preventDefault()
+    if (!clientSecret) { return }
 
     setPending(true)
 
-    if (clientSecret) {
+    if (!paymentForm.dataset.recurring) {
       /* We have a payment intent */
       handleCardPayment(clientSecret, card)
     } else {
@@ -148,18 +149,16 @@ if (cardElement) {
           name: paymentForm.dataset.name
         }
       }
-      stripe.createPaymentMethod('card', card, billingDetails).then((result) => {
-        if (result.error) {
-          showError(result.error.message)
-        } else if (result.paymentMethod) {
-          // Otherwise send paymentMethod.id to your server (see Step 2)
-          sendPaymentData({
-            payment_method_id: result.paymentMethod.id
-          }).then((response) => {
-            handleServerResponse(response, card)
-          })
-        }
-      })
+      const result = await stripe.createPaymentMethod('card', card, billingDetails)
+      if (result.error) {
+        showError(result.error.message)
+      } else if (result.paymentMethod) {
+        // Otherwise send paymentMethod.id to your server (see Step 2)
+        const response = await sendPaymentData({
+          payment_method_id: result.paymentMethod.id
+        })
+        handleServerResponse(response, card)
+      }
     }
   })
 }
@@ -262,20 +261,43 @@ if (prContainer && clientSecret) {
 
   paymentRequest.on('paymentmethod', async (ev) => {
     setPending(true)
-    const data = {
-        payment_method: ev.paymentMethod.id,
-        return_url: paymentForm.dataset.successurl,
-    } as stripe.ConfirmCardPaymentData
+
     if (paymentForm.dataset.recurring) {
-      data.setup_future_usage = "off_session"
+      const response = await sendPaymentData({
+        payment_method_id: ev.paymentMethod.id
+      })
+
+      if (response.error) {
+        ev.complete('fail')
+        showError(response.error)
+        return
+        // Show error from server on payment form
+      } else if (response.requires_action) {
+        // Use Stripe.js to handle required card action
+        const actionResult = await stripe.confirmCardPayment(response.payment_intent_client_secret)
+        if (actionResult.error) {
+          ev.complete('fail')
+          showError(actionResult.error.message)
+          return
+        }
+      }
+      ev.complete('success')
+      document.location.href = paymentForm.dataset.successurl || '/'
+      return
     }
+
+    const data = {
+      payment_method: ev.paymentMethod.id,
+      return_url: paymentForm.dataset.successurl,
+    } as stripe.ConfirmCardPaymentData
+
     const confirmResult = await stripe.confirmCardPayment(clientSecret, data)
     if (confirmResult.error) {
       // Report to the browser that the payment failed, prompting it to
       // re-show the payment interface, or show an error message and close
       // the payment interface.
       ev.complete('fail')
-      showError("Network failure")
+      showError(confirmResult.error.message)
     } else {
       // Report to the browser that the confirmation was successful, prompting
       // it to close the browser payment method collection interface.
@@ -289,9 +311,6 @@ if (prContainer && clientSecret) {
           return
         }
       }
-      await sendPaymentData({
-        success: true
-      })
       window.location.href = paymentForm.dataset.successurl || '/'
     }
   })
