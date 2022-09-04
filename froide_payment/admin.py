@@ -4,13 +4,13 @@ from decimal import Decimal
 from io import StringIO
 
 from django.conf import settings
-from django.conf.urls import url
 from django.contrib import admin, messages
 from django.contrib.admin import helpers
 from django.core.exceptions import PermissionDenied
 from django.db.models import Case, F, NullBooleanField, Sum, Value, When
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
+from django.urls import path
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -213,13 +213,13 @@ class PaymentAdmin(admin.ModelAdmin):
     def get_urls(self):
         urls = super().get_urls()
         my_urls = [
-            url(
-                r"^import-lastschrift/$",
+            path(
+                "import-lastschrift/",
                 self.admin_site.admin_view(self.import_lastschrift_result),
                 name="froide_payment-payment-import_lastschrift_result",
             ),
-            url(
-                r"^convert-lastschrift-to-sepa/(?P<payment_id>\d+)/$",
+            path(
+                "convert-lastschrift-to-sepa/<int:payment_id>/",
                 self.admin_site.admin_view(self.convert_lastschrift_to_sepa),
                 name="froide_payment-payment_convert_lastschrift_to_sepa",
             ),

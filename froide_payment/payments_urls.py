@@ -2,10 +2,10 @@
 This module is responsible for automatic processing of provider callback
 data (asynchronous transaction updates).
 """
-from django.conf.urls import url
 from django.db.transaction import atomic
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
+from django.urls import re_path
 from django.views.decorators.csrf import csrf_exempt
 
 from payments import get_payment_model
@@ -51,13 +51,13 @@ def static_callback(request, variant):
 
 
 urlpatterns = [
-    url(
+    re_path(
         r"^process/(?P<token>[0-9a-z]{8}-[0-9a-z]{4}-"
         "[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{12})/$",
         process_data,
         name="process_payment",
     ),
-    url(
+    re_path(
         r"^process/(?P<variant>[a-z-]+)/$",
         static_callback,
         name="static_process_payment",
