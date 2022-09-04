@@ -87,6 +87,7 @@ const handleCardPayment = async (clientSecret: string, card: stripe.elements.Ele
       }
   })
   if (result.error) {
+    console.error("confirmCardPayment failed", result.error)
     showError(result.error.message)
   } else if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
     window.location.href = paymentForm.dataset.successurl || '/'
@@ -97,6 +98,7 @@ const handleCardPayment = async (clientSecret: string, card: stripe.elements.Ele
 
 const handleServerResponse = (response: PaymentProcessingResponse, card: stripe.elements.Element) => {
   if (response.error) {
+    console.error("handleServerResponse failed", response.error)
     showError(response.error)
     // Show error from server on payment form
   } else if (response.requires_action) {
@@ -152,6 +154,7 @@ if (cardElement) {
       }
       const result = await stripe.createPaymentMethod('card', card, billingDetails)
       if (result.error) {
+        console.error("createPaymentMethod for cc failed", result.error.message)
         showError(result.error.message)
       } else if (result.paymentMethod) {
         // Otherwise send paymentMethod.id to your server (see Step 2)
@@ -182,6 +185,7 @@ if (iban) {
         owner_name: owner.value
       })
       if (setupResponse.error) {
+        console.error("SEPA sendPaymentData failed", setupResponse.error)
         showError(setupResponse.error)
         return
       }
@@ -206,6 +210,7 @@ if (iban) {
           sepaData
         )
         if (confirmResponse.error) {
+          console.error("confirm sepa debit failed", setupResponse, confirmResponse.error)
           showError(confirmResponse.error.message)
           return
         }
@@ -270,6 +275,7 @@ if (prContainer && clientSecret) {
 
       if (response.error) {
         ev.complete('fail')
+        console.error("paymentRequest failed sending paymentMethod", response.error)
         showError(response.error)
         return
         // Show error from server on payment form
@@ -278,6 +284,7 @@ if (prContainer && clientSecret) {
         const actionResult = await stripe.confirmCardPayment(response.payment_intent_client_secret)
         if (actionResult.error) {
           ev.complete('fail')
+          console.error("paymentRequest failed confirmCardPayment recurring", actionResult.error)
           showError(actionResult.error.message)
           return
         }
@@ -298,6 +305,7 @@ if (prContainer && clientSecret) {
       // re-show the payment interface, or show an error message and close
       // the payment interface.
       ev.complete('fail')
+      console.error("paymentRequest failed confirmCardPayment", confirmResult.error)
       showError(confirmResult.error.message)
     } else {
       // Report to the browser that the confirmation was successful, prompting
@@ -308,6 +316,7 @@ if (prContainer && clientSecret) {
       // Let Stripe.js handle the rest of the payment flow.
         const actionResult = await stripe.confirmCardPayment(clientSecret)
         if (actionResult.error) {
+          console.error("paymentRequest failed confirmCardPayment 2", actionResult.error)
           showError(actionResult.error.message)
           return
         }
