@@ -1,5 +1,6 @@
 interface PaymentProcessingResponse {
   error?: string
+  type: string
   requires_action?: boolean
   payment_intent_client_secret: string
   payment_method?: string
@@ -186,7 +187,7 @@ if (iban) {
       }
 
       let sepaData, confirmMethod
-      if (setupResponse.customer) {
+      if (setupResponse.type != "payment_intent") {
         sepaData = {
           payment_method: setupResponse.payment_method,
         } as stripe.ConfirmSepaDebitSetupData
@@ -194,7 +195,7 @@ if (iban) {
       } else {
         sepaData = {
           payment_method: setupResponse.payment_method,
-          save_payment_method: false
+          save_payment_method: setupResponse.customer
         } as stripe.ConfirmSepaDebitPaymentData
         confirmMethod = stripe.confirmSepaDebitPayment  
       }
