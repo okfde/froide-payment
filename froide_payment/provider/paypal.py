@@ -29,9 +29,6 @@ CENTS = Decimal("0.01")
 
 
 def utcisoformat(dt):
-    """
-    FIXME: no tz conversion
-    """
     if timezone.is_aware(dt):
         dt = timezone.localtime(dt, timezone=timezone.utc)
     return dt.replace(microsecond=0).replace(tzinfo=None).isoformat() + "Z"
