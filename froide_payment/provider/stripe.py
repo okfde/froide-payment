@@ -290,7 +290,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
         if payment.variant != self.provider_name:
             # This payment reached the wrong provider implementation endpoint
             return HttpResponse(status=204)
-        if request.is_ajax():
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
             return self.handle_form_communication(payment, request)
         return super().process_data(payment, request)
 
