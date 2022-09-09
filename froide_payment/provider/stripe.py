@@ -11,7 +11,6 @@ from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
-import pytz
 import stripe
 from payments import RedirectNeeded, get_payment_model
 from payments.forms import PaymentForm
@@ -33,9 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 def convert_utc_timestamp(timestamp):
-    tz = timezone.get_current_timezone()
-    utc_dt = datetime.utcfromtimestamp(timestamp).replace(tzinfo=pytz.utc)
-    return tz.normalize(utc_dt.astimezone(tz))
+    return datetime.utcfromtimestamp(timestamp).replace(tzinfo=timezone.utc)
 
 
 def requires_confirmation(request, payment, data):

@@ -11,7 +11,6 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 import dateutil.parser
-import pytz
 import requests
 from payments import PaymentError, RedirectNeeded
 from payments.core import BasicProvider
@@ -33,10 +32,9 @@ def utcisoformat(dt):
     """
     FIXME: no tz conversion
     """
-    dt = dt.replace(microsecond=0)
-    if timezone.is_aware:
-        dt = dt.replace(tzinfo=None)
-    return dt.astimezone(pytz.utc).replace(tzinfo=None).isoformat() + "Z"
+    if timezone.is_aware(dt):
+        dt = timezone.localtime(dt, timezone=timezone.utc)
+    return dt.replace(microsecond=0).replace(tzinfo=None).isoformat() + "Z"
 
 
 class PaypalProvider(BasicProvider):
