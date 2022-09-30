@@ -2,6 +2,7 @@ import json
 import logging
 from datetime import datetime
 from decimal import Decimal
+from typing import Optional
 
 from django.conf import settings
 from django.core.mail import mail_managers
@@ -12,7 +13,7 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 import stripe
-from payments import RedirectNeeded, get_payment_model
+from payments import FraudStatus, RedirectNeeded, get_payment_model
 from payments.forms import PaymentForm
 from payments.stripe import StripeProvider
 
@@ -35,18 +36,28 @@ def convert_utc_timestamp(timestamp):
     return datetime.utcfromtimestamp(timestamp).replace(tzinfo=timezone.utc)
 
 
-def requires_confirmation(request, payment, data):
-    if payment.variant != "sepa":
-        return False
-    if suspicious_ip(request):
-        return True
-    target_countries = settings.FROIDE_CONFIG.get("target_countries", None)
-    if target_countries and not data["iban"].startswith(target_countries):
-        return True
-    check_threshold = getattr(settings, "PAYMENT_CHECK_THRESHOLD", 1000)
-    if payment.total >= check_threshold:
+def requires_confirmation(request, payment, data) -> bool:
+    result = _requires_confirmation(request, payment, data)
+    if result:
+        payment.fraud_status = FraudStatus.REVIEW
+        payment.fraud_mesage = result
         return True
     return False
+
+
+def _requires_confirmation(request, payment, data) -> Optional[str]:
+    if payment.variant != "sepa":
+        return None
+    suspicion = suspicious_ip(request)
+    if suspicion:
+        return str(suspicion)
+    target_countries = settings.FROIDE_CONFIG.get("target_countries", None)
+    if target_countries and not data["iban"].startswith(target_countries):
+        return "IBAN not in target countries"
+    check_threshold = getattr(settings, "PAYMENT_CHECK_THRESHOLD", 1000)
+    if payment.total >= check_threshold:
+        return "Amount too high"
+    return None
 
 
 class StripeWebhookMixin:
