@@ -802,17 +802,18 @@ class StripeSEPAProvider(StripeIntentProvider):
     def check_confirmation(self, request, payment, data):
         return requires_confirmation(request, payment, data)
 
-    def create_payment_method(self, iban, owner_name, billing_email):
+    def create_payment_method(self, iban, owner_name, billing_email, address=None):
+        if address is None:
+            address = {}
+        else:
+            address = {"address": address}
         try:
             return stripe.PaymentMethod.create(
                 type=self.stripe_payment_method_type,
                 sepa_debit={
                     "iban": iban,
                 },
-                billing_details={
-                    "name": owner_name,
-                    "email": billing_email,
-                },
+                billing_details={"name": owner_name, "email": billing_email, **address},
             )
         except stripe.error.StripeError as e:
             logger.exception(e)

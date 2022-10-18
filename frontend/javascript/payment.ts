@@ -175,6 +175,50 @@ if (cardElement) {
 
 const iban = document.querySelector('input#id_iban') as HTMLInputElement
 if (iban) {
+
+  const additionalInfoFields = document.querySelector('#additional-sepa-info') as HTMLElement
+  if (additionalInfoFields) {
+    const toggleAdditionalInfo = () => {
+      const ibanPattern = additionalInfoFields.dataset.ibanpattern
+      if (!ibanPattern) { return }
+      if (iban.value.match(`^${ibanPattern}.*$`)) {
+        additionalInfoFields.removeAttribute("hidden")
+        additionalInfoFields.querySelectorAll("input, select").forEach((el) => {
+          el.setAttribute("required", "required")
+        })
+        additionalInfoFields.querySelectorAll("label").forEach((el) => {
+          el.classList.add("field-required")
+        })
+        const countryCode = iban.value.substring(0, 2)
+        const countrySelect = document.querySelector('select#id_country') as HTMLSelectElement
+        if (countrySelect.querySelector(`option[value=${countryCode}]`)) {
+          countrySelect.value = countryCode
+        }
+      } else {
+        additionalInfoFields.setAttribute("hidden", "true")
+        additionalInfoFields.querySelectorAll("input, select").forEach((el) => {
+          el.removeAttribute("required")
+        })
+        additionalInfoFields.querySelectorAll("label").forEach((el) => {
+          el.classList.remove("field-required")
+        })
+      }
+    }
+
+    iban.addEventListener("change", toggleAdditionalInfo)
+    iban.addEventListener("keyup", toggleAdditionalInfo)
+  }
+
+  const getAdditionalSepaInfo = () => {
+    if (!additionalInfoFields) { return {} }
+    const fields = additionalInfoFields.querySelectorAll("input, select") as NodeListOf<HTMLInputElement | HTMLSelectElement>
+    const data: {[key: string]: string} = {}
+    fields.forEach((el) => {
+      data[el.name] = el.value
+    })
+    return data
+  }
+
   paymentForm.addEventListener('submit', async (event) => {
     event.preventDefault()
     const owner = document.querySelector('input#id_owner_name') as HTMLInputElement
@@ -182,7 +226,8 @@ if (iban) {
     try {
       const setupResponse = await sendPaymentData({
         iban: iban.value,
-        owner_name: owner.value
+        owner_name: owner.value,
+        ...getAdditionalSepaInfo()
       })
       if (setupResponse.error) {
         console.error("SEPA sendPaymentData failed", setupResponse.error)

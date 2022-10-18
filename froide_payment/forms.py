@@ -4,6 +4,7 @@ import uuid
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
+from django_countries.fields import CountryField
 from localflavor.generic.countries.sepa import IBAN_SEPA_COUNTRIES
 from localflavor.generic.forms import IBANFormField
 from payments.core import provider_factory
@@ -95,6 +96,63 @@ class LastschriftPaymentForm(BasePaymentForm):
 
 class SEPAPaymentForm(LastschriftPaymentForm):
     terms = None  # Handled client side
+    iban_address_required = (
+        "AD",
+        "PF",
+        "TF",
+        "GI",
+        "GB",
+        "GG",
+        "VA",
+        "IM",
+        "JE",
+        "MC",
+        "NC",
+        "BL",
+        "PM",
+        "SM",
+        "CH",
+        "WF",
+    )
+
+    address = forms.CharField(
+        label=_("address"),
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": _("Address"),
+            }
+        ),
+    )
+
+    postcode = forms.CharField(
+        max_length=20,
+        label=_("Postcode"),
+        required=False,
+        widget=forms.TextInput(
+            attrs={"placeholder": _("Postcode"), "class": "form-control"}
+        ),
+    )
+    city = forms.CharField(
+        max_length=255,
+        label=_("City"),
+        required=False,
+        widget=forms.TextInput(
+            attrs={"placeholder": _("City"), "class": "form-control"}
+        ),
+    )
+
+    country = CountryField().formfield(
+        label=_("Country"),
+        required=False,
+        widget=forms.Select(
+            attrs={
+                "class": "form-select",
+            }
+        ),
+    )
+
     SEPA_MANDATE = _(
         "By providing your payment information and confirming this payment, you "
         "authorise (A) Open Knowledge Foundation Deutschland e.V. and Stripe, our "
@@ -108,14 +166,32 @@ class SEPAPaymentForm(LastschriftPaymentForm):
         "receive notifications for future debits up to 2 days before they occur."
     )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.iban_address_required_regex = "|".join(self.iban_address_required)
+        order = self.payment.order
+        self.fields["address"].initial = order.street_address_1
+        self.fields["postcode"].initial = order.postcode
+        self.fields["city"].initial = order.city
+        self.fields["country"].initial = order.country
+
     def clean(self):
         if "iban" not in self.cleaned_data:
             return self.cleaned_data
+        address = None
+        if self.cleaned_data["iban"][:2] in self.iban_address_required:
+            address = {
+                "line1": self.cleaned_data["address"],
+                "city": self.cleaned_data["city"],
+                "postal_code": self.cleaned_data["postcode"],
+                "country": self.cleaned_data["country"],
+            }
         try:
             self.payment_method = self.provider.create_payment_method(
                 self.cleaned_data["iban"],
                 self.cleaned_data["owner_name"],
                 self.payment.billing_email,
+                address=address,
             )
         except ValueError as e:
             if e.args[0] == "invalid_bank_account_iban":
