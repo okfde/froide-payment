@@ -21,6 +21,7 @@ def subscription_payment(sender=None, instance=None, **kwargs):
         PaymentStatus.ERROR,
         PaymentStatus.REFUNDED,
         PaymentStatus.REJECTED,
+        PaymentStatus.CANCELED,
     ):
         active = False
 

@@ -291,6 +291,10 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
             payment.change_status(PaymentStatus.ERROR, message=error_message)
             payment.save()
             return False
+        elif intent.status == "canceled":
+            payment.change_status(PaymentStatus.CANCELED)
+            payment.save()
+            return False
         if payment.status != PaymentStatus.PENDING:
             payment.change_status(PaymentStatus.PENDING)
 
@@ -593,6 +597,17 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
 
         self.update_status(payment)
 
+    def payment_intent_canceled(self, request, intent):
+        logger.info(
+            "%s Webhook: Payment intent canceled: %s", self.provider_name, intent.id
+        )
+
+        payment = self.get_payment_by_id(intent.id)
+        if payment is None:
+            return
+
+        self.update_status(payment)
+
     def invoice_upcoming(self, request, invoice):
         # Email user to check details, no invoice id yet!
         # has subscription?
@@ -836,7 +851,7 @@ class StripeSEPAProvider(StripeIntentProvider):
         if payment is None and intent.invoice:
             order = Order.objects.filter(remote_reference=intent.invoice).first()
             if order:
-                payment = payment = order.get_or_create_payment(self.provider_name)
+                payment = order.get_or_create_payment(self.provider_name)
 
         if payment is None:
             raise ValueError
