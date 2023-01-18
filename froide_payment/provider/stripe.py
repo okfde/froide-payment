@@ -295,6 +295,10 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
             payment.change_status(PaymentStatus.CANCELED)
             payment.save()
             return False
+        elif intent.status == "requires_confirmation":
+            # Try confirming
+            stripe.PaymentIntent.confirm(payment.transaction_id)
+            return False
         if payment.status != PaymentStatus.PENDING:
             payment.change_status(PaymentStatus.PENDING)
 
