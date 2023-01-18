@@ -617,10 +617,8 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
         # has subscription?
         pass
 
-    def invoice_created(self, request, invoice):
-        """
-        Create order
-        """
+    def get_payment_for_invoice(self, invoice_id):
+        invoice = stripe.Invoice.retrieve(invoice_id)
         try:
             subscription = Subscription.objects.get(
                 remote_reference=invoice.subscription, plan__provider=self.provider_name
@@ -628,32 +626,37 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
         except Subscription.DoesNotExist:
             # Don't know this subscription on this provider
             return
-        logger.info(
-            "%s webhook invoice created for subscription %s",
-            self.provider_name,
-            subscription.id,
-        )
 
-        if not Order.objects.filter(remote_reference=invoice.id).exists():
+        order = Order.objects.filter(remote_reference=invoice_id).first()
+        if order is None:
             # Create order based on invoice
-            subscription.create_recurring_order(force=True, remote_reference=invoice.id)
+            payment = subscription.create_recurring_order(
+                force=True, remote_reference=invoice_id
+            )
+        else:
+            payment = order.payments.all()[0]
+
+        if invoice.payment_intent:
+            payment.transaction_id = invoice.payment_intent
+            payment.save()
+        return payment
+
+    def invoice_updated(self, request, invoice):
+        payment = self.get_payment_for_invoice(invoice.id)
+        logger.info(
+            "%s webhook invoice updated for payment %s",
+            self.provider_name,
+            payment.id,
+        )
+        self.update_status(payment)
 
     def invoice_finalized(self, request, invoice):
         """
         payment intent is now available
         Create payment on order
         """
-        try:
-            order = Order.objects.get(
-                remote_reference=invoice.id,
-                subscription__plan__provider=self.provider_name,
-            )
-        except Order.DoesNotExist:
-            # Don't know this order/invoice on this provider
-            return
-        payment = order.get_or_create_payment(self.provider_name)
-        payment.transaction_id = invoice.payment_intent or ""
-        payment.save()
+
+        payment = self.get_payment_for_invoice(invoice.id)
         logger.info(
             "%s webhook invoice finalized for payment %s",
             self.provider_name,
@@ -666,21 +669,14 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
         automatic payment does not work
         send customer email with payment link
         """
-        try:
-            order = Order.objects.get(
-                remote_reference=invoice.id,
-                subscription__plan__provider=self.provider_name,
-            )
-        except Order.DoesNotExist:
-            # Don't know this invoice!
-            return
-        order
+        # payment = self.get_payment_for_invoice(invoice.id)
+        # order
         # TODO: do something
 
     def charge_dispute_closed(self, request, dispute):
         if dispute["status"] != "lost":
             return
-        mail_managers("Charge dipsute lost", str(dispute))
+        mail_managers("Charge dispute lost", str(dispute))
         try:
             payment = Payment.objects.get(
                 transaction_id=dispute["payment_intent"], variant=self.provider_name
@@ -853,9 +849,7 @@ class StripeSEPAProvider(StripeIntentProvider):
 
         payment = self.get_payment_by_id(intent.id)
         if payment is None and intent.invoice:
-            order = Order.objects.filter(remote_reference=intent.invoice).first()
-            if order:
-                payment = order.get_or_create_payment(self.provider_name)
+            payment = self.get_payment_for_invoice(intent.invoice)
 
         if payment is None:
             raise ValueError
