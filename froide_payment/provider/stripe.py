@@ -643,6 +643,10 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
 
     def invoice_updated(self, request, invoice):
         payment = self.get_payment_for_invoice(invoice.id)
+        if payment is None:
+            # wrong endpoint
+            return
+
         logger.info(
             "%s webhook invoice updated for payment %s",
             self.provider_name,
@@ -657,6 +661,9 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
         """
 
         payment = self.get_payment_for_invoice(invoice.id)
+        if payment is None:
+            # wrong endpoint
+            return
         logger.info(
             "%s webhook invoice finalized for payment %s",
             self.provider_name,
@@ -852,6 +859,8 @@ class StripeSEPAProvider(StripeIntentProvider):
             payment = self.get_payment_for_invoice(intent.invoice)
 
         if payment is None:
+            # This webhook is only for this method
+            # payment needs to be available
             raise ValueError
 
         order = payment.order
