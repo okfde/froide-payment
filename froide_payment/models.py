@@ -5,6 +5,8 @@ from collections import defaultdict
 from django.apps import apps
 from django.conf import settings
 from django.db import models, transaction
+from django.db.models.constraints import UniqueConstraint
+from django.db.models.functions import Trunc
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -305,6 +307,17 @@ class Order(models.Model):
 
     service_start = models.DateTimeField(null=True, blank=True)
     service_end = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                "remote_reference",
+                Trunc("service_start", "day"),
+                name="unique_remote_reference_service_start",
+                condition=~models.Q(remote_reference="")
+                & models.Q(service_start__isnull=False),
+            )
+        ]
 
     def __str__(self):
         return self.description
