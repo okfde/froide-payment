@@ -639,7 +639,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
                     if order is None:
                         # Create order based on invoice
                         payment = subscription.create_recurring_order(
-                            force=True, remote_reference=invoice_id
+                            remote_reference=invoice_id
                         )
                     else:
                         payment = order.payments.all()[0]

@@ -143,11 +143,12 @@ def create_recurring_order(subscription, remote_reference=None, now=None, force=
         return
 
     provider_name = subscription.plan.provider
-    coming_month = now + timedelta(days=25)
 
     last_order = subscription.get_last_order()
 
-    if not force and last_order.service_end > coming_month:
+    now += timedelta(days=1)
+
+    if not force and now < last_order.service_end:
         # Not yet due, set next_date correctly
         subscription.next_date = last_order.service_end
         subscription.save()
