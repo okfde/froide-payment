@@ -6,7 +6,7 @@ from typing import Optional
 
 from django.conf import settings
 from django.core.mail import mail_managers
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect
 from django.utils import timezone
@@ -629,21 +629,27 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
             # Don't know this subscription on this provider
             return
 
-        orders = Order.objects.select_for_update().filter(remote_reference=invoice_id)
-        with transaction.atomic():
-            order = orders.first()
-            if order is None:
-                # Create order based on invoice
-                payment = subscription.create_recurring_order(
-                    force=True, remote_reference=invoice_id
-                )
-            else:
-                payment = order.payments.all()[0]
+        while True:
+            orders = Order.objects.select_for_update().filter(
+                remote_reference=invoice_id
+            )
+            try:
+                with transaction.atomic():
+                    order = orders.first()
+                    if order is None:
+                        # Create order based on invoice
+                        payment = subscription.create_recurring_order(
+                            force=True, remote_reference=invoice_id
+                        )
+                    else:
+                        payment = order.payments.all()[0]
 
-            if invoice.payment_intent:
-                payment.transaction_id = invoice.payment_intent
-                payment.save()
-            return payment
+                    if invoice.payment_intent:
+                        payment.transaction_id = invoice.payment_intent
+                        payment.save()
+                    return payment
+            except IntegrityError:
+                pass
 
     def invoice_updated(self, request, invoice):
         payment = self.get_payment_for_invoice(invoice.id)
