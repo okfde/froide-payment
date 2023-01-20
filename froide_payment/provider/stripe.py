@@ -298,7 +298,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
             return False
         elif intent.status == "requires_confirmation":
             # Try confirming
-            stripe.PaymentIntent.confirm(payment.transaction_id)
+            self.confirm_single_payment(payment)
             return False
         if payment.status != PaymentStatus.PENDING:
             payment.change_status(PaymentStatus.PENDING)
@@ -700,6 +700,39 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
         payment.change_status(PaymentStatus.REJECTED)
         payment.save()
 
+    def confirm_single_payment(self, payment):
+        """
+        Confirm payment via mandate data from first payment
+        """
+        order = payment.order
+        if order.is_recurring:
+            sub = order.subscription
+            first_order = sub.get_first_order()
+            first_payment = first_order.payments.first()
+        else:
+            first_payment = payment
+
+        try:
+            user_agent = payment.attrs.user_agent
+        except AttributeError:
+            user_agent = "-"
+
+        stripe.PaymentIntent.confirm(
+            payment.transaction_id,
+            mandate_data={
+                "customer_acceptance": {
+                    "type": "online",
+                    "accepted_at": int(first_payment.modified.timestamp()),
+                    "online": {
+                        "ip_address": first_payment.customer_ip_address,
+                        "user_agent": user_agent,
+                    },
+                }
+            },
+        )
+        payment.change_status(PaymentStatus.PENDING)
+        payment.save()
+
 
 class StripeSEPAProvider(StripeIntentProvider):
     form_class = SEPAPaymentForm
@@ -746,26 +779,7 @@ class StripeSEPAProvider(StripeIntentProvider):
             payment.save()
             return
 
-        try:
-            user_agent = payment.attrs.user_agent
-        except AttributeError:
-            user_agent = "-"
-
-        stripe.PaymentIntent.confirm(
-            payment.transaction_id,
-            mandate_data={
-                "customer_acceptance": {
-                    "type": "online",
-                    "accepted_at": int(payment.modified.timestamp()),
-                    "online": {
-                        "ip_address": payment.customer_ip_address,
-                        "user_agent": user_agent,
-                    },
-                }
-            },
-        )
-        payment.change_status(PaymentStatus.PENDING)
-        payment.save()
+        self.confirm_single_payment(payment)
 
     def cancel_payment(self, payment):
         """
