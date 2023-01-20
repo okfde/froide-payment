@@ -298,7 +298,8 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
             return False
         elif intent.status == "requires_confirmation":
             # Try confirming
-            self.confirm_single_payment(payment)
+            if payment.status == PaymentStatus.PENDING:
+                self.confirm_single_payment(payment)
             return False
         if payment.status != PaymentStatus.PENDING:
             payment.change_status(PaymentStatus.PENDING)
