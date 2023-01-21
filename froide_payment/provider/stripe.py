@@ -635,13 +635,14 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
             )
             try:
                 with transaction.atomic():
+                    payment = None
                     order = orders.first()
                     if order is None:
                         # Create order based on invoice
                         payment = subscription.create_recurring_order(
                             remote_reference=invoice_id
                         )
-                    else:
+                    if payment is None:
                         payment = order.payments.all()[0]
 
                     if invoice.payment_intent:
