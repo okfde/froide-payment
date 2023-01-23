@@ -204,6 +204,7 @@ class PaymentAdmin(admin.ModelAdmin):
     search_fields = ("transaction_id", "billing_email", "billing_last_name")
 
     actions = [
+        "update_status",
         "export_lastschrift",
         "send_lastschrift_mail",
         "confirm_payments",
@@ -234,6 +235,12 @@ class PaymentAdmin(admin.ModelAdmin):
 
     def service_label(self, obj):
         return obj.order.get_service_label()
+
+    def update_status(self, request, queryset):
+        for payment in queryset:
+            provider = payment.get_provider()
+            if hasattr(provider, "update_status"):
+                provider.update_status(payment)
 
     def confirm_payments(self, request, queryset):
         queryset = queryset.filter(status=PaymentStatus.DEFERRED)
