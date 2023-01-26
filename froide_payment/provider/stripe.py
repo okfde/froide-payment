@@ -629,7 +629,8 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
             # Don't know this subscription on this provider
             return
 
-        while True:
+        tries = 0
+        while tries < 4:
             orders = Order.objects.select_for_update().filter(
                 remote_reference=invoice_id
             )
@@ -642,15 +643,20 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
                         payment = subscription.create_recurring_order(
                             remote_reference=invoice_id
                         )
-                    if payment is None:
+                    else:
                         payment = order.payments.all()[0]
 
-                    if invoice.payment_intent:
+                    if payment is None:
+                        tries += 1
+                        continue
+
+                    if invoice.payment_intent and not payment.transaction_id:
                         payment.transaction_id = invoice.payment_intent
-                        payment.save()
+                        payment.save(update_fields=["transaction_id"])
                     return payment
             except IntegrityError:
                 pass
+            tries += 1
 
     def invoice_updated(self, request, invoice):
         payment = self.get_payment_for_invoice(invoice.id)
