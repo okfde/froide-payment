@@ -784,6 +784,8 @@ class StripeSEPAProvider(StripeIntentProvider):
                 ],
                 expand=["latest_invoice", "latest_invoice.payment_intent"],
             )
+            subscription.remote_reference = stripe_subscription.id
+            subscription.save(update_fields=["remote_reference"])
             latest_invoice = stripe_subscription.latest_invoice
             subscription.attach_order_info(
                 remote_reference=latest_invoice.id,
