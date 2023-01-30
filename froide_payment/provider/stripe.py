@@ -1,6 +1,7 @@
 import json
 import logging
 from datetime import datetime
+from datetime import timezone as tz
 from decimal import Decimal
 from typing import Optional
 
@@ -34,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 def convert_utc_timestamp(timestamp):
-    return datetime.utcfromtimestamp(timestamp).replace(tzinfo=timezone.utc)
+    return datetime.utcfromtimestamp(timestamp).replace(tzinfo=tz.utc)
 
 
 def requires_confirmation(request, payment, data) -> bool:
