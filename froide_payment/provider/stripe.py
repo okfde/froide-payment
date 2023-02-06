@@ -632,9 +632,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
 
         tries = 0
         while tries < 4:
-            orders = Order.objects.select_for_update().filter(
-                remote_reference=invoice_id
-            )
+            orders = Order.objects.filter(remote_reference=invoice_id)
             try:
                 with transaction.atomic():
                     payment = None
