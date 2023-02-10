@@ -1,0 +1,51 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-10-18 10:37+0200\n"
+"PO-Revision-Date: 2022-10-18 10:39+0200\n"
+"Last-Translator: Stefan Wehrmeyer <stefan.wehrmeyer@okfn.de>\n"
+"Language-Team: \n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.1.1\n"
+
+#: froide_payment/forms.py
+msgid "e.g. DE12..."
+msgstr "z.B. AT12..."
+
+
+#: froide_payment/forms.py
+msgid ""
+"By providing your payment information and confirming this payment, you "
+"authorise (A) Open Knowledge Foundation Deutschland e.V. and Stripe, our "
+"payment service provider and/or PPRO, its local service provider, to send "
+"instructions to your bank to debit your account and (B) your bank to debit "
+"your account in accordance with those instructions. As part of your rights, "
+"you are entitled to a refund from your bank under the terms and conditions "
+"of your agreement with your bank. A refund must be claimed within 8 weeks "
+"starting from the date on which your account was debited. Your rights are "
+"explained in a statement that you can obtain from your bank. You agree to "
+"receive notifications for future debits up to 2 days before they occur."
+msgstr ""
+"Durch Angabe Ihrer Zahlungsinformationen und der Bestätigung der "
+"vorliegenden Zahlung ermächtigen Sie (A) Forum Informationsfreiheit "
+"und Stripe, unseren Zahlungsdienstleister, bzw. PPRO, den "
+"lokalen Bankdienstleister von Stripe, Ihrem Kreditinstitut Anweisungen zur "
+"Belastung Ihres Kontos zu erteilen, und (B) Ihr Kreditinstitut, Ihr Konto "
+"gemäß diesen Anweisungen zu belasten. Im Rahmen Ihrer Rechte haben Sie, "
+"entsprechend den Vertragsbedingungen mit Ihrem Kreditinstitut, Anspruch auf "
+"eine Rückerstattung von Ihrem Kreditinstitut. Eine Rückerstattung muss "
+"innerhalb von 8 Wochen ab dem Tag, an dem Ihr Konto belastet wurde, geltend "
+"gemacht werden. Eine Erläuterung Ihrer Rechte können Sie von Ihrem "
+"Kreditinstitut anfordern. Sie erklären sich einverstanden, "
+"Benachrichtigungen über künftige Belastungen bis spätestens 2 Tage vor dem "
+"Buchungsdatum zu erhalten."
