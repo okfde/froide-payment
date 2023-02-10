@@ -32,6 +32,7 @@ from ..utils import send_sepa_mail
 from .utils import CancelInfo
 
 logger = logging.getLogger(__name__)
+stripe.api_version = '2020-08-27'
 
 
 def convert_utc_timestamp(timestamp):
