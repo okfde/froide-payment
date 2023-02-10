@@ -1,6 +1,7 @@
 import json
 import logging
 from datetime import datetime
+from datetime import timezone as tz
 from decimal import Decimal
 from typing import Optional
 
@@ -34,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 def convert_utc_timestamp(timestamp):
-    return datetime.utcfromtimestamp(timestamp).replace(tzinfo=timezone.utc)
+    return datetime.utcfromtimestamp(timestamp).replace(tzinfo=tz.utc)
 
 
 def requires_confirmation(request, payment, data) -> bool:
@@ -629,10 +630,9 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
             # Don't know this subscription on this provider
             return
 
-        while True:
-            orders = Order.objects.select_for_update().filter(
-                remote_reference=invoice_id
-            )
+        tries = 0
+        while tries < 4:
+            orders = Order.objects.filter(remote_reference=invoice_id)
             try:
                 with transaction.atomic():
                     payment = None
@@ -642,15 +642,20 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
                         payment = subscription.create_recurring_order(
                             remote_reference=invoice_id
                         )
-                    if payment is None:
+                    else:
                         payment = order.payments.all()[0]
 
-                    if invoice.payment_intent:
+                    if payment is None:
+                        tries += 1
+                        continue
+
+                    if invoice.payment_intent and not payment.transaction_id:
                         payment.transaction_id = invoice.payment_intent
-                        payment.save()
+                        payment.save(update_fields=["transaction_id"])
                     return payment
             except IntegrityError:
                 pass
+            tries += 1
 
     def invoice_updated(self, request, invoice):
         payment = self.get_payment_for_invoice(invoice.id)
@@ -777,6 +782,8 @@ class StripeSEPAProvider(StripeIntentProvider):
                 ],
                 expand=["latest_invoice", "latest_invoice.payment_intent"],
             )
+            subscription.remote_reference = stripe_subscription.id
+            subscription.save(update_fields=["remote_reference"])
             latest_invoice = stripe_subscription.latest_invoice
             subscription.attach_order_info(
                 remote_reference=latest_invoice.id,
