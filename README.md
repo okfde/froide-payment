@@ -27,6 +27,7 @@ Configure these event types:
 - `invoice.payment_action_required`
 - `invoice.upcoming`
 - `invoice.created`
+- `invoice.finalized`
 
 
 Use this URL on your domain:
