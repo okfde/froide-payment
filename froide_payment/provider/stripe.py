@@ -170,7 +170,7 @@ class StripeSubscriptionMixin:
         return False
 
     def get_stripe_locales(self):
-        data = {"de": ["de-DE"], "en": ["en-US"]}
+        data = {"de": ["de-DE"], "de-at": ["de-DE"], "en": ["en-US"]}
         if settings.LANGUAGE_CODE in data:
             return data[settings.LANGUAGE_CODE]
         return []
