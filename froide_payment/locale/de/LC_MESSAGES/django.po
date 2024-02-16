@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-10-18 10:37+0200\n"
-"PO-Revision-Date: 2022-10-18 10:39+0200\n"
+"POT-Creation-Date: 2024-04-22 18:16+0200\n"
+"PO-Revision-Date: 2024-04-22 18:17+0200\n"
 "Last-Translator: Stefan Wehrmeyer <stefan.wehrmeyer@okfn.de>\n"
 "Language-Team: \n"
 "Language: de\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 3.1.1\n"
+"X-Generator: Poedit 3.3.2\n"
 
 #: froide_payment/admin.py
 #, python-format
@@ -533,6 +533,13 @@ msgstr "Ihre Dauerspende"
 #: froide_payment/templates/froide_payment/subscription/default.html
 msgid "Details"
 msgstr "Details"
+
+#: froide_payment/templates/froide_payment/subscription/default.html
+msgid ""
+"To change the amount please cancel your subscription and create a new one."
+msgstr ""
+"Zum Ändern des Betrags kündigen Sie ihre Spende bitte und legen eine neue "
+"Dauerspende an."
 
 #: froide_payment/templates/froide_payment/subscription/default.html
 msgid "Close"
