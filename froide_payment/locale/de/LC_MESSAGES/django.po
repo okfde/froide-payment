@@ -277,7 +277,7 @@ msgstr "Sie können Ihren Dauerauftrag nur bei Ihrer Bank selbst abstellen."
 
 #: froide_payment/provider/lastschrift.py
 msgid "You can cancel your direct debit subscription here."
-msgstr "Sie können Ihre Dauerspende per Lastschrift hier kündigen."
+msgstr "Sie können Ihre Dauerspende per Lastschrift hier kündigen. Zum Ändern des Betrags kündigen Sie ihre Spende bitte und legen eine neue Dauerspende an."
 
 #: froide_payment/provider/paypal.py
 msgid "You can cancel your Paypal subscription."
