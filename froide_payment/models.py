@@ -188,7 +188,12 @@ class Subscription(models.Model):
         )
 
     def create_order(
-        self, kind="", description=None, is_donation=True, remote_reference=""
+        self,
+        kind="",
+        description=None,
+        is_donation=True,
+        remote_reference="",
+        remote_reference_is_unique=False,
     ):
         now = timezone.now()
 
@@ -226,6 +231,7 @@ class Subscription(models.Model):
             service_start=service_start,
             service_end=service_end,
             remote_reference=remote_reference,
+            remote_reference_is_unique=remote_reference_is_unique,
         )
         return order
 
@@ -303,6 +309,7 @@ class Order(models.Model):
     kind = models.CharField(max_length=255, default="", blank=True)
 
     remote_reference = models.CharField(max_length=256, blank=True)
+    remote_reference_is_unique = models.BooleanField(default=False)
     token = models.UUIDField(default=uuid.uuid4, db_index=True)
 
     service_start = models.DateTimeField(null=True, blank=True)
@@ -316,7 +323,12 @@ class Order(models.Model):
                 name="unique_remote_reference_service_start",
                 condition=~models.Q(remote_reference="")
                 & models.Q(service_start__isnull=False),
-            )
+            ),
+            UniqueConstraint(
+                "remote_reference",
+                name="unique_remote_reference",
+                condition=models.Q(remote_reference_is_unique=True),
+            ),
         ]
 
     def __str__(self):
@@ -521,6 +533,13 @@ class Payment(BasePayment):
 
     class Meta:
         ordering = ("-modified",)
+        constraints = [
+            UniqueConstraint(
+                "transaction_id",
+                name="unique_transaction_id",
+                condition=~models.Q(transaction_id=""),
+            ),
+        ]
 
     STATUS_COLORS = {
         PaymentStatus.WAITING: "secondary",
