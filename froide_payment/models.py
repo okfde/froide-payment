@@ -195,6 +195,13 @@ class Subscription(models.Model):
         remote_reference="",
         remote_reference_is_unique=False,
     ):
+        existing_order = Order.objects.filter(remote_reference=remote_reference)
+        if remote_reference_is_unique and existing_order.exists():
+            raise ValueError(
+                "remote_reference_is_unique is set to True, but another "
+                "order with that remote reference already exists"
+            )
+
         now = timezone.now()
 
         last_order = self.get_last_order()
