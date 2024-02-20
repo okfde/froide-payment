@@ -133,7 +133,13 @@ def send_sepa_mail(payment, data):
     )
 
 
-def create_recurring_order(subscription, remote_reference=None, now=None, force=False):
+def create_recurring_order(
+    subscription,
+    remote_reference=None,
+    now=None,
+    force=False,
+    remote_reference_is_unique=False,
+):
     from .models import PaymentStatus
 
     if now is None:
@@ -162,7 +168,10 @@ def create_recurring_order(subscription, remote_reference=None, now=None, force=
 
     if remote_reference is None:
         remote_reference = subscription.remote_reference
-    order = subscription.create_order(remote_reference=remote_reference)
+    order = subscription.create_order(
+        remote_reference=remote_reference,
+        remote_reference_is_unique=remote_reference_is_unique,
+    )
     payment = order.get_or_create_payment(provider_name)
     subscription.last_date = order.created
     subscription.next_date = order.service_end

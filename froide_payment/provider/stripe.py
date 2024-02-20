@@ -347,9 +347,11 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
                 {
                     "requires_confirmation": True,
                     "type": intent.object,
-                    "payment_intent_client_secret": ""
-                    if getattr(intent, "confirmation_method", "") == "manual"
-                    else intent.client_secret,
+                    "payment_intent_client_secret": (
+                        ""
+                        if getattr(intent, "confirmation_method", "") == "manual"
+                        else intent.client_secret
+                    ),
                     "payment_method": intent.payment_method,
                     "customer": True if intent.customer else False,
                 }
@@ -640,7 +642,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
                     if order is None:
                         # Create order based on invoice
                         payment = subscription.create_recurring_order(
-                            remote_reference=invoice_id
+                            remote_reference=invoice_id, remote_reference_is_unique=True
                         )
                     else:
                         payment = order.payments.all()[0]
