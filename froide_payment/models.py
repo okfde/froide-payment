@@ -180,11 +180,21 @@ class Subscription(models.Model):
         order.remote_reference = remote_reference
         order.save()
 
-    def create_recurring_order(self, force=False, now=None, remote_reference=None):
+    def create_recurring_order(
+        self,
+        force=False,
+        now=None,
+        remote_reference=None,
+        remote_reference_is_unique=False,
+    ):
         from .utils import create_recurring_order
 
         return create_recurring_order(
-            self, force=force, now=now, remote_reference=remote_reference
+            self,
+            force=force,
+            now=now,
+            remote_reference=remote_reference,
+            remote_reference_is_unique=remote_reference_is_unique,
         )
 
     def create_order(
