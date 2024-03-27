@@ -32,6 +32,7 @@ from ..utils import send_sepa_mail
 from .utils import CancelInfo
 
 logger = logging.getLogger(__name__)
+stripe.api_version = '2020-08-27'
 
 
 def convert_utc_timestamp(timestamp):
@@ -169,7 +170,7 @@ class StripeSubscriptionMixin:
         return False
 
     def get_stripe_locales(self):
-        data = {"de": ["de-DE"], "en": ["en-US"]}
+        data = {"de": ["de-DE"], "de-at": ["de-DE"], "en": ["en-US"]}
         if settings.LANGUAGE_CODE in data:
             return data[settings.LANGUAGE_CODE]
         return []
