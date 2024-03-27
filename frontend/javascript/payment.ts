@@ -244,7 +244,8 @@ if (iban) {
       } else {
         sepaData = {
           payment_method: setupResponse.payment_method,
-          save_payment_method: setupResponse.customer
+          save_payment_method: setupResponse.customer,
+          setup_future_usage: "off_session",
         } as stripe.ConfirmSepaDebitPaymentData
         confirmMethod = stripe.confirmSepaDebitPayment  
       }
