@@ -1,37 +1,31 @@
 {% extends "froide_payment/payment/stripe_base.html" %}
-
 {% load i18n %}
-
-{% block form_attrs %}{{ block.super }}{% block novalidate %}{% endblock %}{% endblock %}
-
+{% block form_attrs %}
+  {{ block.super }}
+  {% block novalidate %}
+  {% endblock novalidate %}
+{% endblock form_attrs %}
 {% block payment_method %}
-
-{% include "bootstrap_field.html" with field=form.owner_name %}
-{% include "bootstrap_field.html" with field=form.iban %}
-
-<div id="additional-sepa-info" data-ibanpattern="{{ form.iban_address_required_regex }}" hidden>
-  <div class="alert alert-info">
-    {% translate "Your IBAN requires your address details for verification." %}
+  {% include "bootstrap_field.html" with field=form.owner_name %}
+  {% include "bootstrap_field.html" with field=form.iban %}
+  <div id="additional-sepa-info"
+       data-ibanpattern="{{ form.iban_address_required_regex }}"
+       hidden>
+    <div class="alert alert-info">{% translate "Your IBAN requires your address details for verification." %}</div>
+    {% include "bootstrap_field.html" with field=form.address %}
+    {% include "bootstrap_field.html" with field=form.city %}
+    {% include "bootstrap_field.html" with field=form.postcode %}
+    {% include "bootstrap_field.html" with field=form.country %}
   </div>
-  {% include "bootstrap_field.html" with field=form.address %}
-  {% include "bootstrap_field.html" with field=form.city %}
-  {% include "bootstrap_field.html" with field=form.postcode %}
-  {% include "bootstrap_field.html" with field=form.country %}
-</div>
-
-<div id="card-errors" class="alert alert-danger" style="display: none" role="alert"></div>
-
-<div>
-  <p class="text-muted small">
-    {{ form.SEPA_MANDATE }}
-  </p>
-</div>
-
-<div class="text-end">
-  <button id="donate-now" type="submit" class="btn btn-success btn-lg">
-    Jetzt spenden
-  </button>
-</div>
-
-{{ block.super }}
-{% endblock %}
+  <div id="card-errors" class="alert alert-danger" hidden role="alert"></div>
+  <div>
+    <p class="text-muted small">{{ form.SEPA_MANDATE }}</p>
+  </div>
+  <div class="text-end">
+    <button id="form-button"
+            type="submit"
+            class="btn btn-success btn-lg"
+            disabled>Jetzt spenden</button>
+  </div>
+  {{ block.super }}
+{% endblock payment_method %}
