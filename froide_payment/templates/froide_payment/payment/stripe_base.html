@@ -1,5 +1,5 @@
 {% extends "froide_payment/payment/base.html" %}
-
+{# djlint:off #}
 {% load i18n %}
 {% load frontendbuild %}
 {% load block_helper %}
@@ -27,10 +27,6 @@
 {% endblock %}
 
 {% block payment_method %}
-
-{% addtoblock "js" %}
-<script src="https://js.stripe.com/v3/"></script>
-{% endaddtoblock %}
-{% addfrontendbuild "payment.js" %}
-
+  {% addfrontendbuild "payment.js" %}
 {% endblock %}
+{# djlint:on #}
