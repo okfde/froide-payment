@@ -1,71 +1,73 @@
 {% extends "froide_payment/base.html" %}
-
 {% load i18n %}
 {% load static %}
 {% load block_helper %}
-
-{% block title %}{% if order.is_donation %}{% trans "Donate now" %}{% else %}{% trans "Pay now" %}{% endif %}{% endblock %}
-
+{% block title %}
+  {% if order.is_donation %}
+    {% trans "Donate now" %}
+  {% else %}
+    {% trans "Pay now" %}
+  {% endif %}
+{% endblock title %}
 {% block app_body %}
-<div class="row justify-content-center">
-  <div class="col-md-8">
-    <div class="mt-5 mb-3">
-      <h2 class="bg-primary text-white px-2 pt-1 pb-2">
-      {% if order.is_donation %}
-        {% if order.is_recurring %}
-          {% trans "Finish your recurring donation:" %}
-        {% else %}
-          {% trans "Finish your donation:" %}
-        {% endif %}
-      {% else %}
-        {% trans "Finish your payment:" %}
-      {% endif %}
-      </h2>
-    </div>
-
-    <p class="lead mb-5 mt-5">
-      {% block order_description %}
-        {% if order.is_donation %}
-          {% if order.is_recurring %}
-            {% blocktrans with amount=order.amount description=order.description interval=order.get_interval_description %}
+  <div class="row justify-content-center">
+    <div class="col-md-9 col-lg-8">
+      <div class="mt-5 mb-3">
+        <h2 class="bg-primary text-white px-2 pt-1 pb-2">
+          {% if order.is_donation %}
+            {% if order.is_recurring %}
+              {% trans "Finish your recurring donation:" %}
+            {% else %}
+              {% trans "Finish your donation:" %}
+            {% endif %}
+          {% else %}
+            {% trans "Finish your payment:" %}
+          {% endif %}
+        </h2>
+      </div>
+      <p class="lead mb-5 mt-5">
+        {% block order_description %}
+          {% if order.is_donation %}
+            {% if order.is_recurring %}
+              {% blocktrans with amount=order.amount description=order.description interval=order.get_interval_description %}
               You are donating <strong>{{ amount }}&nbsp;€</strong> <mark>{{ interval }}</mark>: {{ description }}.
             {% endblocktrans %}
+            {% else %}
+              {% blocktrans with amount=order.amount description=order.description %}You are donating <strong>{{ amount }}&nbsp;€</strong>: <mark>{{ description }}</mark>.{% endblocktrans %}
+            {% endif %}
           {% else %}
-            {% blocktrans with amount=order.amount description=order.description %}You are donating <strong>{{ amount }}&nbsp;€</strong>: <mark>{{ description }}</mark>.{% endblocktrans %}
+            {% blocktrans with amount=order.amount description=order.description %}You are paying <strong>{{ amount }}&nbsp;€</strong> for <mark>{{ description }}</mark>.{% endblocktrans %}
           {% endif %}
-        {% else %}
-          {% blocktrans with amount=order.amount description=order.description %}You are paying <strong>{{ amount }}&nbsp;€</strong> for <mark>{{ description }}</mark>.{% endblocktrans %}
-        {% endif %}
-      {% endblock %}
-    </p>
-    {% if order.is_recurring and order.is_donation %}
-      <p>{% trans "You can cancel your donation anytime online or by contacting us." %}</p>
-    {% endif %}
+        {% endblock order_description %}
+      </p>
+      {% if order.is_recurring and order.is_donation %}
+        <p>{% trans "You can cancel your donation anytime online or by contacting us." %}</p>
+      {% endif %}
+    </div>
   </div>
-</div>
-<div class="row justify-content-center">
-  <div class="col-md-8">
-    <div class="card">
-      <div class="card-body">
-        <form method="{{ form.method }}"
-          id="payment-form"
-          class="form-horizontal"
-          {% if form.action %} action="{{ form.action }}"{% endif %}
-          {% block form_attrs %}{% endblock %}
-          >
-          {% csrf_token %}
-          <div id="loading" class="text-center" style="display: none">
-            <div class="spinner-border" role="status">
-              <span class="visually-hidden">{% trans "Loading..." %}</span>
+  <div class="row justify-content-center">
+    <div class="col-md-9 col-lg-8">
+      <div class="card">
+        <div class="card-body">
+          <form method="{{ form.method }}"
+                id="payment-form"
+                class="form-horizontal"
+                {% if form.action %}action="{{ form.action }}"{% endif %}
+                {% block form_attrs %}
+                {% endblock form_attrs %}>
+            {% csrf_token %}
+            <div id="loading" class="text-center">
+              <div class="spinner-border" role="status">
+                <span class="visually-hidden">{% trans "Loading..." %}</span>
+              </div>
             </div>
-          </div>
-          <div id="container">
-            {% block payment_method %}{% endblock %}
-          </div>
-        </form>
+            <div id="container">
+              {% block payment_method %}
+              {% endblock payment_method %}
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   </div>
-</div>
-
-{% endblock %}
+{% endblock app_body %}

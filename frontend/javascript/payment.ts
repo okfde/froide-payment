@@ -47,29 +47,14 @@ const style = {
   }
 };
 
-(async () => {
+
 
 const paymentForm = document.getElementById('payment-form') as HTMLFormElement
 const formButton = document.getElementById('form-button') as HTMLButtonElement
+const loading = document.getElementById('loading') as HTMLElement
+const container = document.getElementById('container') as HTMLElement
+
 const currency = (paymentForm.dataset.currency || 'EUR').toLowerCase()
-
-if (!paymentForm.dataset.stripepk) {
-  throw new Error('No Stripe Public Key')
-}
-
-const clientSecret = paymentForm.dataset.clientsecret
-const stripe = await loadStripe(paymentForm.dataset.stripepk);
-if (!stripe) {
-  console.error('Stripe not loaded')
-  // maybe?
-  document.location.reload()
-  return
-}
-
-const elements = stripe.elements({
-  locale: <StripeElementLocale>paymentForm.dataset.locale || "de"
-})
-
 
 /*
  *
@@ -77,14 +62,11 @@ const elements = stripe.elements({
  *
  */
 
-const loading = document.getElementById('loading') as HTMLElement
-const container = document.getElementById('container') as HTMLElement
-
 const showError = (error: string | undefined) => {
   // Inform the customer that there was an error.
   const errorElement = document.getElementById('card-errors') as HTMLElement
   if (errorElement) {
-    errorElement.style.display = 'block'
+    errorElement.hidden = false
     errorElement.textContent = error || 'Card error'
   }
   setPending(false)
@@ -108,8 +90,8 @@ function showLoading() {
   if (!container) {
     throw new Error('No container found')
   }
-  loading.style.display = 'block'
-  container.style.display = 'none'
+  loading.hidden = false
+  container.hidden = true
 }
 function stopLoading() {
   if (!loading) {
@@ -118,10 +100,33 @@ function stopLoading() {
   if (!container) {
     throw new Error('No container found')
   }
-  loading.style.display = 'none'
-  container.style.display = 'block'
+  loading.hidden = true
+  container.hidden = false
 }
 
+(async () => {
+
+setPending(true)
+
+if (!paymentForm.dataset.stripepk) {
+  throw new Error('No Stripe Public Key')
+}
+
+
+const clientSecret = paymentForm.dataset.clientsecret
+const stripe = await loadStripe(paymentForm.dataset.stripepk);
+if (!stripe) {
+  console.error('Stripe not loaded')
+  // maybe?
+  document.location.reload()
+  return
+} else {
+  setPending(false)
+}
+
+const elements = stripe.elements({
+  locale: <StripeElementLocale>paymentForm.dataset.locale || "de"
+})
 
 const sendPaymentData = (obj: PaymentMessage): Promise<PaymentProcessingResponse> => {
   return fetch(paymentForm.action, {
@@ -337,7 +342,6 @@ if (iban) {
       showError('Network failure.')
     }
   })
-  setPending(false)
 }
 
 /*
@@ -374,7 +378,7 @@ if (prContainer && clientSecret) {
   // Check the availability of the Payment Request API first.
   paymentRequest.canMakePayment().then((result) => {
     if (result) {
-      prContainer.style.display = 'block'
+      prContainer.hidden = false
       prButton.mount('#payment-request-button')
     }
   })
