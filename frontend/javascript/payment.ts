@@ -1,3 +1,5 @@
+import { ConfirmCardPaymentData, ConfirmSepaDebitPaymentData, ConfirmSepaDebitSetupData, loadStripe, type StripeCardElement, type StripeElementLocale } from '@stripe/stripe-js';
+
 interface PaymentProcessingResponse {
   error?: string
   type: string
@@ -43,7 +45,9 @@ const style = {
       color: '#fa755a'
     }
   }
-}
+};
+
+(async () => {
 
 const paymentForm = document.getElementById('payment-form') as HTMLFormElement
 const formButton = document.getElementById('form-button') as HTMLButtonElement
@@ -54,17 +58,70 @@ if (!paymentForm.dataset.stripepk) {
 }
 
 const clientSecret = paymentForm.dataset.clientsecret
-let stripeOptions
-if (clientSecret) {
-  stripeOptions = {
-    betas: ['payment_intent_beta_3']
-  }
+const stripe = await loadStripe(paymentForm.dataset.stripepk);
+if (!stripe) {
+  console.error('Stripe not loaded')
+  // maybe?
+  document.location.reload()
+  return
 }
-const stripe = Stripe(paymentForm.dataset.stripepk, stripeOptions)
 
 const elements = stripe.elements({
-  locale: paymentForm.dataset.locale
+  locale: <StripeElementLocale>paymentForm.dataset.locale || "de"
 })
+
+
+/*
+ *
+ *  Helpers
+ *
+ */
+
+const loading = document.getElementById('loading') as HTMLElement
+const container = document.getElementById('container') as HTMLElement
+
+const showError = (error: string | undefined) => {
+  // Inform the customer that there was an error.
+  const errorElement = document.getElementById('card-errors') as HTMLElement
+  if (errorElement) {
+    errorElement.style.display = 'block'
+    errorElement.textContent = error || 'Card error'
+  }
+  setPending(false)
+}
+
+const setPending = (pending: boolean) => {
+  if (formButton) {
+    formButton.disabled = pending
+  }
+  if (pending) {
+    showLoading()
+  } else {
+    stopLoading()
+  }
+}
+
+function showLoading() {
+  if (!loading) {
+    throw new Error('No loading found')
+  }
+  if (!container) {
+    throw new Error('No container found')
+  }
+  loading.style.display = 'block'
+  container.style.display = 'none'
+}
+function stopLoading() {
+  if (!loading) {
+    throw new Error('No loading found')
+  }
+  if (!container) {
+    throw new Error('No container found')
+  }
+  loading.style.display = 'none'
+  container.style.display = 'block'
+}
+
 
 const sendPaymentData = (obj: PaymentMessage): Promise<PaymentProcessingResponse> => {
   return fetch(paymentForm.action, {
@@ -79,7 +136,13 @@ const sendPaymentData = (obj: PaymentMessage): Promise<PaymentProcessingResponse
   })
 }
 
-const handleCardPayment = async (clientSecret: string, card: stripe.elements.Element) => {
+/*
+ *
+ *  Payment Intent with CC
+ *
+ */
+
+const handleCardPayment = async (clientSecret: string, card: StripeCardElement) => {
   if (!card) { return }
   const result = await stripe.confirmCardPayment(clientSecret, {
       payment_method: {
@@ -93,19 +156,6 @@ const handleCardPayment = async (clientSecret: string, card: stripe.elements.Ele
     window.location.href = paymentForm.dataset.successurl || '/'
   } else {
     console.error('Missing token!')
-  }
-}
-
-const handleServerResponse = (response: PaymentProcessingResponse, card: stripe.elements.Element) => {
-  if (response.error) {
-    console.error("handleServerResponse failed", response.error)
-    showError(response.error)
-    // Show error from server on payment form
-  } else if (response.requires_action) {
-    // Use Stripe.js to handle required card action
-    handleCardPayment(response.payment_intent_client_secret, card)
-  } else if (response.success) {
-    document.location.href = paymentForm.dataset.successurl || '/'
   }
 }
 
@@ -147,12 +197,14 @@ if (cardElement) {
       /* We have a payment intent */
       handleCardPayment(clientSecret, card)
     } else {
-      const billingDetails = {
-        billing_details: {
+      const billing_details = {
           name: paymentForm.dataset.name
-        }
       }
-      const result = await stripe.createPaymentMethod('card', card, billingDetails)
+      const result = await stripe.createPaymentMethod({
+        type: 'card',
+        card,
+        billing_details
+      })
       if (result.error) {
         console.error("createPaymentMethod for cc failed", result.error.message)
         showError(result.error.message)
@@ -165,6 +217,20 @@ if (cardElement) {
       }
     }
   })
+
+
+  const handleServerResponse = (response: PaymentProcessingResponse, card: StripeCardElement) => {
+    if (response.error) {
+      console.error("handleServerResponse failed", response.error)
+      showError(response.error)
+      // Show error from server on payment form
+    } else if (response.requires_action) {
+      // Use Stripe.js to handle required card action
+      handleCardPayment(response.payment_intent_client_secret, card)
+    } else if (response.success) {
+      document.location.href = paymentForm.dataset.successurl || '/'
+    }
+  }
 }
 
 /*
@@ -175,7 +241,6 @@ if (cardElement) {
 
 const iban = document.querySelector('input#id_iban') as HTMLInputElement
 if (iban) {
-
   const additionalInfoFields = document.querySelector('#additional-sepa-info') as HTMLElement
   if (additionalInfoFields) {
     const toggleAdditionalInfo = () => {
@@ -239,14 +304,16 @@ if (iban) {
       if (setupResponse.type != "payment_intent") {
         sepaData = {
           payment_method: setupResponse.payment_method,
-        } as stripe.ConfirmSepaDebitSetupData
+        } as ConfirmSepaDebitSetupData
         confirmMethod = stripe.confirmSepaDebitSetup
       } else {
         sepaData = {
           payment_method: setupResponse.payment_method,
-          save_payment_method: setupResponse.customer,
-          setup_future_usage: "off_session",
-        } as stripe.ConfirmSepaDebitPaymentData
+          save_payment_method: setupResponse.customer
+        } as ConfirmSepaDebitPaymentData
+        if (setupResponse.customer) {
+          sepaData.setup_future_usage = 'off_session'
+        }
         confirmMethod = stripe.confirmSepaDebitPayment  
       }
 
@@ -270,6 +337,7 @@ if (iban) {
       showError('Network failure.')
     }
   })
+  setPending(false)
 }
 
 /*
@@ -343,7 +411,7 @@ if (prContainer && clientSecret) {
     const data = {
       payment_method: ev.paymentMethod.id,
       return_url: paymentForm.dataset.successurl,
-    } as stripe.ConfirmCardPaymentData
+    } as ConfirmCardPaymentData
 
     const confirmResult = await stripe.confirmCardPayment(clientSecret, data)
     if (confirmResult.error) {
@@ -372,53 +440,4 @@ if (prContainer && clientSecret) {
   })
 }
 
-/*
- *
- *  Helpers
- *
- */
-
-const loading = document.getElementById('loading') as HTMLElement
-const container = document.getElementById('container') as HTMLElement
-
-const showError = (error: string | undefined) => {
-  // Inform the customer that there was an error.
-  const errorElement = document.getElementById('card-errors') as HTMLElement
-  if (errorElement) {
-    errorElement.style.display = 'block'
-    errorElement.textContent = error || 'Card error'
-  }
-  setPending(false)
-}
-
-const setPending = (pending: boolean) => {
-  if (formButton) {
-    formButton.disabled = pending
-  }
-  if (pending) {
-    showLoading()
-  } else {
-    stopLoading()
-  }
-}
-
-function showLoading() {
-  if (!loading) {
-    throw new Error('No loading found')
-  }
-  if (!container) {
-    throw new Error('No container found')
-  }
-  loading.style.display = 'block'
-  container.style.display = 'none'
-}
-function stopLoading() {
-  if (!loading) {
-    throw new Error('No loading found')
-  }
-  if (!container) {
-    throw new Error('No container found')
-  }
-  loading.style.display = 'none'
-  container.style.display = 'block'
-}
+})();
