@@ -304,7 +304,6 @@ class Order(models.Model):
 
     user_email = models.EmailField(blank=True, default="")
 
-    currency = models.CharField(max_length=3, default=settings.DEFAULT_CURRENCY)
     total_net = models.DecimalField(
         max_digits=12, decimal_places=settings.DEFAULT_DECIMAL_PLACES, default=0
     )
