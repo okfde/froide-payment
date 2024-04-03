@@ -279,9 +279,11 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
         for charge in charges:
             txn = self.get_balance_transaction(charge.balance_transaction)
             if txn is not None:
-                payment.received_timestamp = convert_utc_timestamp(txn.created)
-                payment.received_amount = Decimal(txn.net) / 100
-                break
+                # Ignore refund fees
+                if txn.net > 0:
+                    payment.received_timestamp = convert_utc_timestamp(txn.created)
+                    payment.received_amount = Decimal(txn.net) / 100
+                    break
         if intent.status == "succeeded":
             payment.change_status(PaymentStatus.CONFIRMED)
             payment.save()
