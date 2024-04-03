@@ -286,7 +286,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
             payment.change_status(PaymentStatus.CONFIRMED)
             payment.save()
             return True
-        elif intent.status == "failed":
+        elif intent.status in ("failed", "requires_payment_method"):
             error_message = None
             if intent.get("last_payment_error"):
                 error_message = intent["last_payment_error"]["message"]
