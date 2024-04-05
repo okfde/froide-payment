@@ -208,15 +208,15 @@ class PaypalProvider(BasicProvider):
         )
         return response.json()
 
-    def post_api(self, url, request_data):
+    def post_api(self, url, request_data, method="POST"):
         access_token = self._get_access_token()
         headers = {
             "Content-Type": "application/json",
             "Authorization": access_token,
             "Prefer": "return=representation",
         }
-        response = requests.post(
-            url, json=request_data, headers=headers, verify=not settings.DEBUG
+        response = requests.request(
+            method, url, json=request_data, headers=headers, verify=not settings.DEBUG
         )
         try:
             data = response.json()
@@ -224,7 +224,7 @@ class PaypalProvider(BasicProvider):
             data = {}
         if 400 <= response.status_code <= 500:
             logger.debug(data)
-            message = "Paypal error"
+            message = "Paypal error on {}".format(url)
             if response.status_code == 400:
                 error_data = response.json()
                 logger.warning(
