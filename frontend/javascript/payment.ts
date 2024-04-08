@@ -4,10 +4,11 @@ interface PaymentProcessingResponse {
   error?: string
   type: string
   requires_action?: boolean
+  requires_confirmation?: boolean
   payment_intent_client_secret: string
   payment_method?: string
   success?: boolean
-  customer?: string
+  customer?: boolean
 }
 
 type SuccessMessage = {
