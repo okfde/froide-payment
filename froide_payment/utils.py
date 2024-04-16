@@ -154,17 +154,23 @@ def create_recurring_order(
 
     now += timedelta(days=1)
 
-    if not force and now < last_order.service_end:
+    if not force and last_order and now < last_order.service_end:
         # Not yet due, set next_date correctly
         subscription.next_date = last_order.service_end
         subscription.save()
         return
 
-    logger.info(
-        "Create recurring order for subscription %s based on order %s",
-        subscription.id,
-        last_order.id,
-    )
+    if last_order:
+        logger.info(
+            "Create recurring order for subscription %s based on order %s",
+            subscription.id,
+            last_order.id,
+        )
+    else:
+        logger.info(
+            "Create recurring order for subscription %s",
+            subscription.id,
+        )
 
     if remote_reference is None:
         remote_reference = subscription.remote_reference

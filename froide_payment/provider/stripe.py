@@ -22,10 +22,20 @@ from payments.stripe import StripeProvider
 from froide.helper.spam import suspicious_ip
 
 from ..forms import SEPAPaymentForm
-from ..models import Order, Payment, PaymentStatus, Plan, Product, Subscription
+from ..models import (
+    Customer,
+    Order,
+    Payment,
+    PaymentStatus,
+    Plan,
+    Product,
+    Subscription,
+)
 from ..signals import (
     sepa_notification,
     subscription_activated,
+    subscription_canceled,
+    subscription_created,
     subscription_deactivated,
 )
 from ..utils import send_sepa_mail
@@ -749,6 +759,35 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
         )
         payment.change_status(PaymentStatus.PENDING)
         payment.save()
+
+    def customer_subscription_created(
+        self, request, stripe_subscription: stripe.Subscription
+    ):
+        customer = Customer.objects.get(remote_reference=stripe_subscription.customer)
+        plan = Plan.objects.get(remote_reference=stripe_subscription.plan.id)
+        subscription, created = Subscription.objects.get_or_create(
+            remote_reference=stripe_subscription.id,
+            defaults={
+                "customer": customer,
+                "plan": plan,
+                "created": datetime.fromtimestamp(
+                    stripe_subscription.created, tz=timezone.utc
+                ),
+            },
+        )
+        if created:
+            subscription_created.send(sender=subscription)
+
+    def customer_subscription_deleted(
+        self, request, stripe_subscription: stripe.Subscription
+    ):
+        sub = Subscription.objects.get(remote_reference=stripe_subscription.id)
+        sub.active = False
+        sub.canceled = datetime.fromtimestamp(
+            stripe_subscription.canceled_at, tz=timezone.utc
+        )
+        sub.save()
+        subscription_canceled.send(sender=sub)
 
 
 class StripeSEPAProvider(StripeIntentProvider):
