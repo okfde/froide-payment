@@ -2,7 +2,6 @@
 
 A Django app that allows running payment campaigns on FOI requests.
 
-
 ## Configure Stripe Webhooks
 
 Include `payments.urls` in root URL pattern.
@@ -28,7 +27,6 @@ Configure these event types:
 - `invoice.upcoming`
 - `invoice.created`
 
-
 Use this URL on your domain:
 
 ```
@@ -47,6 +45,8 @@ Configure these event types:
 - `invoice.finalized`
 - `payment_intent.succeeded`
 - `payment_intent.payment_failed`
+- `customer.subscription.created`
+- `customer.subscription.deleted`
 
 Use this URL on your domain:
 
@@ -69,20 +69,17 @@ Use this URL on your domain:
 /payments/process/sofort/
 ```
 
-
-
 ### Webhook for Paypal Payments
 
 Configure these event types:
 
-- 
+-
 
 Use this URL on your domain:
 
 ```
 /payments/process/paypal/
 ```
-
 
 ## Configure Payment variants
 
