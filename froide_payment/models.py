@@ -153,6 +153,15 @@ class Subscription(models.Model):
     remote_reference = models.CharField(max_length=256, blank=True)
     token = models.UUIDField(default=uuid.uuid4, db_index=True)
 
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                "remote_reference",
+                name="subscription_unique_remote_reference",
+                condition=~models.Q(remote_reference=""),
+            ),
+        ]
+
     def __str__(self):
         return str(self.customer)
 
