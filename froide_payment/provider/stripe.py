@@ -52,7 +52,7 @@ def requires_confirmation(request, payment, data) -> bool:
     result = _requires_confirmation(request, payment, data)
     if result:
         payment.fraud_status = FraudStatus.REVIEW
-        payment.fraud_mesage = result
+        payment.fraud_message = result
         return True
     return False
 
