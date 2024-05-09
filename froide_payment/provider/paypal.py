@@ -513,7 +513,7 @@ class PaypalProvider(BasicProvider):
                 },
                 "application_context": {
                     "brand_name": settings.SITE_NAME,
-                    "locale": settings.LANGUAGE_CODE,
+                    "locale": settings.LANGUAGE_CODE.split("-")[0],
                     "shipping_preference": "NO_SHIPPING",
                     "user_action": "SUBSCRIBE_NOW",
                     "payment_method": {
