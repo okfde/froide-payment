@@ -1,4 +1,4 @@
-include README.md LICENSE
+include README.md LICENSE package.json
 recursive-include froide_payment/templates *
 recursive-include froide_payment/locale *
 recursive-include frontend *
