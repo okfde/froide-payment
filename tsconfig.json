@@ -1,29 +1,27 @@
 {
   "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
     "lib": [
-      "dom",
-      "es5",
-      "es2015",
-      "es6",
-      "es2015.promise"
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
     ],
-    "moduleResolution": "node",
-    "target": "es6",
-    "sourceMap": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "preserve",
     "allowJs": true,
-    "allowSyntheticDefaultImports": true,
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noImplicitAny": true,
-    "noEmit": true
+    "noFallthroughCasesInSwitch": true
   },
   "include": [
-    "./frontend/javascript/**/*"
-  ],
-  "exclude": [
-    "node_modules"
+    "./frontend/**/*"
   ]
 }
