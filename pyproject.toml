@@ -15,12 +15,21 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Topic :: Utilities",
 ]
-dynamic = ["version"]
-dependencies = ["froide"]
+version = "0.0.3"
+dependencies = [
+  "django-payments[stripe]",
+  "django-countries",
+  "django-prices>=2.1.0",
+  "django-localflavor",
+  "python-dateutil",
+  "prices",
+  "stripe>=2.29.4",
+  "requests",
+]
 
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools]
-packages = ["froide_payment"]
+[tool.setuptools.packages.find]
+include = ["froide_payment*"]
