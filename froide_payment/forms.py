@@ -1,9 +1,10 @@
 import json
 import uuid
+from datetime import timedelta
 
 from django import forms
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-
 from django_countries.fields import CountryField
 from localflavor.generic.countries.sepa import IBAN_SEPA_COUNTRIES
 from localflavor.generic.forms import IBANFormField
@@ -306,3 +307,59 @@ class StartPaymentMixin:
         else:
             order = self.create_single_order(data)
         return order
+
+
+class ModifySubscriptionForm(forms.Form):
+    amount = forms.DecimalField(
+        localize=True,
+        required=True,
+        min_value=5,
+        max_digits=19,
+        decimal_places=2,
+        label=_("Donation amount:"),
+    )
+    interval = forms.TypedChoiceField(
+        choices=[
+            ("1", _("monthly")),
+            ("3", _("quarterly")),
+            ("12", _("yearly")),
+        ],
+        coerce=int,
+        empty_value=None,
+        required=True,
+        label=_("Frequency"),
+    )
+    next_date = forms.DateField(
+        label=_("Next payment date"),
+        localize=True,
+        widget=forms.DateInput(attrs={"type": "date"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.subscription = kwargs.pop("subscription")
+        super().__init__(*args, **kwargs)
+        self.fields["amount"].initial = self.subscription.plan.amount
+        self.fields["interval"].initial = self.subscription.plan.interval
+        provider = self.subscription.get_provider()
+        modify_info = provider.get_modify_info(self.subscription)
+        if not modify_info.can_schedule:
+            del self.fields["next_date"]
+            return
+        min_date = timezone.now().date() + timedelta(days=1)
+        self.fields["next_date"].initial = (
+            self.subscription.get_next_date() or min_date
+        ).strftime("%Y-%m-%d")
+        self.fields["next_date"].widget.attrs["min"] = min_date.strftime("%Y-%m-%d")
+
+    def clean_next_date(self):
+        next_date = self.cleaned_data["next_date"]
+        if next_date < timezone.now().date() + timedelta(days=1):
+            raise forms.ValidationError(_("Date must be in the future"))
+        return next_date
+
+    def save(self):
+        provider = self.subscription.get_provider()
+        return provider.modify_subscription(
+            self.subscription,
+            **self.cleaned_data,
+        )

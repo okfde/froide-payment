@@ -33,3 +33,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["froide_payment*"]
+
+[tool.djlint]
+ignore = "T002,T003,H005,H006,H021,H023,H029,H030,H031"

@@ -8,10 +8,10 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
-
 from payments import RedirectNeeded
 from payments.core import provider_factory
 
+from .forms import ModifySubscriptionForm
 from .models import Order, Payment, PaymentStatus, Subscription
 
 logger = logging.getLogger(__name__)
@@ -147,6 +147,8 @@ def subscription_detail(request, token):
         "orders": orders,
         "subscription": subscription,
         "cancel_info": subscription.get_cancel_info(),
+        "modify_info": subscription.get_modify_info(),
+        "modify_form": ModifySubscriptionForm(subscription=subscription),
     }
     return render(request, templates, ctx)
 
@@ -181,6 +183,41 @@ def subscription_cancel(request, token):
                 "We will investigate and make sure your subscription is "
                 "properly canceled."
             ),
+        )
+
+    return redirect(subscription)
+
+
+@require_POST
+def subscription_modify(request, token):
+    subscription = get_object_or_404(Subscription, token=token)
+    user = request.user
+    customer = subscription.customer
+    if not can_access(customer, user):
+        return redirect("/")
+
+    form = ModifySubscriptionForm(request.POST, subscription=subscription)
+    if form.is_valid():
+        success = form.save()
+        if success:
+            messages.add_message(
+                request, messages.INFO, _("Your subscription has been modified.")
+            )
+        else:
+            messages.add_message(
+                request,
+                messages.ERROR,
+                _(
+                    "There was an error modifying your subscription with our payment provider."
+                ),
+            )
+            mail_admins(
+                "Subscription modification failed",
+                "Subscription ID: %s" % subscription.id,
+            )
+    else:
+        messages.add_message(
+            request, messages.ERROR, _("There was an error with your input.")
         )
 
     return redirect(subscription)

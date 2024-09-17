@@ -2,13 +2,12 @@ import re
 
 from django.utils.crypto import get_random_string
 from django.utils.translation import gettext_lazy as _
-
 from payments import RedirectNeeded
 from payments.core import BasicProvider
 
 from ..models import PaymentStatus
 from .mixins import PlanProductMixin
-from .utils import CancelInfo
+from .utils import CancelInfo, ModifyInfo
 
 CODE_CHARS = "ACDEFHJKLMNPRSTUWXY3469"
 TRANSFER_PREFIX = "FDS "  # note trailing space
@@ -39,6 +38,11 @@ class BanktransferProvider(PlanProductMixin, BasicProvider):
     def get_cancel_info(self, subscription):
         return CancelInfo(
             False, _("You need to cancel your standing order with your bank.")
+        )
+
+    def get_modify_info(self, subscription):
+        return ModifyInfo(
+            False, _("You need to modify your standing order with your bank."), False
         )
 
     def cancel_subscription(self, subscription):

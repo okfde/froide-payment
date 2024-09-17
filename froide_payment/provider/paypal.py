@@ -3,15 +3,14 @@ import logging
 from datetime import timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
+import dateutil.parser
+import requests
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import redirect
 from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
-
-import dateutil.parser
-import requests
 from payments import PaymentError, RedirectNeeded
 from payments.core import BasicProvider
 
@@ -21,7 +20,7 @@ from ..signals import (
     subscription_canceled,
     subscription_deactivated,
 )
-from .utils import CancelInfo
+from .utils import CancelInfo, ModifyInfo
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +54,9 @@ class PaypalProvider(BasicProvider):
 
     def get_cancel_info(self, subscription):
         return CancelInfo(True, _("You can cancel your Paypal subscription."))
+
+    def get_modify_info(self, subscription):
+        return ModifyInfo(True, _("You can modify your Paypal subscription."), False)
 
     def get_form(self, payment, data=None):
         """
@@ -458,6 +460,30 @@ class PaypalProvider(BasicProvider):
             logger.exception(e)
             return False
 
+        return True
+
+    def modify_subscription(self, subscription, amount, interval):
+        modify_url = "{e}/v1/billing/subscriptions/{sub_id}/revise".format(
+            e=self.endpoint, sub_id=subscription.remote_reference
+        )
+        current_plan = subscription.plan
+        new_plan = self.get_or_create_plan(
+            current_plan.name,
+            current_plan.category,
+            amount,
+            interval,
+        )
+        modify_data = {"plan_id": new_plan.remote_reference}
+        try:
+            self.post_api(modify_url, modify_data)
+        except ValueError as e:
+            # modification failed
+            logger.info("Paypal subscription modification failed %s", subscription.id)
+            logger.exception(e)
+            return False
+
+        subscription.plan = new_plan
+        subscription.save()
         return True
 
     def capture_subscription_order(self, order, payment=None):
