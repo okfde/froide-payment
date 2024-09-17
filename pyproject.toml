@@ -23,7 +23,7 @@ dependencies = [
   "django-localflavor",
   "python-dateutil",
   "prices",
-  "stripe>=2.29.4",
+  "stripe==5.5.0",
   "requests",
 ]
 
