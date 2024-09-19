@@ -3,9 +3,13 @@ import uuid
 from datetime import timedelta
 
 from django import forms
+from django.conf import settings
+from django.core import signing
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django_countries.fields import CountryField
+from froide.helper.email_sending import mail_registry
 from localflavor.generic.countries.sepa import IBAN_SEPA_COUNTRIES
 from localflavor.generic.forms import IBANFormField
 from payments.core import provider_factory
@@ -13,6 +17,12 @@ from payments.forms import PaymentForm as BasePaymentForm
 
 from .models import Customer, Order, PaymentStatus, Subscription
 from .signals import subscription_created
+from .utils import interval_description
+
+modify_subscription_confirmation = mail_registry.register(
+    "froide_payment/email/modify_subscription",
+    ("customer", "subscription", "changes", "data", "action_url"),
+)
 
 
 class LastschriftPaymentForm(BasePaymentForm):
@@ -356,6 +366,62 @@ class ModifySubscriptionForm(forms.Form):
         if next_date < timezone.now().date() + timedelta(days=1):
             raise forms.ValidationError(_("Date must be in the future"))
         return next_date
+
+    def _get_signer(self):
+        return signing.TimestampSigner(salt="modify-subscription")
+
+    def send_confirmation_email(self):
+        assert self.is_valid()
+        signer = self._get_signer()
+        # Send and sign flattened POST data so it serializes
+        data = self.data.dict()
+        data.pop("csrfmiddlewaretoken", None)
+        data["token"] = str(self.subscription.token)
+        value = signer.sign_object(data)
+        url = settings.SITE_URL + (
+            reverse(
+                "froide_payment:subscription-modify-confirm",
+                kwargs={"token": self.subscription.token},
+            )
+            + "?code="
+            + value
+        )
+        changes = {}
+        if self.subscription.plan.amount != self.cleaned_data["amount"]:
+            changes["amount"] = {
+                "old": self.subscription.plan.amount,
+                "new": self.cleaned_data["amount"],
+            }
+        if self.subscription.plan.interval != self.cleaned_data["interval"]:
+            changes["interval"] = {
+                "old": interval_description(self.subscription.plan.interval),
+                "new": interval_description(self.cleaned_data["interval"]),
+            }
+        modify_subscription_confirmation.send(
+            email=self.subscription.customer.user_email,
+            subject=_("Please confirm your subscription modification"),
+            context={
+                "customer": self.subscription.customer,
+                "subscription": self.subscription,
+                "changes": changes,
+                "data": self.cleaned_data,
+                "action_url": url,
+            },
+        )
+
+    def get_form_data_from_code(self, code):
+        signer = self._get_signer()
+        # Allow an hour for the code to be valid
+        try:
+            data = signer.unsign_object(code, max_age=60 * 60)
+        except signing.SignatureExpired:
+            raise ValueError(_("Confirmation link has expired."))
+        except signing.BadSignature:
+            raise ValueError(_("Invalid confirmation link."))
+        token = data.pop("token", None)
+        if token != str(self.subscription.token):
+            raise ValueError(_("Invalid confirmation link."))
+        return data
 
     def save(self):
         provider = self.subscription.get_provider()
