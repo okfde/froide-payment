@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-17 10:46+0200\n"
-"PO-Revision-Date: 2024-09-17 10:50+0200\n"
+"POT-Creation-Date: 2024-09-19 11:33+0200\n"
+"PO-Revision-Date: 2024-09-19 11:36+0200\n"
 "Last-Translator: Stefan Wehrmeyer <stefan.wehrmeyer@okfn.de>\n"
 "Language-Team: \n"
 "Language: de\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 3.4.4\n"
+"X-Generator: Poedit 3.5\n"
 
 #: admin.py
 #, python-format
@@ -199,6 +199,18 @@ msgstr "Nächster Abbuchungstermin"
 #: forms.py
 msgid "Date must be in the future"
 msgstr "Datum muss in der Zukunft liegen"
+
+#: forms.py
+msgid "Please confirm your subscription modification"
+msgstr "Bitte bestätigen Sie die Änderung Ihrer Dauerspende"
+
+#: forms.py
+msgid "Confirmation link has expired."
+msgstr "Bestätigungs-Link ist abgelaufen."
+
+#: forms.py
+msgid "Invalid confirmation link."
+msgstr "Ungültiger Bestätigungs-Link."
 
 #: models.py
 msgid "Dummy"
@@ -648,6 +660,10 @@ msgid ""
 msgstr ""
 "Leider ist beim Ändern Ihrer Dauerspende bei unserem Zahlungsanbieter ein "
 "Fehler aufgetreten."
+
+#: views.py
+msgid "We have sent a confirmation email to your email address."
+msgstr "Wir haben eine Bestätigungs-E-Mail an Ihre E-Mail-Adresse gesendet."
 
 #: views.py
 msgid "There was an error with your input."
