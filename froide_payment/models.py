@@ -2,6 +2,7 @@ import json
 import uuid
 from collections import defaultdict
 
+from dateutil.relativedelta import relativedelta
 from django.apps import apps
 from django.conf import settings
 from django.db import models, transaction
@@ -11,8 +12,6 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
-
-from dateutil.relativedelta import relativedelta
 from django_countries.fields import CountryField
 from django_prices.models import TaxedMoneyField
 from payments import PaymentStatus as BasePaymentStatus
@@ -89,8 +88,11 @@ class Plan(models.Model):
     )
 
     def __str__(self):
-        return "{} via {}".format(
-            self.name, CHECKOUT_PAYMENT_CHOICES_DICT.get(self.provider, "?")
+        return _("{amount} {currency} {interval} via {provider}").format(
+            amount=self.amount,
+            currency=settings.DEFAULT_CURRENCY,
+            interval=self.get_interval_description(),
+            provider=CHECKOUT_PAYMENT_CHOICES_DICT.get(self.provider, "?"),
         )
 
     def get_interval_description(self):
@@ -267,6 +269,10 @@ class Subscription(models.Model):
     def get_cancel_info(self):
         provider = self.get_provider()
         return provider.get_cancel_info(self)
+
+    def get_modify_info(self):
+        provider = self.get_provider()
+        return provider.get_modify_info(self)
 
     def cancel(self):
         provider = self.get_provider()

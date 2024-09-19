@@ -5,6 +5,7 @@ from datetime import timezone as tz
 from decimal import Decimal
 from typing import Optional
 
+import stripe
 from django.conf import settings
 from django.core.mail import mail_managers
 from django.db import IntegrityError, transaction
@@ -13,13 +14,10 @@ from django.shortcuts import redirect
 from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
-
-import stripe
+from froide.helper.spam import suspicious_ip
 from payments import FraudStatus, RedirectNeeded, get_payment_model
 from payments.forms import PaymentForm
 from payments.stripe import StripeProvider
-
-from froide.helper.spam import suspicious_ip
 
 from ..forms import SEPAPaymentForm
 from ..models import (
@@ -39,7 +37,7 @@ from ..signals import (
     subscription_deactivated,
 )
 from ..utils import send_sepa_mail
-from .utils import CancelInfo
+from .utils import CancelInfo, ModifyInfo
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +47,8 @@ def convert_utc_timestamp(timestamp):
 
 
 def requires_confirmation(request, payment, data) -> bool:
+    if settings.DEBUG:
+        return False
     result = _requires_confirmation(request, payment, data)
     if result:
         payment.fraud_status = FraudStatus.REVIEW
@@ -164,6 +164,9 @@ class StripeSubscriptionMixin:
     def get_cancel_info(self, subscription):
         return CancelInfo(True, _("You can cancel your credit card subscription."))
 
+    def get_modify_info(self, subscription):
+        return ModifyInfo(True, _("You can modify your subscription."), True)
+
     def cancel_subscription(self, subscription):
         if not subscription.remote_reference:
             return False
@@ -177,6 +180,40 @@ class StripeSubscriptionMixin:
         if stripe_sub.status == "canceled":
             return True
         return False
+
+    def modify_subscription(self, subscription, amount, interval, next_date):
+        current_plan = subscription.plan
+        new_plan = self.get_or_create_plan(
+            current_plan.name,
+            current_plan.category,
+            amount,
+            interval,
+        )
+        sub_items = stripe.SubscriptionItem.list(
+            limit=3,
+            subscription=subscription.remote_reference,
+        )
+        assert len(sub_items.data) == 1
+        sub_item = sub_items.data[0]
+        next_datetime = datetime(
+            year=next_date.year,
+            month=next_date.month,
+            day=next_date.day,
+            tzinfo=timezone.utc,
+        )
+        try:
+            stripe.Subscription.modify(
+                subscription.remote_reference,
+                trial_end=int(next_datetime.timestamp()),
+                proration_behavior="none",
+                items=[{"id": sub_item.id, "plan": new_plan.remote_reference}],
+            )
+        except stripe.error.StripeError as e:
+            logger.exception(e)
+            return False
+        subscription.plan = new_plan
+        subscription.save()
+        return True
 
     def get_stripe_locales(self):
         data = {"de": ["de-DE"], "en": ["en-US"]}
@@ -200,7 +237,7 @@ class StripeSubscriptionMixin:
                 name=customer.get_full_name(),
                 preferred_locales=self.get_stripe_locales(),
                 metadata={"customer_id": customer.id},
-                **pm_kwargs
+                **pm_kwargs,
             )
             customer.remote_reference = stripe_customer.id
             customer.save()
@@ -273,6 +310,14 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
     provider_name = "creditcard"
     stripe_payment_method_type = "card"
 
+    def get_received_amount_timestamp(self, charges):
+        for charge in charges:
+            txn = self.get_balance_transaction(charge.balance_transaction)
+            if txn is not None:
+                # Ignore refund fees
+                if txn.net > 0:
+                    return Decimal(txn.net) / 100, convert_utc_timestamp(txn.created)
+
     def update_status(self, payment):
         if payment.status not in (PaymentStatus.PENDING, PaymentStatus.INPUT):
             return
@@ -283,17 +328,15 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
         except stripe.error.InvalidRequestError:
             # intent is not yet available
             return
-        charges = intent.charges.data
+
+        charges = stripe.Charge.list(payment_intent=payment.transaction_id).data
         payment.attrs.charges = charges
         payment.captured_amount = Decimal(intent.amount_received) / 100
-        for charge in charges:
-            txn = self.get_balance_transaction(charge.balance_transaction)
-            if txn is not None:
-                # Ignore refund fees
-                if txn.net > 0:
-                    payment.received_timestamp = convert_utc_timestamp(txn.created)
-                    payment.received_amount = Decimal(txn.net) / 100
-                    break
+        received = self.get_received_amount_timestamp(charges)
+        if received:
+            payment.received_amount = received[0]
+            payment.received_timestamp = received[1]
+
         if intent.status == "succeeded":
             payment.change_status(PaymentStatus.CONFIRMED)
             payment.save()
@@ -459,7 +502,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
                 use_stripe_sdk=True,
                 statement_descriptor=get_statement_descriptor(payment),
                 metadata={"order_id": str(payment.order.token)},
-                **kwargs
+                **kwargs,
             )
         payment.transaction_id = intent.id
         payment.save()
@@ -533,13 +576,14 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
         assert tn_id.startswith("pi_")
         intent = stripe.PaymentIntent.retrieve(tn_id)
         payment.captured_amount = Decimal(intent.amount_received) / 100
-        charges = intent.charges.data
-        for charge in charges:
-            txn = self.get_balance_transaction(charge.balance_transaction)
-            if txn is not None:
-                payment.received_timestamp = convert_utc_timestamp(txn.created)
-                payment.received_amount = Decimal(txn.net) / 100
-                break
+
+        charges = stripe.Charge.list(payment_intent=tn_id).data
+        payment.attrs.charges = charges
+        received = self.get_received_amount_timestamp(charges)
+        if received:
+            payment.received_amount = received[0]
+            payment.received_timestamp = received[1]
+
         if intent.status == "succeeded":
             payment.change_status(PaymentStatus.CONFIRMED)
         payment.save()
@@ -580,17 +624,15 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
         payment = order.get_or_create_payment(self.provider_name)
         payment.transaction_id = invoice.charge
         intent = stripe.PaymentIntent.retrieve(invoice.payment_intent)
-
-        charges = intent.charges.data
-        payment.attrs.charges = charges
         payment.captured_amount = Decimal(intent.amount_received) / 100
-        for charge in charges:
-            txn = self.get_balance_transaction(charge.balance_transaction)
-            if txn is not None:
-                payment.received_amount = Decimal(txn.net) / 100
-                payment.received_timestamp = convert_utc_timestamp(txn.created)
-                payment.save()
-                break
+
+        charges = stripe.Charge.list(payment_intent=intent.id).data
+        payment.attrs.charges = charges
+        received = self.get_received_amount_timestamp(charges)
+        if received:
+            payment.received_amount = received[0]
+            payment.received_timestamp = received[1]
+
         if invoice.status == "paid":
             payment.change_status(PaymentStatus.CONFIRMED)
         payment.save()
@@ -949,7 +991,7 @@ class StripeSEPAProvider(StripeIntentProvider):
             # Only need to send notification for recurring debits
             return HttpResponse(status=204)
 
-        charges = intent.charges.data
+        charges = stripe.Charge.list(payment_intent=intent.id).data
         data = None
         for charge in charges:
             payment_type = charge.payment_method_details.type

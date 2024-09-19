@@ -1,4 +1,5 @@
 import logging
+from functools import wraps
 
 from django.conf import settings
 from django.contrib import messages
@@ -8,10 +9,11 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
-
+from froide.helper.utils import render_403
 from payments import RedirectNeeded
 from payments.core import provider_factory
 
+from .forms import ModifySubscriptionForm
 from .models import Order, Payment, PaymentStatus, Subscription
 
 logger = logging.getLogger(__name__)
@@ -29,6 +31,19 @@ def can_access(obj, user):
     if obj.user and user != obj.user:
         return False
     return True
+
+
+def check_subscription_access(func):
+    @wraps(func)
+    def inner(request, token, *args, **kwargs):
+        subscription = get_object_or_404(Subscription, token=token)
+        user = request.user
+        customer = subscription.customer
+        if can_access(customer, user):
+            return func(request, subscription, *args, **kwargs)
+        return render_403(request)
+
+    return inner
 
 
 def order_detail(request, token):
@@ -127,13 +142,8 @@ def start_payment(request, token, variant):
     return render(request, [template, default_template], ctx)
 
 
-def subscription_detail(request, token):
-    subscription = get_object_or_404(Subscription, token=token)
-    user = request.user
-    customer = subscription.customer
-    if not can_access(customer, user):
-        return redirect("/")
-
+@check_subscription_access
+def subscription_detail(request, subscription):
     templates = []
     plan = subscription.plan
     if plan.provider:
@@ -147,18 +157,15 @@ def subscription_detail(request, token):
         "orders": orders,
         "subscription": subscription,
         "cancel_info": subscription.get_cancel_info(),
+        "modify_info": subscription.get_modify_info(),
+        "modify_form": ModifySubscriptionForm(subscription=subscription),
     }
     return render(request, templates, ctx)
 
 
 @require_POST
-def subscription_cancel(request, token):
-    subscription = get_object_or_404(Subscription, token=token)
-    user = request.user
-    customer = subscription.customer
-    if not can_access(customer, user):
-        return redirect("/")
-
+@check_subscription_access
+def subscription_cancel(request, subscription):
     cancel_info = subscription.get_cancel_info()
     if not subscription.active or not cancel_info.can_cancel:
         return redirect(subscription)
@@ -183,4 +190,82 @@ def subscription_cancel(request, token):
             ),
         )
 
+    return redirect(subscription)
+
+
+@require_POST
+@check_subscription_access
+def subscription_modify(request, subscription):
+    customer = subscription.customer
+    form = ModifySubscriptionForm(request.POST, subscription=subscription)
+    if form.is_valid():
+        if customer.user:
+            # Subscription customer has a user and previous check has established access
+            success = form.save()
+            if success:
+                messages.add_message(
+                    request, messages.INFO, _("Your subscription has been modified.")
+                )
+            else:
+                messages.add_message(
+                    request,
+                    messages.ERROR,
+                    _(
+                        "There was an error modifying your subscription with our payment provider."
+                    ),
+                )
+                mail_admins(
+                    "Subscription modification failed",
+                    "Subscription ID: %s" % subscription.id,
+                )
+        else:
+            # Subscription customer has no user, so we need to confirm the modification
+            form.send_confirmation_email()
+            messages.add_message(
+                request,
+                messages.INFO,
+                _("We have sent a confirmation email to your email address."),
+            )
+
+    else:
+        messages.add_message(
+            request, messages.ERROR, _("There was an error with your input.")
+        )
+
+    return redirect(subscription)
+
+
+@check_subscription_access
+def subscription_modify_confirm(request, subscription):
+    form = ModifySubscriptionForm(subscription=subscription)
+    try:
+        data = form.get_form_data_from_code(request.GET.get("code", ""))
+    except ValueError as e:
+        messages.add_message(request, messages.ERROR, e.message)
+        return redirect(subscription)
+    form = ModifySubscriptionForm(data=data, subscription=subscription)
+    if form.is_valid():
+        # Subscription customer email has confirmed the modification
+        success = form.save()
+        if success:
+            messages.add_message(
+                request, messages.INFO, _("Your subscription has been modified.")
+            )
+        else:
+            messages.add_message(
+                request,
+                messages.ERROR,
+                _(
+                    "There was an error modifying your subscription with our payment provider."
+                ),
+            )
+            mail_admins(
+                "Subscription modification failed",
+                "Subscription ID: %s" % subscription.id,
+            )
+
+    else:
+        messages.add_message(
+            request, messages.ERROR, _("There was an error with your input.")
+        )
     return redirect(subscription)

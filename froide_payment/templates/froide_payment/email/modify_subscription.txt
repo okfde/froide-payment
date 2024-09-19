@@ -1,0 +1,16 @@
+{% autoescape off %}Liebe/r {{ customer.first_name }} {{ customer.last_name }},
+
+wir haben deine Anfrage zur Änderung deines Abonnements erhalten.
+
+{% if changes.amount %}- Betrag: {{ changes.amount.new }} EUR (vorher {{ changes.amount.old }} EUR{% endif %}
+{% if changes.amount %}- Spendenrhythmus: {{ changes.interval.new }} (vorher {{ changes.interval.old }}{% endif %}
+
+{% if data.next_date %}Die nächste Abbuchung soll am {{ data.next_date|date:"SHORT_DATE_FORMAT" }} erfolgen.{% endif %}
+
+Bitte bestätige die Änderung deines Abonnements, indem du auf den folgenden Link klickst:
+
+{{ action_url }}
+
+Beste Grüße
+{{ SITE_NAME }}
+{% endautoescape %}

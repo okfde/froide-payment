@@ -7,6 +7,8 @@ from .views import (
     start_payment,
     subscription_cancel,
     subscription_detail,
+    subscription_modify,
+    subscription_modify_confirm,
 )
 
 app_name = "froide_payment"
@@ -17,6 +19,16 @@ urlpatterns = [
         "subscription/<uuid:token>/cancel/",
         subscription_cancel,
         name="subscription-cancel",
+    ),
+    path(
+        "subscription/<uuid:token>/modify/",
+        subscription_modify,
+        name="subscription-modify",
+    ),
+    path(
+        "subscription/<uuid:token>/modify/confirm/",
+        subscription_modify_confirm,
+        name="subscription-modify-confirm",
     ),
     path("<uuid:token>/", order_detail, name="order-detail"),
     path("<uuid:token>/success/", order_success, name="order-success"),

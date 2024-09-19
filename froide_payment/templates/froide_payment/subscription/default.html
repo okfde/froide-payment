@@ -4,87 +4,105 @@
 {% load block_helper %}
 {% load prices %}
 {% load froide_payment %}
+{% block title %}
+    {% trans "Your subscription" %}
+{% endblock title %}
 {% block app_body %}
-  <div class="row justify-content-center">
-    <div class="col-md-8">
-      <h3>{% trans "Your subscription" %}</h3>
-      {% block custom_content %}{% endblock %}
-      <table class="table">
-        <thead>
-          <tr>
-            <th>{% trans "date" %}</th>
-            <th>{% trans "amount" %}</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for order in orders %}
-            <tr>
-              <td>{{ order.created|date:"DATE_FORMAT" }}</td>
-              <td>{{ order.total_gross }}&nbsp;{{ order.currency }}</td>
-              <td>
-                <a href="{{ order.get_absolute_url }}">{% translate "Details" %}</a>
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      {% if subscription.active %}
-        {% if cancel_info.can_cancel %}
-          <div class="alert alert-secondary">
-            <p>
-              {{ cancel_info.message }} {% trans "To change the amount please cancel your subscription and create a new one." %}
-            </p>
-            <div class="text-end">
-              <button type="button"
-                      class="btn btn-secondary"
-                      data-bs-toggle="modal"
-                      data-bs-target="#cancel-subscription">{% trans "Cancel subscription" %}</button>
-            </div>
-          </div>
-          <div class="modal fade"
-               id="cancel-subscription"
-               tabindex="-1"
-               role="dialog"
-               aria-labelledby="cancel-subscription-label"
-               aria-hidden="true">
-            <div class="modal-dialog" role="document">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h5 class="modal-title" id="cancel-subscription-label">{% trans "Cancel subscription" %}</h5>
-                  <button type="button"
-                          class="btn-close"
-                          data-bs-dismiss="modal"
-                          aria-label="{% translate 'Close' %}"></button>
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h3>{% trans "Your subscription" %}</h3>
+            <p>{{ subscription.plan }}</p>
+            {% block custom_content %}
+            {% endblock custom_content %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>{% trans "date" %}</th>
+                        <th>{% trans "amount" %}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                        <tr>
+                            <td>{{ order.created|date:"DATE_FORMAT" }}</td>
+                            <td>{{ order.total_gross }}&nbsp;{{ order.currency }}</td>
+                            <td>
+                                <a href="{{ order.get_absolute_url }}">{% translate "Details" %}</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if subscription.active %}
+                <div class="card mb-5">
+                    <div class="card-body">
+                        <h5 class="card-title">{% trans "Modify subscription" %}</h5>
+                        <p>{{ modify_info.message }}</p>
+                        <form action="{% url 'froide_payment:subscription-modify' token=subscription.token %}"
+                              method="post">
+                            {% csrf_token %}
+                            {{ modify_form.as_p }}
+                            <p>
+                                <button type="submit" class="btn btn-secondary">{% trans "Modify subscription" %}</button>
+                            </p>
+                        </form>
+                    </div>
                 </div>
-                <form action="{% url 'froide_payment:subscription-cancel' token=subscription.token %}"
-                      method="post">
-                  {% csrf_token %}
-                  <div class="modal-body">{% trans "Are you sure you want to cancel your subscription?" %}</div>
-                  <div class="modal-footer">
-                    <button type="button"
-                            class="me-auto btn btn-secondary"
-                            data-bs-dismiss="modal">{% trans "Close" %}</button>
-                    <button type="submit" class="btn btn-danger">{% trans "Cancel subscription now" %}</button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
+            </hr>
+            {% if cancel_info.can_cancel %}
+                <div class="alert alert-secondary">
+                    <p>{{ cancel_info.message }}</p>
+                    <div class="text-end">
+                        <button type="button"
+                                class="btn btn-secondary"
+                                data-bs-toggle="modal"
+                                data-bs-target="#cancel-subscription">{% trans "Cancel subscription" %}</button>
+                    </div>
+                </div>
+                <div class="modal fade"
+                     id="cancel-subscription"
+                     tabindex="-1"
+                     role="dialog"
+                     aria-labelledby="cancel-subscription-label"
+                     aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="cancel-subscription-label">{% trans "Cancel subscription" %}</h5>
+                                <button type="button"
+                                        class="btn-close"
+                                        data-bs-dismiss="modal"
+                                        aria-label="{% translate "Close" %}"></button>
+                            </div>
+                            <form action="{% url 'froide_payment:subscription-cancel' token=subscription.token %}"
+                                  method="post">
+                                {% csrf_token %}
+                                <div class="modal-body">{% trans "Are you sure you want to cancel your subscription?" %}</div>
+                                <div class="modal-footer">
+                                    <button type="button"
+                                            class="me-auto btn btn-secondary"
+                                            data-bs-dismiss="modal">{% trans "Close" %}</button>
+                                    <button type="submit" class="btn btn-danger">{% trans "Cancel subscription now" %}</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-secondary">{{ cancel_info.message }}</div>
+            {% endif %}
         {% else %}
-          <div class="alert alert-secondary">{{ cancel_info.message }}</div>
-        {% endif %}
-      {% else %}
-        {% if subscription.canceled %}
-          <div class="alert alert-info">
-            {% blocktrans with date=subscription.canceled|date:"SHORT_DATE_FORMAT" %}
+            {% if subscription.canceled %}
+                <div class="alert alert-info">
+                    {% blocktrans with date=subscription.canceled|date:"SHORT_DATE_FORMAT" %}
             This subscription has been canceled on {{ date }}.
           {% endblocktrans %}
-          </div>
-        {% else %}
-          <div class="alert alert-secondary">{% trans "This subscription has not been marked as active yet." %}</div>
+                </div>
+            {% else %}
+                <div class="alert alert-secondary">{% trans "This subscription has not been marked as active yet." %}</div>
+            {% endif %}
         {% endif %}
-      {% endif %}
     </div>
-  </div>
-{% endblock %}
+</div>
+{% endblock app_body %}
