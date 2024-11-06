@@ -6,7 +6,7 @@ from payments.core import BasicProvider
 from ..forms import LastschriftPaymentForm
 from ..models import PaymentStatus
 from .mixins import PlanProductMixin
-from .utils import CancelInfo
+from .utils import CancelInfo, ModifyInfo
 
 
 class IBANProviderMixin:
@@ -51,6 +51,11 @@ class LastschriftProvider(PlanProductMixin, IBANProviderMixin, BasicProvider):
     def get_cancel_info(self, subscription):
         return CancelInfo(
             True, _("You can cancel your direct debit subscription here.")
+        )
+
+    def get_modify_info(self, subscription):
+        return ModifyInfo(
+            True, _("You can modify your direct debit subscription here."), False
         )
 
     def cancel_subscription(self, subscription):
