@@ -4,6 +4,7 @@ from functools import wraps
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_permission_codename
+from django.core.exceptions import BadRequest
 from django.core.mail import mail_admins
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -198,6 +199,9 @@ def subscription_cancel(request, subscription):
 def subscription_modify(request, subscription):
     customer = subscription.customer
     form = ModifySubscriptionForm(request.POST, subscription=subscription)
+    if not subscription.get_modify_info().can_modify:
+        raise BadRequest("Subscription can't be modified")
+
     if form.is_valid():
         if customer.user:
             # Subscription customer has a user and previous check has established access
