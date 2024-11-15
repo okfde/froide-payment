@@ -39,14 +39,16 @@
                     <div class="card-body">
                         <h5 class="card-title">{% trans "Modify subscription" %}</h5>
                         <p>{{ modify_info.message }}</p>
-                        <form action="{% url 'froide_payment:subscription-modify' token=subscription.token %}"
-                              method="post">
-                            {% csrf_token %}
-                            {{ modify_form.as_p }}
-                            <p>
-                                <button type="submit" class="btn btn-secondary">{% trans "Modify subscription" %}</button>
-                            </p>
-                        </form>
+                        {% if modify_info.can_modify %}
+                            <form action="{% url 'froide_payment:subscription-modify' token=subscription.token %}"
+                                  method="post">
+                                {% csrf_token %}
+                                {{ modify_form.as_p }}
+                                <p>
+                                    <button type="submit" class="btn btn-secondary">{% trans "Modify subscription" %}</button>
+                                </p>
+                            </form>
+                        {% endif %}
                     </div>
                 </div>
             </hr>
