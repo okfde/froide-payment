@@ -245,7 +245,7 @@ def subscription_modify_confirm(request, subscription):
     try:
         data = form.get_form_data_from_code(request.GET.get("code", ""))
     except ValueError as e:
-        messages.add_message(request, messages.ERROR, e.message)
+        messages.add_message(request, messages.ERROR, str(e))
         return redirect(subscription)
     form = ModifySubscriptionForm(data=data, subscription=subscription)
     if form.is_valid():
