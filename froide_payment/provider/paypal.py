@@ -2,6 +2,7 @@ import json
 import logging
 from datetime import timedelta
 from decimal import ROUND_HALF_UP, Decimal
+from typing import NamedTuple
 
 import dateutil.parser
 import requests
@@ -25,6 +26,11 @@ from .utils import CancelInfo, ModifyInfo
 logger = logging.getLogger(__name__)
 
 CENTS = Decimal("0.01")
+
+
+class TransactionAmounts(NamedTuple):
+    amount: Decimal
+    fee: Decimal
 
 
 def utcisoformat(dt):
@@ -296,23 +302,40 @@ class PaypalProvider(BasicProvider):
 
         logger.info("Paypal webhook subscription canceled %s", subscription.id)
 
+    def extract_amounts(self, resource) -> TransactionAmounts:
+        if "seller_receivable_breakdown" in resource:
+            breakdown = resource["seller_receivable_breakdown"]
+            total = breakdown["gross_amount"]["value"]
+            fee = breakdown["paypal_fee"]["value"]
+        elif "amount" in resource:
+            amount = resource["amount"]
+            if "total" in amount:
+                total = amount["total"]
+            elif "value" in amount:
+                total = amount["value"]
+            else:
+                raise ValueError("Could not extract total amount")
+            fee = resource["transaction_fee"]["value"]
+        elif "amount_with_breakdown" in resource:
+            total = resource["amount_with_breakdown"]["gross_amount"]["value"]
+            fee = resource["amount_with_breakdown"]["fee_amount"]["value"]
+        else:
+            raise ValueError("Could not extract amounts")
+
+        return TransactionAmounts(amount=Decimal(total), fee=Decimal(fee))
+
     def webhook_payment_capture_completed(self, request, data):
         resource = data["resource"]
-        invoide_id = resource["invoice_id"]
+        invoice_id = resource["invoice_id"]
         try:
-            payment = Payment.objects.get(order__token=invoide_id)
+            payment = Payment.objects.get(order__token=invoice_id)
         except Payment.DoesNotExist:
             return
-
         logger.info("Paypal webhook capture completed for payment %s", payment.id)
         payment.attrs.paypal_resource = resource
-        payment.captured_amount = Decimal(payment.total)
-        fee = Decimal(
-            resource.get("seller_receivable_breakdown", {})
-            .get("paypal_fee", {})
-            .get("value", "0.0")
-        )
-        payment.received_amount = Decimal(payment.total) - fee
+        amounts = self.extract_amounts(resource)
+        payment.captured_amount = amounts.amount
+        payment.received_amount = amounts.amount - amounts.fee
         payment.received_timestamp = dateutil.parser.parse(resource["create_time"])
         payment.change_status(PaymentStatus.CONFIRMED)
         payment.save()
@@ -354,9 +377,11 @@ class PaypalProvider(BasicProvider):
 
         logger.info("Paypal webhook sale complete for payment %s", payment.id)
         payment.attrs.paypal_resource = resource
-        payment.captured_amount = Decimal(payment.total)
-        fee = Decimal(resource.get("transaction_fee", {}).get("value", "0.0"))
-        payment.received_amount = Decimal(payment.total) - fee
+
+        amounts = self.extract_amounts(resource)
+        payment.captured_amount = amounts.amount
+        payment.received_amount = amounts.amount - amounts.fee
+
         payment.received_timestamp = dateutil.parser.parse(resource["create_time"])
         payment.change_status(PaymentStatus.CONFIRMED)
         payment.save()
@@ -417,19 +442,15 @@ class PaypalProvider(BasicProvider):
             assert len(transactions) == 1
             transaction = transactions[0]
             payment.transaction_id = transaction["id"]
-            amounts = transaction["amount_with_breakdown"]
-            total = amounts["gross_amount"]["value"]
-            payment.captured_amount = Decimal(total)
-            fee = Decimal(amounts["fee_amount"]["value"])
-            payment.received_amount = payment.captured_amount - fee
+            amounts = self.extract_amounts(transaction)
+            payment.captured_amount = amounts.amount
+            payment.received_amount = payment.captured_amount - amounts.fee
             payment.received_timestamp = create_time
             success = transaction["status"] == "COMPLETED"
         else:
-            total = resource["amount"]["total"]
-            payment.captured_amount = Decimal(total)
-            fee = resource.get("transaction_fee", {}).get("value", "0.0")
-            fee = Decimal(fee)
-            payment.received_amount = payment.captured_amount - fee
+            amounts = self.extract_amounts(resource)
+            payment.captured_amount = amounts.amount
+            payment.received_amount = payment.captured_amount - amounts.fee
             payment.received_timestamp = create_time
             success = resource["state"] == "completed"
         if success:
@@ -508,8 +529,9 @@ class PaypalProvider(BasicProvider):
             return
         if response["status"] in ("COMPLETED", "PARTIALLY_REFUNDED"):
             payment.transaction_id = response["id"]
-            amount = response["amount_with_breakdown"]["gross_amount"]["value"]
-            payment.captured_amount = Decimal(amount)
+            amounts = self.extract_amounts(response)
+            payment.captured_amount = amounts.amount
+            payment.received_amount = payment.captured_amount - amounts.fee
             payment.change_status(PaymentStatus.CONFIRMED)
         elif response["status"] == "PENDING":
             payment.change_status(PaymentStatus.PENDING)
