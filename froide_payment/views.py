@@ -203,7 +203,7 @@ def subscription_modify(request, subscription):
         raise BadRequest("Subscription can't be modified")
 
     if form.is_valid():
-        if customer.user:
+        if customer.user or request.user.has_perm("froide_payment.change_subscription"):
             # Subscription customer has a user and previous check has established access
             success = form.save()
             if success:
