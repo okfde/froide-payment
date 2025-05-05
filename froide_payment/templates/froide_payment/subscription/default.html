@@ -2,6 +2,7 @@
 {% load i18n %}
 {% load static %}
 {% load block_helper %}
+{% load form_helper %}
 {% load prices %}
 {% load froide_payment %}
 {% block title %}
@@ -43,7 +44,7 @@
                             <form action="{% url 'froide_payment:subscription-modify' token=subscription.token %}"
                                   method="post">
                                 {% csrf_token %}
-                                {{ modify_form.as_p }}
+                                {% render_form modify_form %}
                                 <p>
                                     <button type="submit" class="btn btn-secondary">{% trans "Modify subscription" %}</button>
                                 </p>

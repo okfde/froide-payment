@@ -10,10 +10,13 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django_countries.fields import CountryField
 from froide.helper.email_sending import mail_registry
+from froide.helper.widgets import BootstrapRadioSelect
 from localflavor.generic.countries.sepa import IBAN_SEPA_COUNTRIES
 from localflavor.generic.forms import IBANFormField
 from payments.core import provider_factory
 from payments.forms import PaymentForm as BasePaymentForm
+
+from froide_payment.widgets import PriceInput
 
 from .models import Customer, Order, PaymentStatus, Subscription
 from .signals import subscription_created
@@ -327,6 +330,7 @@ class ModifySubscriptionForm(forms.Form):
         max_digits=19,
         decimal_places=2,
         label=_("Donation amount:"),
+        widget=PriceInput,
     )
     interval = forms.TypedChoiceField(
         choices=[
@@ -338,11 +342,12 @@ class ModifySubscriptionForm(forms.Form):
         empty_value=None,
         required=True,
         label=_("Frequency"),
+        widget=BootstrapRadioSelect,
     )
     next_date = forms.DateField(
         label=_("Next payment date"),
         localize=True,
-        widget=forms.DateInput(attrs={"type": "date"}),
+        widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}),
     )
 
     def __init__(self, *args, **kwargs):
