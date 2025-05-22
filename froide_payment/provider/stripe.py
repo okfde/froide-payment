@@ -345,10 +345,15 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
             error_message = None
             if intent.get("last_payment_error"):
                 error_message = intent["last_payment_error"]["message"]
+            # Reset amount on failure because balance transaction is pending
+            payment.received_timestamp = None
+            payment.received_amount = None
             payment.change_status(PaymentStatus.ERROR, message=error_message)
             payment.save()
             return False
         elif intent.status == "canceled":
+            payment.received_timestamp = None
+            payment.received_amount = None
             payment.change_status(PaymentStatus.CANCELED)
             payment.save()
             return False
