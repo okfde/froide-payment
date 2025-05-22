@@ -1,6 +1,7 @@
 import json
 import logging
 from datetime import timedelta
+from datetime import timezone as tz
 from decimal import ROUND_HALF_UP, Decimal
 from typing import NamedTuple
 
@@ -35,7 +36,7 @@ class TransactionAmounts(NamedTuple):
 
 def utcisoformat(dt):
     if timezone.is_aware(dt):
-        dt = timezone.localtime(dt, timezone=timezone.utc)
+        dt = timezone.localtime(dt, timezone=tz.utc)
     return dt.replace(microsecond=0).replace(tzinfo=None).isoformat() + "Z"
 
 

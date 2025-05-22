@@ -199,7 +199,7 @@ class StripeSubscriptionMixin:
             year=next_date.year,
             month=next_date.month,
             day=next_date.day,
-            tzinfo=timezone.utc,
+            tzinfo=tz.utc,
         )
         try:
             stripe.Subscription.modify(
@@ -813,7 +813,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
                 "customer": customer,
                 "plan": plan,
                 "created": datetime.fromtimestamp(
-                    stripe_subscription.created, tz=timezone.utc
+                    stripe_subscription.created, tz=tz.utc
                 ),
             },
         )
@@ -826,7 +826,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
         sub = Subscription.objects.get(remote_reference=stripe_subscription.id)
         sub.active = False
         sub.canceled = datetime.fromtimestamp(
-            stripe_subscription.canceled_at, tz=timezone.utc
+            stripe_subscription.canceled_at, tz=tz.utc
         )
         sub.save()
         subscription_canceled.send(sender=sub)
