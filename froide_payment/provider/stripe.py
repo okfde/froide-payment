@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 
 def convert_utc_timestamp(timestamp):
-    return datetime.utcfromtimestamp(timestamp).replace(tzinfo=tz.utc)
+    return datetime.fromtimestamp(timestamp, tz.utc)
 
 
 def requires_confirmation(request, payment, data) -> bool:
