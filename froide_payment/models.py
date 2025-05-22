@@ -1,6 +1,8 @@
 import json
 import uuid
 from collections import defaultdict
+from dataclasses import dataclass
+from decimal import Decimal
 
 from dateutil.relativedelta import relativedelta
 from django.apps import apps
@@ -13,12 +15,10 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 from django_countries.fields import CountryField
-from django_prices.models import TaxedMoneyField
 from payments import PaymentStatus as BasePaymentStatus
 from payments import PurchasedItem
 from payments.core import provider_factory
 from payments.models import BasePayment
-from prices import Money, TaxedMoney
 
 from .signals import subscription_canceled
 from .utils import get_payment_defaults, interval_description, order_service_description
@@ -41,8 +41,15 @@ PAYMENT_METHODS = [
     if variant[0] in settings.PAYMENT_VARIANTS
 ]
 
-ZERO_MONEY = Money(0, settings.DEFAULT_CURRENCY)
-ZERO_TAXED_MONEY = TaxedMoney(net=ZERO_MONEY, gross=ZERO_MONEY)
+
+@dataclass
+class Money:
+    amount: Decimal
+    currency: str = settings.DEFAULT_CURRENCY
+
+
+ZERO_MONEY = Money(amount=Decimal("0.00"))
+
 
 MONTHLY_INTERVALS = (
     (1, _("monthly")),
@@ -325,14 +332,6 @@ class Order(models.Model):
     total_gross = models.DecimalField(
         max_digits=12, decimal_places=settings.DEFAULT_DECIMAL_PLACES, default=0
     )
-    total = TaxedMoneyField(
-        net_amount_field="total_net",
-        gross_amount_field="total_gross",
-        currency="currency",
-    )
-
-    # FIXME: https://github.com/mirumee/django-prices/issues/71
-    total.unique = False
 
     is_donation = models.BooleanField(default=False)
     description = models.CharField(max_length=255, blank=True)
@@ -371,11 +370,11 @@ class Order(models.Model):
 
     @property
     def amount(self):
-        return self.total.gross.amount
+        return self.total_gross
 
     @property
     def amount_cents(self):
-        return int(self.total.gross.amount * 100)
+        return int(self.total_gross * 100)
 
     @property
     def email(self):
@@ -414,17 +413,17 @@ class Order(models.Model):
     def is_fully_paid(self):
         total_paid = sum(
             [
-                payment.get_captured_amount()
+                payment.get_captured_amount().amount
                 for payment in self.payments.filter(status=PaymentStatus.CONFIRMED)
             ],
-            ZERO_TAXED_MONEY,
+            ZERO_MONEY.amount,
         )
-        return total_paid.gross >= self.total.gross
+        return total_paid >= self.total_gross
 
     def is_tentatively_paid(self):
         tentatively_paid = sum(
             [
-                payment.total
+                payment.total_gross
                 for payment in self.payments.filter(
                     status__in=(
                         PaymentStatus.CONFIRMED,
@@ -433,9 +432,9 @@ class Order(models.Model):
                     )
                 )
             ],
-            ZERO_TAXED_MONEY,
+            Decimal(0),
         )
-        return tentatively_paid.gross >= self.total.gross
+        return tentatively_paid >= self.total_gross
 
     def get_payment_amounts(self):
         tentative_status = (
@@ -446,11 +445,11 @@ class Order(models.Model):
 
         payments = self.payments.filter(status__in=tentative_status)
 
-        amounts = defaultdict(lambda: ZERO_MONEY)
+        amounts = defaultdict(lambda: ZERO_MONEY.amount)
         for payment in payments:
-            amounts["tentative"] += payment.get_amount()
+            amounts["tentative"] += payment.get_amount().amount
             if payment.status in (PaymentStatus.CONFIRMED,):
-                amounts["total"] += payment.get_captured_amount()
+                amounts["total"] += payment.get_captured_amount().amount
         return amounts
 
     def get_absolute_url(self):
@@ -600,10 +599,15 @@ class Payment(BasePayment):
         return provider_factory(self.variant)
 
     def get_amount(self):
-        return Money(self.total, self.currency or settings.DEFAULT_CURRENCY)
+        return Money(
+            amount=self.total, currency=self.currency or settings.DEFAULT_CURRENCY
+        )
 
     def get_captured_amount(self):
-        return Money(self.captured_amount, self.currency or settings.DEFAULT_CURRENCY)
+        return Money(
+            amount=self.captured_amount,
+            currency=self.currency or settings.DEFAULT_CURRENCY,
+        )
 
     def get_failure_url(self):
         return self.order.get_failure_url()
