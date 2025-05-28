@@ -3,6 +3,7 @@ import uuid
 from collections import defaultdict
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import Optional
 
 from dateutil.relativedelta import relativedelta
 from django.apps import apps
@@ -190,6 +191,17 @@ class Subscription(models.Model):
 
     def get_first_order(self):
         return self.orders.all().order_by("service_end").first()
+
+    def get_previous_order(self, order) -> Optional["Order"]:
+        """
+        Get the order that was created before the given order.
+        """
+        return (
+            self.orders.filter(service_end__lt=order.service_end)
+            .exclude(id=order.id)
+            .order_by("-service_end")
+            .first()
+        )
 
     def attach_order_info(self, remote_reference="", **extra):
         order = self.get_last_order()

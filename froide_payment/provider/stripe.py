@@ -116,7 +116,7 @@ class StripeWebhookMixin:
             return None
         return payment.token
 
-    def get_payment_by_id(self, transaction_id):
+    def get_payment_by_id(self, transaction_id) -> Optional[Payment]:
         Payment = get_payment_model()
         try:
             return Payment.objects.get(
@@ -991,10 +991,13 @@ class StripeSEPAProvider(StripeIntentProvider):
             return HttpResponse(status=204)
 
         subscription = order.subscription
-        first_order = subscription.get_first_order()
-        if order == first_order:
-            # Only need to send notification for recurring debits
-            return HttpResponse(status=204)
+        previous_order = subscription.get_previous_order(order)
+        if previous_order is not None:
+            # Only need to send notification for first
+            # unless something has changed!
+            if previous_order.total_net == order.total_net:
+                # No change in amount, no need to send notification
+                return HttpResponse(status=204)
 
         charges = stripe.Charge.list(payment_intent=intent.id).data
         data = None
