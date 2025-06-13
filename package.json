@@ -21,13 +21,13 @@
   },
   "homepage": "https://github.com/okfde/froide-payment#readme",
   "dependencies": {
-    "@stripe/stripe-js": "^3.1.0"
+    "@stripe/stripe-js": "^3.5.0"
   },
   "devDependencies": {
     "@okfde/eslint-config-froide": "^1.2.1",
     "@typescript-eslint/eslint-plugin": "^5.17.0",
     "@typescript-eslint/parser": "^5.17.0",
-    "eslint": "^8.57.0",
+    "eslint": "^8.57.1",
     "prettier": "^3.5.3",
     "prettier-config-standard": "^7.0.0",
     "typescript": "^5.8.3"
