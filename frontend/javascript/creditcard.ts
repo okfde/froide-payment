@@ -53,7 +53,7 @@ export default class CreditCard extends BasePaymentMethod {
   }
 
   async handleCardPayment(card: StripeCardElement) {
-    if (!this.payment.stripe) {
+    if (!this.payment.stripe || !this.payment.config.clientSecret) {
       console.error('Stripe not initialized')
       return
     }
@@ -87,7 +87,7 @@ export default class CreditCard extends BasePaymentMethod {
 
     this.payment.ui.setPending(true)
 
-    if (!this.payment.config.recurring) {
+    if (this.payment.config.interval === 0) {
       /* We have a payment intent */
       this.handleCardPayment(this.card)
     } else {
