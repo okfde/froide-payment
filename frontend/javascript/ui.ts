@@ -50,3 +50,30 @@ export class DefaultUI implements PaymentUI {
     this.container.hidden = false
   }
 }
+
+
+export class ErrorOnlyUI implements PaymentUI {
+  quickPayment: HTMLElement
+  errorContainer: HTMLElement | null = null
+
+  constructor(quickPayment: HTMLElement) {
+    this.quickPayment = quickPayment
+  }
+  showError(error: string | undefined) {
+    if (!this.errorContainer) {
+      this.errorContainer = document.createElement("div")
+      this.errorContainer.className = "alert alert-danger"
+      this.quickPayment.insertBefore(this.errorContainer, this.quickPayment.firstChild)
+    }
+    this.errorContainer.textContent = error || "Error"
+  }
+  setPending() {
+
+  }
+  showLoading() {
+
+  }
+  stopLoading() {
+
+  }
+}

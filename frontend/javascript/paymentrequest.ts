@@ -11,16 +11,14 @@ export default class PaymentRequestButton extends BasePaymentMethod {
     }
 
     const paymentRequest = this.payment.stripe.paymentRequest({
-      country: this.payment.config.country,
+      country: this.payment.config.stripecountry,
       currency: this.payment.config.currency,
       total: {
         label: this.payment.config.label,
         amount: this.payment.config.amount
       },
-      ...(this.payment.config.askInfo ? {
-        requestPayerName: true,
-        requestPayerEmail: true,
-      } : {})
+      requestPayerName: false,
+      requestPayerEmail: false,
     })
 
     const prButton = this.payment.elements.create('paymentRequestButton', {
@@ -47,14 +45,14 @@ export default class PaymentRequestButton extends BasePaymentMethod {
   }
 
   async onPaymentMethod(ev: PaymentRequestPaymentMethodEvent) {
-    if (!this.payment.stripe) {
+    if (!this.payment.stripe || !this.payment.config.clientSecret) {
       console.error('Stripe not initialized')
       return
     }
 
     this.payment.ui.setPending(true)
 
-    if (this.payment.config.recurring) {
+    if (this.payment.config.interval > 0) {
       const response = await this.payment.sendPaymentData({
         payment_method_id: ev.paymentMethod.id
       })

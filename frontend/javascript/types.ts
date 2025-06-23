@@ -10,17 +10,18 @@ export interface PaymentUI {
 export type PaymentConfig = {
     action: string // URL to send payment data to
     stripepk: string
-    clientSecret: string
+    clientSecret?: string
     locale: StripeElementLocale
-    country: string
-    amount: number
+    stripecountry: string
+    country?: string
+    amount: number // in cents
     currency: string
     label: string
     successurl: string
-    recurring: boolean
-    name: string
+    interval: number
+    name?: string
     donation: boolean
-    askInfo: boolean
+    sitename: string
 }
 
 export interface PaymentProcessingResponse {
@@ -32,6 +33,7 @@ export interface PaymentProcessingResponse {
     payment_method?: string
     success?: boolean
     customer?: boolean
+    successurl?: string
 }
 
 export type SuccessMessage = {
@@ -47,4 +49,34 @@ export type SepaMessage = {
     owner_name: string
 }
 
-export type PaymentMessage = SuccessMessage | PaymentMethodMessage | SepaMessage
+export type QuickPaymentMessage = {
+    type: 'quickpayment'
+    amount: number,
+    currency: string,
+    interval: number,
+    name: string,
+    email: string,
+    city: string,
+    postcode: string,
+    country: string
+    street_address_1: string
+    street_address_2: string
+}
+
+export type PaymentMessage = SuccessMessage | PaymentMethodMessage | SepaMessage | QuickPaymentMessage
+
+export interface AmountInterval {
+    amount?: number;
+    interval?: number; // for recurring payments
+}
+
+interface CustomEventMap {
+    "donationchange": CustomEvent<AmountInterval>;
+}
+declare global {
+    interface HTMLElement { //adds definition to Document, but you can do the same with HTMLElement
+        addEventListener<K extends keyof CustomEventMap>(type: K,
+            listener: (this: Document, ev: CustomEventMap[K]) => void): void;
+
+    }
+}

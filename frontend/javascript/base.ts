@@ -1,4 +1,4 @@
-import { loadStripe, Stripe, StripeElements } from '@stripe/stripe-js';
+import { loadStripe, type Stripe, type StripeElements } from '@stripe/stripe-js';
 import { PaymentConfig, PaymentMessage, PaymentProcessingResponse, PaymentUI } from './types';
 
 
@@ -28,8 +28,14 @@ export class Payment {
       return
     }
     this.stripe = stripe
+  }
 
-    this.elements = stripe.elements({
+  setupElements() {
+    if (!this.stripe) {
+      console.error('Stripe not initialized')
+      return
+    }
+    this.elements = this.stripe.elements({
       locale: this.config.locale
     })
 
