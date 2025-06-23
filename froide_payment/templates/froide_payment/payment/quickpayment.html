@@ -1,0 +1,8 @@
+{% load froide_payment %}
+{% load frontendbuild %}
+{% block element %}
+    {% render_quickpayment %}
+{% endblock element %}
+{% block scripts %}
+    {% addfrontendbuild "payment.js" %}
+{% endblock scripts %}
