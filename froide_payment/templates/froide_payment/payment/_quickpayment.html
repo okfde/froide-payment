@@ -1,0 +1,9 @@
+{% load i18n %}
+<div data-quickpayment="{{ quickpayment_id }}" class="text-center mb-3">
+    {% if loading %}
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">{% translate "Loading..." %}</span>
+        </div>
+    {% endif %}
+</div>
+{{ quickpayment_data|json_script:quickpayment_data_id }}

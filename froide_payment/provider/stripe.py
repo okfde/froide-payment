@@ -394,6 +394,11 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
             return JsonResponse({"success": True})
         return self.generate_intent_response(intent)
 
+    def start_quick_payment(self, payment):
+        intent = self.get_initial_intent(payment, automatic_payment_methods=True)
+
+        return self.generate_intent_response(intent)
+
     def generate_intent_response(self, intent):
         if intent.status == "requires_action":
             return JsonResponse(
@@ -475,10 +480,11 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
 
         form.action = self.get_return_url(payment)
         form.public_key = self.public_key
+        form.stripe_country = getattr(settings, "STRIPE_COUNTRY", "DE")
 
         return form
 
-    def get_initial_intent(self, payment):
+    def get_initial_intent(self, payment, automatic_payment_methods=False):
         order = payment.order
 
         if payment.transaction_id:
@@ -487,23 +493,29 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripePr
             else:
                 return stripe.PaymentIntent.retrieve(payment.transaction_id)
 
-        kwargs = {}
         order = payment.order
+        kwargs = {}
+        if automatic_payment_methods:
+            kwargs["automatic_payment_methods"] = {
+                "enabled": True,
+            }
+        else:
+            kwargs["payment_method_types"] = [self.stripe_payment_method_type]
+
         if order.is_recurring:
             subscription = order.subscription
             customer = subscription.customer
             self.setup_customer(subscription, payment_method=None)
 
             intent = stripe.SetupIntent.create(
-                payment_method_types=[self.stripe_payment_method_type],
-                customer=customer.remote_reference,
+                customer=customer.remote_reference, **kwargs
             )
         else:
             # For non-recurring orders create payment intent directly
+            kwargs = {}
             intent = stripe.PaymentIntent.create(
                 amount=int(payment.total * 100),
                 currency=payment.currency,
-                payment_method_types=[self.stripe_payment_method_type],
                 use_stripe_sdk=True,
                 statement_descriptor=get_statement_descriptor(payment),
                 metadata={"order_id": str(payment.order.token)},

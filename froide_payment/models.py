@@ -414,6 +414,11 @@ class Order(models.Model):
             return self.description
         return order_service_description(self, self.subscription.plan.interval)
 
+    def get_interval(self):
+        if not self.subscription:
+            return 0
+        return self.subscription.plan.interval
+
     def get_user_or_order(self):
         if self.user:
             return self.user

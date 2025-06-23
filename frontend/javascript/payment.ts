@@ -2,12 +2,12 @@ import { StripeElementLocale } from '@stripe/stripe-js'
 import { Payment } from './base'
 import CreditCard from './creditcard'
 import PaymentRequestButton from './paymentrequest'
+import QuickPaymentButtonMethod from './quickpayment'
 import SepaDebit from './sepa'
-import { DefaultUI } from './ui'
+import { PaymentConfig } from './types'
+import { DefaultUI, ErrorOnlyUI } from './ui'
 
-const setupPayment = async () => {
-
-  const paymentForm = document.getElementById('payment-form') as HTMLFormElement
+const setupPayment = async (paymentForm: HTMLFormElement) => {
 
   const ui = new DefaultUI()
   const payment = new Payment(ui, {
@@ -20,12 +20,14 @@ const setupPayment = async () => {
     successurl: paymentForm.dataset.successurl || '',
     name: paymentForm.dataset.name || '',
     country: paymentForm.dataset.country || '',
+    stripecountry: paymentForm.dataset.stripecountry || '',
     donation: paymentForm.dataset.donation === "1",
-    recurring: paymentForm.dataset.recurring === "1",
+    interval: parseInt(paymentForm.dataset.interval || '0', 10),
     label: paymentForm.dataset.label || '',
-    askInfo: false
+    sitename: paymentForm.dataset.sitename || '',
   })
   await payment.init()
+  payment.setupElements()
 
   const iban = document.querySelector('input#id_iban') as HTMLInputElement
   if (iban) {
@@ -52,89 +54,34 @@ const setupPayment = async () => {
 
 }
 
-setupPayment()
+const setupQuickPayment = async (container: HTMLElement, data: PaymentConfig) => {
+  const ui = new ErrorOnlyUI(container)
+  const payment = new Payment(ui, data)
+  await payment.init()
+  const method = new QuickPaymentButtonMethod(payment)
+  method.setup(container, data)
+}
 
 
-
-// class QuickPaymentButtonMethod extends BasePaymentMethod {
-//   elements: StripeElements | null = null
-
-//   async setup() {
-//     if (!this.payment.stripe || !this.payment.elements) {
-//       console.error('Stripe Elements not initialized')
-//       return
-//     }
-
-//     this.elements = this.payment.stripe.elements({
-//       locale: this.payment.config.locale,
-//       mode: 'payment',
-//       amount: 1099,
-//       currency: 'usd',
-
-//     })
-
-//     const expressCheckoutElement = this.payment.elements.create("expressCheckout", {
-//       // emailRequired: true,
-//       buttonHeight: 55,
-//       buttonTheme: {
-//         applePay: 'black'
-//       },
-//       buttonType: {
-//         googlePay: 'book',
-//         applePay: 'book',
-//       },
-//       // layout: 'auto',
-//       // applePay: {
-//       //   recurringPaymentRequest: {
-//       //     paymentDescription: "Standard Subscription",
-//       //     regularBilling: {
-//       //       amount: 1000,
-//       //       label: "Standard Package",
-//       //       recurringPaymentStartDate: new Date("2023-03-31"),
-//       //       recurringPaymentEndDate: new Date("2024-03-31"),
-//       //       recurringPaymentIntervalUnit: "year",
-//       //       recurringPaymentIntervalCount: 1,
-//       //     },
-//       //     billingAgreement: "billing agreement",
-//       //     managementURL: "https://stripe.com",
-//       //   }
-//       // }
-//     });
-//     expressCheckoutElement.mount("#express-checkout-element");
-
-//     const expressCheckoutDiv = document.getElementById('express-checkout-element');
-//     expressCheckoutDiv.style.visibility = 'hidden';
-
-//     expressCheckoutElement.on('ready', ({ availablePaymentMethods }) => {
-//       if (!availablePaymentMethods) {
-//         // No buttons will show
-//       } else {
-//         // Optional: Animate in the Element
-//         expressCheckoutDiv.style.visibility = 'initial';
-//       }
-//     });
+const paymentForm = document.getElementById('payment-form') as HTMLFormElement
+if (paymentForm) {
+  setupPayment(paymentForm)
+}
 
 
-
-//     expressCheckoutElement.on('confirm', async (event) => {
-//       const { error } = await stripe.confirmPayment({
-//         // `Elements` instance that's used to create the Express Checkout Element.
-//         elements,
-//         // `clientSecret` from the created PaymentIntent
-//         clientSecret,
-//         confirmParams: {
-//           return_url: 'https://example.com/order/123/complete',
-//         },
-//         // Uncomment below if you only want redirect for redirect-based payments.
-//         // redirect: 'if_required',
-//       });
-
-//       if (error) {
-//         // This point is reached only if there's an immediate error when confirming the payment. Show the error to your customer (for example, payment details incomplete).
-//       } else {
-//         // Your customer will be redirected to your `return_url`.
-//       }
-//     });
-
-//   }
-// }
+const quickPaymentContainers = document.querySelectorAll("[data-quickpayment]")
+quickPaymentContainers.forEach((container) => {
+  const quickPayment = container as HTMLElement
+  const quickPaymentId = quickPayment.dataset.quickpayment
+  const dataScript = document.getElementById(`${quickPaymentId}-data`)
+  if (dataScript === null) {
+    console.error(`No data script found for quick payment ${quickPaymentId}`);
+    return;
+  }
+  const data = JSON.parse(dataScript.textContent || 'null');
+  if (data === null) {
+    console.error(`Invalid data for quick payment ${quickPaymentId}`);
+    return;
+  }
+  setupQuickPayment(quickPayment, data)
+})

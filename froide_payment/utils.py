@@ -10,6 +10,7 @@ from django.http import StreamingHttpResponse
 from django.template.loader import render_to_string
 from django.utils import formats, timezone
 from django.utils.translation import gettext_lazy as _
+from payments.core import provider_factory
 
 logger = logging.getLogger(__name__)
 
@@ -241,3 +242,7 @@ def cleanup(time_ago=None):
     )
     logger.warn("Deleting %s obsolete customers", dangling_customers.count())
     dangling_customers.delete()
+
+
+def get_quickpayment_provider():
+    return provider_factory("creditcard")
