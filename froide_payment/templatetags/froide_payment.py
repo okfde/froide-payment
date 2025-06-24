@@ -22,6 +22,7 @@ def render_payment_status(payment):
 
 @register.inclusion_tag("froide_payment/payment/_quickpayment.html", takes_context=True)
 def render_quickpayment(context):
+    request = context["request"]
     amount_cents = context.get("amount", 0) * 100
     provider = get_quickpayment_provider()
     element_id = context.get("id", "quick-payment")
@@ -40,6 +41,6 @@ def render_quickpayment(context):
             "sitename": settings.SITE_NAME,
             "locale": context["request"].LANGUAGE_CODE,
             "donation": context.get("is_donation", True),
-            "successurl": settings.SITE_URL,
+            "successurl": request.build_absolute_uri(),
         },
     }
