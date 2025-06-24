@@ -401,38 +401,43 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
             return JsonResponse({"success": True})
         return self.generate_intent_response(intent)
 
-    def start_quick_payment(self, payment):
+    def start_quick_payment(self, payment) -> dict[str, any]:
         intent = self.get_initial_intent(payment, automatic_payment_methods=True)
+        return self.generate_intent_response_data(intent)
 
-        return self.generate_intent_response(intent)
-
-    def generate_intent_response(self, intent):
+    def generate_intent_response_data(self, intent):
         if intent.status == "requires_action":
-            return JsonResponse(
-                {
-                    "requires_action": True,
-                    "payment_intent_client_secret": intent.client_secret,
-                }
-            )
+            return {
+                "requires_action": True,
+                "payment_intent_client_secret": intent.client_secret,
+            }
         elif intent.status == "requires_confirmation":
-            return JsonResponse(
-                {
-                    "requires_confirmation": True,
-                    "type": intent.object,
-                    "payment_intent_client_secret": (
-                        ""
-                        if getattr(intent, "confirmation_method", "") == "manual"
-                        else intent.client_secret
-                    ),
-                    "payment_method": intent.payment_method,
-                    "customer": True if intent.customer else False,
-                }
-            )
+            return {
+                "requires_confirmation": True,
+                "type": intent.object,
+                "payment_intent_client_secret": (
+                    ""
+                    if getattr(intent, "confirmation_method", "") == "manual"
+                    else intent.client_secret
+                ),
+                "payment_method": intent.payment_method,
+                "customer": True if intent.customer else False,
+            }
+        elif intent.status == "requires_payment_method":
+            # The payment failed, ask for a new payment method
+            return {
+                "requires_payment_method": True,
+                "payment_intent_client_secret": intent.client_secret,
+                "customer": True if intent.customer else False,
+            }
         elif intent.status == "succeeded":
             # The payment didn’t need any additional actions and completed!
             # Handle post-payment fulfillment
-            return JsonResponse({"success": True})
-        return JsonResponse({"error": "Invalid PaymentIntent status"})
+            return {"success": True}
+        return {"error": "Invalid PaymentIntent status"}
+
+    def generate_intent_response(self, intent):
+        return JsonResponse(self.generate_intent_response_data(intent))
 
     def handle_form_method(self, payment, data, request=None):
         intent = None
@@ -507,7 +512,12 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
                 "enabled": True,
             }
         else:
-            kwargs["payment_method_types"] = [self.stripe_payment_method_type]
+            kwargs.update(
+                {
+                    "payment_method_types": [self.stripe_payment_method_type],
+                    "use_stripe_sdk": True,
+                }
+            )
 
         if order.is_recurring:
             subscription = order.subscription
@@ -523,7 +533,6 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
             intent = stripe.PaymentIntent.create(
                 amount=int(payment.total * 100),
                 currency=payment.currency,
-                use_stripe_sdk=True,
                 statement_descriptor=get_statement_descriptor(payment),
                 metadata={"order_id": str(payment.order.token)},
                 **kwargs,
