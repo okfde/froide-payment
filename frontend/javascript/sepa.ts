@@ -11,8 +11,8 @@ export default class SepaDebit extends BasePaymentMethod {
     this.ownerInput = ownerInput
     this.additionalInfoFields = additionalInfoFields
 
-    iban.addEventListener("change", this.toggleAdditionalInfo)
-    iban.addEventListener("keyup", this.toggleAdditionalInfo)
+    iban.addEventListener("change", this.toggleAdditionalInfo.bind(this))
+    iban.addEventListener("keyup", this.toggleAdditionalInfo.bind(this))
   }
 
   toggleAdditionalInfo() {
@@ -43,7 +43,7 @@ export default class SepaDebit extends BasePaymentMethod {
     }
   }
 
-  getAdditionalSepaInfo = () => {
+  getAdditionalSepaInfo() {
     if (!this.additionalInfoFields) { return {} }
     const fields = this.additionalInfoFields.querySelectorAll("input, select") as NodeListOf<HTMLInputElement | HTMLSelectElement>
     const data: { [key: string]: string } = {}
