@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-19 11:33+0200\n"
-"PO-Revision-Date: 2024-09-19 11:36+0200\n"
+"POT-Creation-Date: 2025-06-24 14:27+0200\n"
+"PO-Revision-Date: 2025-06-24 14:28+0200\n"
 "Last-Translator: Stefan Wehrmeyer <stefan.wehrmeyer@okfn.de>\n"
 "Language-Team: \n"
 "Language: de\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 3.5\n"
+"X-Generator: Poedit 3.6\n"
 
 #: admin.py
 #, python-format
@@ -100,8 +100,8 @@ msgstr ""
 "Die IBAN fängt mit zwei Buchstaben und zwei Ziffern an. Nur SEPA-Länder."
 
 #: forms.py
-msgid "Sie müssen den Bedingungen der Lastschrift zustimmen."
-msgstr "Sie müssen den Bedingungen der Lastschrift zustimmen."
+msgid "You have to accept the terms of direct debit."
+msgstr "Du musst den Bedingungen der Lastschrift zustimmen."
 
 #: forms.py templates/froide_payment/order/default.html
 msgid "address"
@@ -155,8 +155,7 @@ msgid "The provided IBAN seems invalid."
 msgstr "Die angegeben IBAN scheint ungültig."
 
 #: forms.py
-msgid ""
-"The provided owner name seems invalid (at least 3 characters required)."
+msgid "The provided owner name seems invalid (at least 3 characters required)."
 msgstr ""
 "Der angegeben Kontoinhaber scheint ungültig (mind. 3 Zeichen notwendig)."
 
@@ -170,7 +169,7 @@ msgid ""
 "Please try again."
 msgstr ""
 "Leider ist beim Überprüfen Ihrer Angaben bei unserem Zahlungsanbieter ein "
-"Fehler aufgetreten. Bitte versuchen Sie es noch einmal."
+"Fehler aufgetreten. Bitte versuche es noch einmal."
 
 #: forms.py
 msgid "Donation amount:"
@@ -202,7 +201,7 @@ msgstr "Datum muss in der Zukunft liegen"
 
 #: forms.py
 msgid "Please confirm your subscription modification"
-msgstr "Bitte bestätigen Sie die Änderung Ihrer Dauerspende"
+msgstr "Bitte bestätige die Änderung Deiner Dauerspende"
 
 #: forms.py
 msgid "Confirmation link has expired."
@@ -309,35 +308,39 @@ msgstr "Annulliert"
 
 #: provider/banktransfer.py
 msgid "You need to cancel your standing order with your bank."
-msgstr "Sie können Ihren Dauerauftrag nur bei Ihrer Bank selbst abstellen."
+msgstr "Du kannst Deinen Dauerauftrag nur bei Deiner Bank selbst abstellen."
 
 #: provider/banktransfer.py
 msgid "You need to modify your standing order with your bank."
-msgstr "Sie können Ihren Dauerauftrag nur bei Ihrer Bank selbst ändern."
+msgstr "Du kannst Deinen Dauerauftrag nur bei Deiner Bank selbst ändern."
 
 #: provider/lastschrift.py
 msgid "You can cancel your direct debit subscription here."
-msgstr "Sie können Ihre Dauerspende per Lastschrift hier kündigen."
+msgstr "Du kannst Deine Dauerspende per Lastschrift hier kündigen."
+
+#: provider/lastschrift.py
+msgid "You can modify your direct debit subscription here."
+msgstr "Du kannst Deine Dauerspende per Lastschrift hier ändern."
 
 #: provider/paypal.py
 msgid "You can cancel your Paypal subscription."
-msgstr "Sie können Ihre Dauerspende per Paypal hier kündigen."
+msgstr "Du kannst Deine Dauerspende per Paypal hier kündigen."
 
 #: provider/paypal.py
 msgid "You can modify your Paypal subscription."
-msgstr "Sie können Ihre Dauerspende per Paypal anpassen."
+msgstr "Du kannst Deine Dauerspende per Paypal anpassen."
 
 #: provider/stripe.py
 msgid "You can cancel your credit card subscription."
-msgstr "Sie können Ihre Dauerspende per Kreditkarte hier kündigen."
+msgstr "Du kannst Deine Dauerspende per Kreditkarte hier kündigen."
 
 #: provider/stripe.py
 msgid "You can modify your subscription."
-msgstr "Sie können Ihre Dauerspende ändern."
+msgstr "Du kannst Deine Dauerspende ändern."
 
 #: provider/stripe.py
 msgid "You can cancel your SEPA direct debit subscription here."
-msgstr "Sie können Ihre Dauerspende per Lastschrift hier kündigen."
+msgstr "Du kannst Deine Dauerspende per SEPA-Lastschrift hier kündigen."
 
 #: templates/admin/froide_payment/payment/change_form.html
 msgid "Convert to SEPA"
@@ -384,11 +387,11 @@ msgstr "Wir verarbeiten Ihre Zahlung gerade."
 
 #: templates/froide_payment/order/default.html
 msgid "Sorry, there was an error."
-msgstr "Entschuldigen Sie bitte, ein Fehler ist aufgetreten."
+msgstr "Entschuldige bitte, ein Fehler ist aufgetreten."
 
 #: templates/froide_payment/order/default.html
 msgid "Your payment was NOT received."
-msgstr "Ihre Zahlung wurde NICHT erhalten."
+msgstr "Deine Zahlung wurde NICHT erhalten."
 
 #: templates/froide_payment/order/default.html
 #: templates/froide_payment/subscription/default.html
@@ -444,6 +447,11 @@ msgstr "E-Mail"
 msgid "payment"
 msgstr "Bezahlung"
 
+#: templates/froide_payment/payment/_quickpayment.html
+#: templates/froide_payment/payment/base.html
+msgid "Loading..."
+msgstr "Wird geladen..."
+
 #: templates/froide_payment/payment/base.html
 msgid "Donate now"
 msgstr "Jetzt spenden"
@@ -455,15 +463,15 @@ msgstr "Jetzt bezahlen"
 
 #: templates/froide_payment/payment/base.html
 msgid "Finish your recurring donation:"
-msgstr "Schließen Sie Ihre Dauerspende ab:"
+msgstr "Schließe Deine Dauerspende ab:"
 
 #: templates/froide_payment/payment/base.html
 msgid "Finish your donation:"
-msgstr "Schließen Sie Ihre Spende ab:"
+msgstr "Schließe Deine Spende ab:"
 
 #: templates/froide_payment/payment/base.html
 msgid "Finish your payment:"
-msgstr "Schlißen Sie Ihre Bezahlung ab:"
+msgstr "Schließen Deine Bezahlung ab:"
 
 #: templates/froide_payment/payment/base.html
 #, python-format
@@ -474,7 +482,7 @@ msgid ""
 "            "
 msgstr ""
 "\n"
-"              Sie spenden <strong>%(amount)s&nbsp;€</strong> "
+"              Du spendest <strong>%(amount)s&nbsp;€</strong> "
 "<mark>%(interval)s</mark>: %(description)s.\n"
 "            "
 
@@ -484,35 +492,30 @@ msgid ""
 "You are donating <strong>%(amount)s&nbsp;€</strong>: <mark>%(description)s</"
 "mark>."
 msgstr ""
-"Sie spenden <strong>%(amount)s&nbsp;€</strong>: <mark>%(description)s</"
-"mark>."
+"Du spendest <strong>%(amount)s&nbsp;€</strong>: <mark>%(description)s</mark>."
 
 #: templates/froide_payment/payment/base.html
 #, python-format
 msgid ""
-"You are paying <strong>%(amount)s&nbsp;€</strong> for "
-"<mark>%(description)s</mark>."
+"You are paying <strong>%(amount)s&nbsp;€</strong> for <mark>%(description)s</"
+"mark>."
 msgstr ""
-"Sie zahlen <strong>%(amount)s&nbsp;€</strong> für <mark>%(description)s</"
+"Du zahlst <strong>%(amount)s&nbsp;€</strong> für <mark>%(description)s</"
 "mark>."
 
 #: templates/froide_payment/payment/base.html
 msgid "You can cancel your donation anytime online or by contacting us."
 msgstr ""
-"Sie können Ihre Dauerspende jederzeit online oder durch Kontaktaufnahme "
+"Du kannst Deine Dauerspende jederzeit online oder durch Kontaktaufnahme "
 "kündigen."
-
-#: templates/froide_payment/payment/base.html
-msgid "Loading..."
-msgstr "Wird geladen..."
 
 #: templates/froide_payment/payment/creditcard.html
 msgid "Or enter your credit card details below"
-msgstr "Oder geben Sie die Details Ihrer Kreditkarte selbst ein"
+msgstr "Oder gib die Details Deiner Kreditkarte selbst ein"
 
 #: templates/froide_payment/payment/creditcard.html
 msgid "Please enter your credit card details"
-msgstr "Bitte geben Sie die Details Ihrer Kreditkarte ein"
+msgstr "Bitte gib die Details Deiner Kreditkarte ein"
 
 #: templates/froide_payment/payment/creditcard.html
 #, python-format
@@ -535,7 +538,7 @@ msgstr "Spende abschließen"
 
 #: templates/froide_payment/payment/sepa.html
 msgid "Your IBAN requires your address details for verification."
-msgstr "Ihre IBAN erfordert Ihre Adresse als zusätzliche Überprüfung."
+msgstr "Deine IBAN erfordert Deine Adresse als zusätzliche Überprüfung."
 
 #: templates/froide_payment/payment/status/base.html
 msgid "status"
@@ -567,17 +570,17 @@ msgstr "Die Lastschrift wird im Laufe des nächsten Monats abgebucht."
 
 #: templates/froide_payment/payment/status/lastschrift.html
 msgid "Your direct debit was processed."
-msgstr "Ihre Lastschrift wurde abgebucht."
+msgstr "Deine Lastschrift wurde abgebucht."
 
 #: templates/froide_payment/payment/status/lastschrift.html
 msgid "There was a problem with your payment. Your direct debit was rejected."
 msgstr ""
-"Es gab ein Problem mit Ihrer Bezahlung. Die Lastschrift wurde abgewiesen "
+"Es gab ein Problem mit Deiner Bezahlung. Die Lastschrift wurde abgewiesen "
 "oder zurückgebucht."
 
 #: templates/froide_payment/subscription/default.html
 msgid "Your subscription"
-msgstr "Ihre Dauerspende"
+msgstr "Deine Dauerspende"
 
 #: templates/froide_payment/subscription/default.html
 msgid "Details"
@@ -593,7 +596,7 @@ msgstr "Schließen"
 
 #: templates/froide_payment/subscription/default.html
 msgid "Are you sure you want to cancel your subscription?"
-msgstr "Sind Sie sicher, dass Sie Ihre Dauerspende kündigen wollen?"
+msgstr "Bist Du sicher, dass Du Deine Dauerspende kündigen willst?"
 
 #: templates/froide_payment/subscription/default.html
 msgid "Cancel subscription now"
@@ -613,6 +616,10 @@ msgstr ""
 #: templates/froide_payment/subscription/default.html
 msgid "This subscription has not been marked as active yet."
 msgstr "Diese Dauerspende ist noch nicht aktiviert."
+
+#: templatetags/froide_payment.py
+msgid "Donation to {}"
+msgstr "Spende an {}"
 
 #: utils.py
 msgid "one time"
@@ -640,7 +647,7 @@ msgstr "alle {} Monate"
 
 #: views.py
 msgid "Your subscription has been canceled."
-msgstr "Ihre Dauerspende wurde gekündigt."
+msgstr "Deine Dauerspende wurde gekündigt."
 
 #: views.py
 msgid ""
@@ -648,33 +655,35 @@ msgid ""
 "sure your subscription is properly canceled."
 msgstr ""
 "Es ist ein Fehler bei unserem Zahlungsanbieter aufgetreten. Wir kümmern uns "
-"darum, dass Ihre Dauerspende ordentlich gekündigt wurde."
+"darum, dass Deine Dauerspende ordentlich gekündigt wurde."
 
 #: views.py
 msgid "Your subscription has been modified."
-msgstr "Ihre Dauerspende wurde geändert."
+msgstr "Deine Dauerspende wurde geändert."
 
 #: views.py
 msgid ""
 "There was an error modifying your subscription with our payment provider."
 msgstr ""
-"Leider ist beim Ändern Ihrer Dauerspende bei unserem Zahlungsanbieter ein "
+"Leider ist beim Ändern Deiner Dauerspende bei unserem Zahlungsanbieter ein "
 "Fehler aufgetreten."
 
 #: views.py
 msgid "We have sent a confirmation email to your email address."
-msgstr "Wir haben eine Bestätigungs-E-Mail an Ihre E-Mail-Adresse gesendet."
+msgstr "Wir haben eine Bestätigungs-E-Mail an Deine E-Mail-Adresse gesendet."
 
 #: views.py
 msgid "There was an error with your input."
-msgstr "Es gab ein Problem mit Ihrer Eingabe."
+msgstr "Es gab ein Problem mit Deiner Eingabe."
+
+#~ msgid "Sie müssen den Bedingungen der Lastschrift zustimmen."
+#~ msgstr "Du musst den Bedingungen der Lastschrift zustimmen."
 
 #~ msgid ""
-#~ "To change the amount please cancel your subscription and create a new "
-#~ "one."
+#~ "To change the amount please cancel your subscription and create a new one."
 #~ msgstr ""
-#~ "Zum Ändern des Betrags kündigen Sie ihre Spende bitte und legen eine "
-#~ "neue Dauerspende an."
+#~ "Zum Ändern des Betrags kündigen Sie ihre Spende bitte und legen eine neue "
+#~ "Dauerspende an."
 
 #~ msgid "This payment has already been processed."
 #~ msgstr "Diese Zahlung wurde schon verarbeitet."
@@ -710,8 +719,7 @@ msgstr "Es gab ein Problem mit Ihrer Eingabe."
 #~ msgstr "Lastschrift"
 
 #~ msgid ""
-#~ "Oops, it looks like we were unable to contact the selected payment "
-#~ "service"
+#~ "Oops, it looks like we were unable to contact the selected payment service"
 #~ msgstr ""
-#~ "Hoppla, wir konnten offenbar den ausgewählten Zahlungsdienstleister "
-#~ "nicht erreichen"
+#~ "Hoppla, wir konnten offenbar den ausgewählten Zahlungsdienstleister nicht "
+#~ "erreichen"

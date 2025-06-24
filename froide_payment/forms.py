@@ -71,9 +71,7 @@ class LastschriftPaymentForm(BasePaymentForm):
             "Betrages verlangen. Es gelten dabei die mit meinem "
             "Kreditinstitut vereinbarten Bedingungen."
         ),
-        error_messages={
-            "required": _("Sie müssen den Bedingungen der Lastschrift zustimmen.")
-        },
+        error_messages={"required": _("You have to accept the terms of direct debit.")},
     )
 
     def __init__(self, *args, **kwargs):
