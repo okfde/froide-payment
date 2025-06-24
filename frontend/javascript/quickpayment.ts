@@ -116,6 +116,10 @@ export default class QuickPaymentButtonMethod extends BasePaymentMethod {
           street_address_1: event.billingDetails.address?.line1 || '',
           street_address_2: event.billingDetails.address?.line2 || '',
         })
+        if (response.error) {
+          this.payment.ui.showError(response.error);
+          return;
+        }
 
         const { error } = await this.payment.stripe.confirmPayment({
           // `Elements` instance that's used to create the Express Checkout Element.
