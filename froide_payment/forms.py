@@ -48,7 +48,7 @@ class LastschriftPaymentForm(BasePaymentForm):
                 "class": "form-control",
                 "pattern": (
                     # 36 len includes possible spaces
-                    r"^[A-Z]{2}\d{2}[ ]*[ A-Za-z\d]{11,36}"
+                    r"^[A-Za-z]{2}\d{2}[ ]*[ A-Za-z\d]{11,36}"
                 ),
                 "placeholder": _("e.g. DE12..."),
                 "title": _(
