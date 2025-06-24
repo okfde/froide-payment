@@ -26,6 +26,8 @@ export default class QuickPaymentButtonMethod extends BasePaymentMethod {
         mode: config.interval > 0 ? 'subscription' : 'payment',
         amount: config.amount,
         currency: config.currency,
+        captureMethod: 'automatic',
+        setupFutureUsage: config.interval > 0 ? 'off_session' : null,
       }
     }
 
