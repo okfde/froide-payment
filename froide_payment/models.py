@@ -13,6 +13,7 @@ from django.db.models.constraints import UniqueConstraint
 from django.db.models.functions import Trunc
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.formats import number_format
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 from django_countries.fields import CountryField
@@ -97,7 +98,7 @@ class Plan(models.Model):
 
     def __str__(self):
         return _("{amount} {currency} {interval} via {provider}").format(
-            amount=self.amount,
+            amount=number_format(self.amount),
             currency=settings.DEFAULT_CURRENCY,
             interval=self.get_interval_description(),
             provider=CHECKOUT_PAYMENT_CHOICES_DICT.get(self.provider, "?"),
@@ -605,7 +606,7 @@ class Payment(BasePayment):
         return "{}: {} ({} {} - {})".format(
             self.order,
             self.get_status_display(),
-            self.total,
+            number_format(self.total),
             self.currency,
             self.variant,
         )
