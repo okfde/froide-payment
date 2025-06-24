@@ -1,42 +1,42 @@
 {% extends "froide_payment/payment/stripe_base.html" %}
 {% load i18n %}
 {% block payment_method %}
-  <div id="payment-request" hidden>
-    <div id="payment-request-button">{# A Stripe Element will be inserted here. #}</div>
-    <p class="mt-5 mb-5 text-center">
-      <strong>{% trans "Or enter your credit card details below" %}</strong>
-    </p>
-  </div>
-  <div class="mb-3">
-    <strong>
-      <label for="card-element">
-        <i class="fa fa-lock" aria-hidden="true"></i>
-        {% trans "Please enter your credit card details" %}
-      </label>
-    </strong>
-    <div class="p-3 border border-primary rounded">
-      <div id="card-element"></div>
+    <div id="payment-request" hidden>
+        <div id="payment-request-button">{# A Stripe Element will be inserted here. #}</div>
+        <p class="mt-5 mb-5 text-center">
+            <strong>{% trans "Or enter your credit card details below" %}</strong>
+        </p>
     </div>
-  </div>
-  {# Used to display Element errors. #}
-  <div id="card-errors" class="alert alert-danger" hidden role="alert"></div>
-  {% if order.is_recurring %}
-    <p class="mt-5 small">
-      {% blocktrans with site_name=SITE_NAME %}
+    <div class="mb-3">
+        <strong>
+            <label for="card-element">
+                <i class="fa fa-lock" aria-hidden="true"></i>
+                {% trans "Please enter your credit card details" %}
+            </label>
+        </strong>
+        <div class="p-3 border border-primary rounded">
+            <div id="card-element"></div>
+        </div>
+    </div>
+    {# Used to display Element errors. #}
+    <div id="card-errors" class="alert alert-danger" hidden role="alert"></div>
+    {% if order.is_recurring %}
+        <p class="mt-3 small">
+            {% blocktrans with site_name=SITE_NAME %}
         I authorise {{ site_name }} to send instructions to the financial institution that issued my card to take payments from my card account in accordance with the terms stated above.
       {% endblocktrans %}
+        </p>
+    {% endif %}
+    <p class="text-end">
+        <button class="btn btn-primary btn-lg btn-threed" disabled id="form-button">
+            {# djlint:off H023 #}
+            {% if order.is_donation %}
+                &rarr;&nbsp;{% trans "Finalize donation" %}
+            {% else %}
+                &rarr;&nbsp;{% trans "Pay now" %}
+            {% endif %}
+            {# djlint:on H023 #}
+        </button>
     </p>
-  {% endif %}
-  <p class="text-end">
-    <button class="btn btn-primary btn-lg btn-threed" disabled id="form-button">
-      {# djlint:off H023 #}
-      {% if order.is_donation %}
-        &rarr;&nbsp;{% trans "Finalize donation" %}
-      {% else %}
-        &rarr;&nbsp;{% trans "Pay now" %}
-      {% endif %}
-      {# djlint:on H023 #}
-    </button>
-  </p>
-  {{ block.super }}
+    {{ block.super }}
 {% endblock payment_method %}
