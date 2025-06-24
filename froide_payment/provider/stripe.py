@@ -490,7 +490,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
         if intent:
             form.intent_secret = intent.client_secret
 
-        form.action = self.get_return_url(payment)
+        form.action = payment.get_process_url()
         form.public_key = self.public_key
         form.stripe_country = getattr(settings, "STRIPE_COUNTRY", "DE")
 
