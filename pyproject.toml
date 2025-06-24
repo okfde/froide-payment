@@ -21,7 +21,7 @@ dependencies = [
   "django-countries",
   "django-localflavor",
   "python-dateutil",
-  "stripe==5.5.0",
+  "stripe==7.14.0",
   "requests",
 ]
 
