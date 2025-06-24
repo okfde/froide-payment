@@ -16,6 +16,7 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from froide.helper.spam import suspicious_ip
 from payments import FraudStatus, RedirectNeeded, get_payment_model
+from payments.core import BasicProvider
 from payments.forms import PaymentForm
 from payments.stripe import StripeProvider
 
@@ -305,10 +306,16 @@ def get_statement_descriptor(payment):
     return "{} {}".format(settings.SITE_NAME, payment.order.id)
 
 
-class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, StripeProvider):
+class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicProvider):
     form_class = PaymentForm
     provider_name = "creditcard"
     stripe_payment_method_type = "card"
+
+    def __init__(self, public_key, secret_key, **kwargs):
+        stripe.api_key = secret_key
+        self.secret_key = secret_key
+        self.public_key = public_key
+        super().__init__(**kwargs)
 
     def get_received_amount_timestamp(self, charges):
         for charge in charges:
