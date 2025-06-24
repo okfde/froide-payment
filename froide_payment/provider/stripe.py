@@ -402,6 +402,12 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
         return self.generate_intent_response(intent)
 
     def start_quick_payment(self, payment) -> dict[str, any]:
+        payment.change_status(PaymentStatus.PENDING)
+        if payment.order.is_recurring:
+            intent = self.setup_subscription(payment.order.subscription)
+            payment.transaction_id = intent.id
+            payment.save()
+            return self.generate_intent_response_data(intent)
         intent = self.get_initial_intent(payment, automatic_payment_methods=True)
         return self.generate_intent_response_data(intent)
 
@@ -500,7 +506,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
         order = payment.order
 
         if payment.transaction_id:
-            if order.is_recurring:
+            if payment.transaction_id.startswith("seti_"):
                 return stripe.SetupIntent.retrieve(payment.transaction_id)
             else:
                 return stripe.PaymentIntent.retrieve(payment.transaction_id)
@@ -543,13 +549,15 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
         return intent
 
     def setup_subscription(
-        self, subscription, payment_method, delay_confirmation=False
+        self, subscription, payment_method=None, delay_confirmation=False
     ):
         plan = subscription.plan
         customer = subscription.customer
         self.setup_customer(subscription, payment_method=payment_method)
 
         if delay_confirmation:
+            if not payment_method:
+                raise ValueError("Payment method is required for delayed confirmation")
             setup_intent = stripe.SetupIntent.create(
                 payment_method_types=[self.stripe_payment_method_type],
                 payment_method=payment_method,
@@ -558,15 +566,24 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
             return setup_intent
 
         if not subscription.remote_reference:
+            kwargs = {}
+            if payment_method:
+                kwargs.update(
+                    {
+                        "default_payment_method": payment_method,
+                    }
+                )
             stripe_subscription = stripe.Subscription.create(
                 customer=customer.remote_reference,
-                default_payment_method=payment_method,
                 items=[
                     {
                         "plan": plan.remote_reference,
                     },
                 ],
+                payment_behavior="default_incomplete",
+                payment_settings={"save_default_payment_method": "on_subscription"},
                 expand=["latest_invoice", "latest_invoice.payment_intent"],
+                **kwargs,
             )
         else:
             stripe_subscription = stripe.Subscription.retrieve(
