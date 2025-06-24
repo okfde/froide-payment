@@ -117,7 +117,7 @@ export default class CreditCard extends BasePaymentMethod {
       console.error("handleServerResponse failed", response.error)
       this.payment.ui.showError(response.error)
       // Show error from server on payment form
-    } else if (response.requires_action) {
+    } else if (response.requires_action || response.requires_confirmation) {
       // Use Stripe.js to handle required card action
       this.payment.config.clientSecret = response.payment_intent_client_secret
       this.handleCardPayment(card)
