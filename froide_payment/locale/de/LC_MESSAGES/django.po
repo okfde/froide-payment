@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-06-24 14:27+0200\n"
-"PO-Revision-Date: 2025-06-24 14:28+0200\n"
+"POT-Creation-Date: 2025-06-24 17:19+0200\n"
+"PO-Revision-Date: 2025-06-24 17:20+0200\n"
 "Last-Translator: Stefan Wehrmeyer <stefan.wehrmeyer@okfn.de>\n"
 "Language-Team: \n"
 "Language: de\n"
@@ -583,12 +583,16 @@ msgid "Your subscription"
 msgstr "Deine Dauerspende"
 
 #: templates/froide_payment/subscription/default.html
-msgid "Details"
-msgstr "Details"
-
-#: templates/froide_payment/subscription/default.html
 msgid "Modify subscription"
 msgstr "Dauerspende ändern"
+
+#: templates/froide_payment/subscription/default.html
+msgid "Payments on this subscription"
+msgstr "Zahlungen dieser Dauerspende"
+
+#: templates/froide_payment/subscription/default.html
+msgid "Details"
+msgstr "Details"
 
 #: templates/froide_payment/subscription/default.html
 msgid "Close"
