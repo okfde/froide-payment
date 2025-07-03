@@ -16,6 +16,7 @@ from payments.core import provider_factory
 
 from .forms import ModifySubscriptionForm
 from .models import Order, Payment, PaymentStatus, Subscription
+from .signals import subscription_cancel_feedback
 
 logger = logging.getLogger(__name__)
 
@@ -168,10 +169,20 @@ def subscription_detail(request, subscription):
 @check_subscription_access
 def subscription_cancel(request, subscription):
     cancel_info = subscription.get_cancel_info()
-    if not subscription.active or not cancel_info.can_cancel:
+    if not subscription.active or subscription.canceled or not cancel_info.can_cancel:
         return redirect(subscription)
 
-    success = subscription.cancel()
+    user = None
+    if request.user.is_authenticated:
+        user = request.user
+
+    trigger = "admin" if request.user.is_staff else "website"
+    success = subscription.cancel(user=user, trigger=trigger)
+
+    subscription_cancel_feedback.send(
+        sender=subscription,
+        data=request.POST,
+    )
 
     if success:
         messages.add_message(
