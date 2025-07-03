@@ -3,6 +3,7 @@ import json
 from decimal import Decimal
 from io import StringIO
 
+import dateutil.parser
 from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin import helpers
@@ -13,8 +14,6 @@ from django.template.response import TemplateResponse
 from django.urls import path
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-
-import dateutil.parser
 
 from .admin_utils import make_nullfilter
 from .models import Customer, Order, Payment, PaymentStatus, Plan, Product, Subscription
@@ -53,8 +52,8 @@ class CustomerAdmin(admin.ModelAdmin):
 
 
 class SubscriptionAdmin(admin.ModelAdmin):
-    readonly_fields = ("canceled", "active")
-    raw_id_fields = ("customer",)
+    readonly_fields = ("canceled", "active", "cancel_trigger", "canceled_by")
+    raw_id_fields = ("customer", "canceled_by")
     list_display = ("customer", "plan", "created", "next_date", "active", "canceled")
     date_hierarchy = "created"
     list_filter = (

@@ -172,10 +172,14 @@ class StripeSubscriptionMixin:
         if not subscription.remote_reference:
             return False
         logger.info("Stripe cancel subscription: %s", subscription.id)
+        stripe_sub = stripe.Subscription.retrieve(subscription.remote_reference)
+        if stripe_sub.status == "canceled":
+            logger.info("Stripe subscription already canceled: %s", subscription.id)
+            return True
         try:
             stripe_sub = stripe.Subscription.delete(subscription.remote_reference)
         except stripe.error.StripeError as e:
-            logger.warn("Stripe cancel subscription failed: %s", subscription.id)
+            logger.warning("Stripe cancel subscription failed: %s", subscription.id)
             logger.exception(e)
             return False
         if stripe_sub.status == "canceled":
@@ -874,12 +878,20 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
         self, request, stripe_subscription: stripe.Subscription
     ):
         sub = Subscription.objects.get(remote_reference=stripe_subscription.id)
-        sub.active = False
-        sub.canceled = datetime.fromtimestamp(
-            stripe_subscription.canceled_at, tz=tz.utc
-        )
+        should_send_signal = False
+        if not sub.canceled:
+            should_send_signal = True
+            sub.active = False
+            sub.canceled = datetime.fromtimestamp(
+                stripe_subscription.canceled_at, tz=tz.utc
+            )
+        if not sub.cancel_trigger and stripe_subscription.cancellation_details:
+            sub.cancel_trigger = stripe_subscription.cancellation_details.get(
+                "reason", ""
+            )
         sub.save()
-        subscription_canceled.send(sender=sub)
+        if should_send_signal:
+            subscription_canceled.send(sender=sub)
 
 
 class StripeSEPAProvider(StripeIntentProvider):

@@ -160,6 +160,10 @@ class Subscription(models.Model):
     next_date = models.DateTimeField(null=True, blank=True)
 
     canceled = models.DateTimeField(null=True, blank=True)
+    canceled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    cancel_trigger = models.CharField(max_length=50, blank=True)
 
     remote_reference = models.CharField(max_length=256, blank=True)
     token = models.UUIDField(default=uuid.uuid4, db_index=True)
@@ -294,11 +298,15 @@ class Subscription(models.Model):
         provider = self.get_provider()
         return provider.get_modify_info(self)
 
-    def cancel(self):
+    def cancel(self, user=None, trigger=""):
         provider = self.get_provider()
         success = provider.cancel_subscription(self)
+        if not success:
+            return False
         self.active = False
         self.canceled = timezone.now()
+        self.canceled_by = user
+        self.cancel_trigger = trigger
         self.save()
         subscription_canceled.send(sender=self)
         return success

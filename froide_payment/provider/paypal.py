@@ -297,6 +297,8 @@ class PaypalProvider(BasicProvider):
         subscription.active = False
         if not subscription.canceled:
             subscription.canceled = timezone.now()
+        if not subscription.cancel_trigger:
+            subscription.cancel_trigger = "webhook"
         subscription.save()
         if old_sub_status != subscription.active:
             subscription_canceled.send(sender=subscription)
