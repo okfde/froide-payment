@@ -641,6 +641,9 @@ class Payment(BasePayment):
     def get_success_url(self):
         return self.order.get_success_check_url()
 
+    def get_absolute_payment_url(self):
+        return self.order.get_absolute_payment_url(self.variant)
+
     def get_purchased_items(self):
         order = self.order
         yield PurchasedItem(
