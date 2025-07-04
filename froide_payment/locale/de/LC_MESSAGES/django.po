@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-06-24 17:19+0200\n"
+"POT-Creation-Date: 2025-07-03 15:30+0200\n"
 "PO-Revision-Date: 2025-06-24 17:20+0200\n"
 "Last-Translator: Stefan Wehrmeyer <stefan.wehrmeyer@okfn.de>\n"
 "Language-Team: \n"
@@ -578,6 +578,10 @@ msgstr ""
 "Es gab ein Problem mit Deiner Bezahlung. Die Lastschrift wurde abgewiesen "
 "oder zurückgebucht."
 
+#: templates/froide_payment/subscription/_cancel_form.html
+msgid "Are you sure you want to cancel your subscription?"
+msgstr "Bist Du sicher, dass Du Deine Dauerspende kündigen willst?"
+
 #: templates/froide_payment/subscription/default.html
 msgid "Your subscription"
 msgstr "Deine Dauerspende"
@@ -597,10 +601,6 @@ msgstr "Details"
 #: templates/froide_payment/subscription/default.html
 msgid "Close"
 msgstr "Schließen"
-
-#: templates/froide_payment/subscription/default.html
-msgid "Are you sure you want to cancel your subscription?"
-msgstr "Bist Du sicher, dass Du Deine Dauerspende kündigen willst?"
 
 #: templates/froide_payment/subscription/default.html
 msgid "Cancel subscription now"
