@@ -153,9 +153,11 @@ def create_recurring_order(
 
     last_order = subscription.get_last_order()
 
-    now += timedelta(days=1)
+    # We receive processing orders often before the service_end date
+    # so we add a buffer of 10 days
+    soon = now + timedelta(days=10)
 
-    if not force and last_order and now < last_order.service_end:
+    if not force and last_order and soon < last_order.service_end:
         # Not yet due, set next_date correctly
         subscription.next_date = last_order.service_end
         subscription.save()
@@ -189,8 +191,7 @@ def create_recurring_order(
         payment.attrs.mandats_id = customer_data.get("mandats_id", None)
         payment.attrs.iban = customer_data.get("iban", None)
 
-    payment.change_status(PaymentStatus.PENDING)
-    payment.save()
+    payment.change_status_and_save(PaymentStatus.PENDING)
     logger.info("Payment %s created for subscription %s", payment.id, subscription.id)
 
     return payment

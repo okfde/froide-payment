@@ -21,6 +21,7 @@ from payments import PaymentStatus as BasePaymentStatus
 from payments import PurchasedItem
 from payments.core import provider_factory
 from payments.models import BasePayment
+from payments.signals import status_changed
 
 from .signals import subscription_canceled
 from .utils import get_payment_defaults, interval_description, order_service_description
@@ -543,8 +544,7 @@ class Order(models.Model):
                     | models.Q(status=PaymentStatus.INPUT),
                 ).filter(order=self).exclude(id=payment.id).delete()
         # Trigger signal
-        payment.change_status(payment.status)
-        payment.save()
+        payment.change_status_and_save(payment.status)
         return payment
 
 
@@ -618,6 +618,24 @@ class Payment(BasePayment):
             self.currency,
             self.variant,
         )
+
+    def change_status(self, status: PaymentStatus | str, message=""):
+        """
+        Updates the Payment status and sends the status_changed signal.
+        """
+        # We are overriding this here and save the whole payment object
+        # because most of the time we are changing additional fields, too.
+
+        self.status = status  # type: ignore[assignment]
+        self.message = message
+        self.save()
+        status_changed.send(sender=type(self), instance=self)
+
+    def change_status_and_save(self, status: PaymentStatus | str, message=""):
+        """
+        Updates the Payment status, saves it, and sends the status_changed signal.
+        """
+        self.change_status(status, message)
 
     def get_provider(self):
         from payments.core import provider_factory

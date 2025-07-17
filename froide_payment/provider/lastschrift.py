@@ -1,5 +1,4 @@
 from django.utils.translation import gettext_lazy as _
-
 from payments import RedirectNeeded
 from payments.core import BasicProvider
 
@@ -15,8 +14,7 @@ class IBANProviderMixin:
         Lastschrift gets stored and processed
         """
         if payment.status == PaymentStatus.WAITING:
-            payment.change_status(PaymentStatus.INPUT)
-            payment.save()
+            payment.change_status_and_save(PaymentStatus.INPUT)
 
         iban = None
         try:
@@ -29,8 +27,7 @@ class IBANProviderMixin:
 
         if iban is not None:
             if payment.status == PaymentStatus.INPUT:
-                payment.change_status(PaymentStatus.PENDING)
-                payment.save()
+                payment.change_status_and_save(PaymentStatus.PENDING)
             raise RedirectNeeded(payment.get_success_url())
 
         form = self.form_class(

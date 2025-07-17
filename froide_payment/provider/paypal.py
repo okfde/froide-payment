@@ -84,8 +84,7 @@ class PaypalProvider(BasicProvider):
             approve_url = self.create_order(payment)
         else:
             approve_url = redirect_to["href"]
-        payment.change_status(PaymentStatus.INPUT)
-        payment.save()
+        payment.change_status_and_save(PaymentStatus.INPUT)
         raise RedirectNeeded(approve_url)
 
     def create_order(self, payment, extra_data=None):
@@ -174,8 +173,7 @@ class PaypalProvider(BasicProvider):
         payer_id = request.GET.get("PayerID")
         if not payer_id:
             if payment.status != PaymentStatus.CONFIRMED:
-                payment.change_status(PaymentStatus.REJECTED)
-                payment.save()
+                payment.change_status_and_save(PaymentStatus.REJECTED)
                 return redirect(failure_url)
             else:
                 return redirect(success_url)
@@ -188,11 +186,9 @@ class PaypalProvider(BasicProvider):
             return redirect(success_url)
         if self._capture:
             payment.captured_amount = payment.total
-            payment.change_status(PaymentStatus.CONFIRMED)
-            payment.save()
+            payment.change_status_and_save(PaymentStatus.CONFIRMED)
         else:
-            payment.change_status(PaymentStatus.PREAUTH)
-            payment.save()
+            payment.change_status_and_save(PaymentStatus.PREAUTH)
         return redirect(success_url)
 
     def _get_access_token(self):
@@ -340,8 +336,7 @@ class PaypalProvider(BasicProvider):
         payment.captured_amount = amounts.amount
         payment.received_amount = amounts.amount - amounts.fee
         payment.received_timestamp = dateutil.parser.parse(resource["create_time"])
-        payment.change_status(PaymentStatus.CONFIRMED)
-        payment.save()
+        payment.change_status_and_save(PaymentStatus.CONFIRMED)
 
     def webhook_payment_sale_completed(self, request, data):
         resource = data["resource"]
@@ -386,8 +381,7 @@ class PaypalProvider(BasicProvider):
         payment.received_amount = amounts.amount - amounts.fee
 
         payment.received_timestamp = dateutil.parser.parse(resource["create_time"])
-        payment.change_status(PaymentStatus.CONFIRMED)
-        payment.save()
+        payment.change_status_and_save(PaymentStatus.CONFIRMED)
 
     def verify_webhook(self, request, data):
         def get_header(key):
@@ -457,7 +451,7 @@ class PaypalProvider(BasicProvider):
             payment.received_timestamp = create_time
             success = resource["state"] == "completed"
         if success:
-            payment.change_status(PaymentStatus.CONFIRMED)
+            payment.change_status_and_save(PaymentStatus.CONFIRMED)
         payment.save()
 
     def synchronize_orders(self, subscription):
@@ -535,14 +529,13 @@ class PaypalProvider(BasicProvider):
             amounts = self.extract_amounts(response)
             payment.captured_amount = amounts.amount
             payment.received_amount = payment.captured_amount - amounts.fee
-            payment.change_status(PaymentStatus.CONFIRMED)
+            payment.change_status_and_save(PaymentStatus.CONFIRMED)
         elif response["status"] == "PENDING":
-            payment.change_status(PaymentStatus.PENDING)
+            payment.change_status_and_save(PaymentStatus.PENDING)
         elif response["status"] == "REFUNDED":
-            payment.change_status(PaymentStatus.REFUNDED)
+            payment.change_status_and_save(PaymentStatus.REFUNDED)
         else:
-            payment.change_status(PaymentStatus.REJECTED)
-        payment.save()
+            payment.change_status_and_save(PaymentStatus.REJECTED)
 
     def setup_subscription(self, payment, data=None):
         order = payment.order

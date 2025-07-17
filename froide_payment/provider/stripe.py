@@ -349,8 +349,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
             payment.received_timestamp = received[1]
 
         if intent.status == "succeeded":
-            payment.change_status(PaymentStatus.CONFIRMED)
-            payment.save()
+            payment.change_status_and_save(PaymentStatus.CONFIRMED)
             return True
         elif intent.status in ("failed", "requires_payment_method"):
             error_message = None
@@ -359,14 +358,12 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
             # Reset amount on failure because balance transaction is pending
             payment.received_timestamp = None
             payment.received_amount = None
-            payment.change_status(PaymentStatus.ERROR, message=error_message)
-            payment.save()
+            payment.change_status_and_save(PaymentStatus.ERROR, message=error_message)
             return False
         elif intent.status == "canceled":
             payment.received_timestamp = None
             payment.received_amount = None
-            payment.change_status(PaymentStatus.CANCELED)
-            payment.save()
+            payment.change_status_and_save(PaymentStatus.CANCELED)
             return False
         elif intent.status == "requires_confirmation":
             # Try confirming
@@ -374,7 +371,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
                 self.confirm_single_payment(payment)
             return False
         if payment.status != PaymentStatus.PENDING:
-            payment.change_status(PaymentStatus.PENDING)
+            payment.change_status_and_save(PaymentStatus.PENDING)
 
         payment.save()
         return False
@@ -406,7 +403,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
         return self.generate_intent_response(intent)
 
     def start_quick_payment(self, payment) -> dict[str, any]:
-        payment.change_status(PaymentStatus.PENDING)
+        payment.change_status_and_save(PaymentStatus.PENDING)
         if payment.order.is_recurring:
             intent = self.setup_subscription(payment.order.subscription)
             payment.transaction_id = intent.id
@@ -481,8 +478,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
 
     def get_form(self, payment, data=None):
         if payment.status == PaymentStatus.WAITING:
-            payment.change_status(PaymentStatus.INPUT)
-            payment.save()
+            payment.change_status_and_save(PaymentStatus.INPUT)
 
         form = self.form_class(data=data, payment=payment, provider=self)
         if data is not None:
@@ -493,8 +489,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
         intent = self.get_initial_intent(payment)
 
         if intent and intent.status == "succeeded":
-            payment.change_status(PaymentStatus.CONFIRMED)
-            payment.save()
+            payment.change_status_and_save(PaymentStatus.CONFIRMED)
             raise RedirectNeeded(payment.get_success_url())
 
         if intent:
@@ -639,7 +634,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
             payment.received_timestamp = received[1]
 
         if intent.status == "succeeded":
-            payment.change_status(PaymentStatus.CONFIRMED)
+            payment.change_status_and_save(PaymentStatus.CONFIRMED)
         payment.save()
 
     def get_or_create_order_from_invoice(self, invoice):
@@ -688,7 +683,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
             payment.received_timestamp = received[1]
 
         if invoice.status == "paid":
-            payment.change_status(PaymentStatus.CONFIRMED)
+            payment.change_status_and_save(PaymentStatus.CONFIRMED)
         payment.save()
 
     # Webhook callbacks
@@ -820,8 +815,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
         payment.captured_amount = Decimal("0.0")
         payment.received_amount = Decimal("0.0")
         payment.received_timestamp = None
-        payment.change_status(PaymentStatus.REJECTED)
-        payment.save()
+        payment.change_status_and_save(PaymentStatus.REJECTED)
 
     def confirm_single_payment(self, payment):
         """
@@ -853,8 +847,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
                 }
             },
         )
-        payment.change_status(PaymentStatus.PENDING)
-        payment.save()
+        payment.change_status_and_save(PaymentStatus.PENDING)
 
     def customer_subscription_created(
         self, request, stripe_subscription: stripe.Subscription
@@ -937,8 +930,7 @@ class StripeSEPAProvider(StripeIntentProvider):
             )
             payment_intent = stripe_subscription.latest_invoice.payment_intent
             payment.transaction_id = payment_intent.id
-            payment.change_status(PaymentStatus.PENDING)
-            payment.save()
+            payment.change_status_and_save(PaymentStatus.PENDING)
             return
 
         self.confirm_single_payment(payment)
@@ -961,8 +953,7 @@ class StripeSEPAProvider(StripeIntentProvider):
                 )
         except stripe.error.StripeError as e:
             logger.exception(e)
-        payment.change_status(PaymentStatus.CANCELED)
-        payment.save()
+        payment.change_status_and_save(PaymentStatus.CANCELED)
 
     def handle_form_method(self, payment, data, request=None):
         if "iban" in data:
@@ -993,10 +984,9 @@ class StripeSEPAProvider(StripeIntentProvider):
         if "success" in data:
             if payment.status not in (PaymentStatus.PENDING, PaymentStatus.DEFERRED):
                 if payment.attrs.needs_confirmation:
-                    payment.change_status(PaymentStatus.DEFERRED)
+                    payment.change_status_and_save(PaymentStatus.DEFERRED)
                 else:
-                    payment.change_status(PaymentStatus.PENDING)
-                payment.save()
+                    payment.change_status_and_save(PaymentStatus.PENDING)
             return True
         return None
 
@@ -1103,8 +1093,7 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
             # charge is not yet available
             return
         if charge.status == "succeeded":
-            payment.change_status(PaymentStatus.CONFIRMED)
-            payment.save()
+            payment.change_status_and_save(PaymentStatus.CONFIRMED)
             return True
 
     def get_form(self, payment, data=None):
@@ -1125,11 +1114,9 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
                     },
                 )
                 payment.transaction_id = source.id
-                payment.change_status(PaymentStatus.INPUT)
-                payment.save()
+                payment.change_status_and_save(PaymentStatus.INPUT)
             except stripe.error.StripeError:
-                payment.change_status(PaymentStatus.ERROR)
-                payment.save()
+                payment.change_status_and_save(PaymentStatus.ERROR)
                 # charge_id = e.json_body['error']['charge']
                 raise RedirectNeeded(payment.get_failure_url())
         if source.status == "chargeable":
@@ -1161,22 +1148,18 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
                 source_id = request.GET["source"]
                 client_secret = request.GET["client_secret"]
             except KeyError:
-                payment.change_status(PaymentStatus.ERROR)
-                payment.save()
+                payment.change_status_and_save(PaymentStatus.ERROR)
                 return redirect(payment.get_failure_url())
             try:
                 source = stripe.Source.retrieve(source_id, client_secret=client_secret)
             except stripe.error.StripeError:
-                payment.change_status(PaymentStatus.ERROR)
-                payment.save()
+                payment.change_status_and_save(PaymentStatus.ERROR)
                 return redirect(payment.get_failure_url())
             if source.status in ("canceled", "failed"):
-                payment.save()
-                payment.change_status(PaymentStatus.REJECTED)
+                payment.change_status_and_save(PaymentStatus.REJECTED)
                 return redirect(payment.get_failure_url())
             # Charging takes place in webhook
-            payment.change_status(PaymentStatus.PENDING)
-            payment.save()
+            payment.change_status_and_save(PaymentStatus.PENDING)
             return redirect(payment.get_success_url())
         # Process web hook
         logger.info("Incoming Sofort Webhook")
@@ -1192,7 +1175,7 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
             payment.received_amount = Decimal(txn.net) / 100
             payment.received_timestamp = convert_utc_timestamp(txn.created)
         if charge.status == "succeeded":
-            payment.change_status(PaymentStatus.CONFIRMED)
+            payment.change_status_and_save(PaymentStatus.CONFIRMED)
         payment.save()
 
     def charge_source(self, payment, source):
@@ -1203,12 +1186,10 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
                 source=source.id,
             )
         except stripe.error.StripeError:
-            payment.change_status(PaymentStatus.ERROR)
-            payment.save()
+            payment.change_status_and_save(PaymentStatus.ERROR)
             raise RedirectNeeded(payment.get_failure_url())
         payment.transaction_id = charge.id
-        payment.change_status(PaymentStatus.PENDING)
-        payment.save()
+        payment.change_status_and_save(PaymentStatus.PENDING)
 
     def source_chargeable(self, request, source):
         logger.info("Sofort Webhook: source chargeable: %d", source.id)
@@ -1234,8 +1215,7 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
         if txn is not None:
             payment.received_amount = Decimal(txn.net) / 100
             payment.received_timestamp = convert_utc_timestamp(txn.created)
-        payment.change_status(PaymentStatus.CONFIRMED)
-        payment.save()
+        payment.change_status_and_save(PaymentStatus.CONFIRMED)
 
     def charge_failed(self, request, charge):
         logger.info("Sofort Webhook: charge failed: %d", charge.id)
@@ -1246,5 +1226,4 @@ class StripeSofortProvider(StripeWebhookMixin, StripeProvider):
 
         payment.attrs.charge = json.dumps(charge)
         payment.captured_amount = Decimal("0.0")
-        payment.change_status(PaymentStatus.REJECTED)
-        payment.save()
+        payment.change_status_and_save(PaymentStatus.REJECTED)

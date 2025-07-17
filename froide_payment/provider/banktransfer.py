@@ -53,8 +53,7 @@ class BanktransferProvider(PlanProductMixin, BasicProvider):
         Bank transfer gets stored and need to be done by the user
         """
         if payment.status == PaymentStatus.WAITING:
-            payment.change_status(PaymentStatus.INPUT)
-            payment.save()
+            payment.change_status_and_save(PaymentStatus.INPUT)
 
         order = payment.order
 
@@ -81,7 +80,6 @@ class BanktransferProvider(PlanProductMixin, BasicProvider):
             order.save()
 
         if payment.status == PaymentStatus.INPUT:
-            payment.change_status(PaymentStatus.PENDING)
-            payment.save()
+            payment.change_status_and_save(PaymentStatus.PENDING)
 
         raise RedirectNeeded(payment.get_success_url())
