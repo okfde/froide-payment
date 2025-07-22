@@ -627,7 +627,7 @@ class Payment(BasePayment):
         # because most of the time we are changing additional fields, too.
 
         self.status = status  # type: ignore[assignment]
-        self.message = message
+        self.message = message or ""
         self.save()
         status_changed.send(sender=type(self), instance=self)
 
