@@ -32,27 +32,29 @@
                     </div>
                 </div>
             {% endif %}
-            <h4>{% translate "Payments on this subscription" %}</h4>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>{% trans "date" %}</th>
-                        <th>{% trans "amount" %}</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for order in orders %}
+            {% block payments %}
+                <h4>{% translate "Payments on this subscription" %}</h4>
+                <table class="table">
+                    <thead>
                         <tr>
-                            <td>{{ order.created|date:"DATE_FORMAT" }}</td>
-                            <td>{{ order.total_gross }}&nbsp;{{ order.currency }}</td>
-                            <td>
-                                <a href="{{ order.get_absolute_url }}">{% translate "Details" %}</a>
-                            </td>
+                            <th>{% trans "date" %}</th>
+                            <th>{% trans "amount" %}</th>
+                            <th></th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                            <tr>
+                                <td>{{ order.created|date:"DATE_FORMAT" }}</td>
+                                <td>{{ order.total_gross }}&nbsp;{{ order.currency }}</td>
+                                <td>
+                                    <a href="{{ order.get_absolute_url }}">{% translate "Details" %}</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endblock payments %}
             {% if subscription.active %}
                 {% if cancel_info.can_cancel %}
                     <div class="alert alert-secondary">
