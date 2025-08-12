@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-03 15:30+0200\n"
-"PO-Revision-Date: 2025-06-24 17:20+0200\n"
+"POT-Creation-Date: 2025-08-12 14:26+0100\n"
+"PO-Revision-Date: 2025-08-12 14:26+0100\n"
 "Last-Translator: Stefan Wehrmeyer <stefan.wehrmeyer@okfn.de>\n"
 "Language-Team: \n"
 "Language: de\n"
@@ -127,28 +127,27 @@ msgstr "Land"
 msgid ""
 "By providing your payment information and confirming this payment, you "
 "authorise (A) Open Knowledge Foundation Deutschland e.V. and Stripe, our "
-"payment service provider and/or PPRO, its local service provider, to send "
-"instructions to your bank to debit your account and (B) your bank to debit "
-"your account in accordance with those instructions. As part of your rights, "
-"you are entitled to a refund from your bank under the terms and conditions "
-"of your agreement with your bank. A refund must be claimed within 8 weeks "
-"starting from the date on which your account was debited. Your rights are "
-"explained in a statement that you can obtain from your bank. You agree to "
-"receive notifications for future debits up to 2 days before they occur."
+"payment service provider, to send instructions to your bank to debit your "
+"account and (B) your bank to debit your account in accordance with those "
+"instructions. As part of your rights, you are entitled to a refund from your "
+"bank under the terms and conditions of your agreement with your bank. A "
+"refund must be claimed within 8 weeks starting from the date on which your "
+"account was debited. Your rights are explained in a statement that you can "
+"obtain from your bank. You agree to receive notifications for future debits "
+"up to 2 days before they occur."
 msgstr ""
 "Durch Angabe Ihrer Zahlungsinformationen und der Bestätigung der "
 "vorliegenden Zahlung ermächtigen Sie (A) Open Knowledge Foundation "
-"Deutschland e.V. und Stripe, unseren Zahlungsdienstleister, bzw. PPRO, den "
-"lokalen Bankdienstleister von Stripe, Ihrem Kreditinstitut Anweisungen zur "
-"Belastung Ihres Kontos zu erteilen, und (B) Ihr Kreditinstitut, Ihr Konto "
-"gemäß diesen Anweisungen zu belasten. Im Rahmen Ihrer Rechte haben Sie, "
-"entsprechend den Vertragsbedingungen mit Ihrem Kreditinstitut, Anspruch auf "
-"eine Rückerstattung von Ihrem Kreditinstitut. Eine Rückerstattung muss "
-"innerhalb von 8 Wochen ab dem Tag, an dem Ihr Konto belastet wurde, geltend "
-"gemacht werden. Eine Erläuterung Ihrer Rechte können Sie von Ihrem "
-"Kreditinstitut anfordern. Sie erklären sich einverstanden, "
-"Benachrichtigungen über künftige Belastungen bis spätestens 2 Tage vor dem "
-"Buchungsdatum zu erhalten."
+"Deutschland e.V. und Stripe, unseren Zahlungsdienstleister, Ihrem "
+"Kreditinstitut Anweisungen zur Belastung Ihres Kontos zu erteilen, und (B) "
+"Ihr Kreditinstitut, Ihr Konto gemäß diesen Anweisungen zu belasten. Im "
+"Rahmen Ihrer Rechte haben Sie, entsprechend den Vertragsbedingungen mit "
+"Ihrem Kreditinstitut, Anspruch auf eine Rückerstattung von Ihrem "
+"Kreditinstitut. Eine Rückerstattung muss innerhalb von 8 Wochen ab dem Tag, "
+"an dem Ihr Konto belastet wurde, geltend gemacht werden. Eine Erläuterung "
+"Ihrer Rechte können Sie von Ihrem Kreditinstitut anfordern. Sie erklären "
+"sich einverstanden, Benachrichtigungen über künftige Belastungen bis "
+"spätestens 2 Tage vor dem Buchungsdatum zu erhalten."
 
 #: forms.py
 msgid "The provided IBAN seems invalid."
@@ -331,8 +330,21 @@ msgid "You can modify your Paypal subscription."
 msgstr "Du kannst Deine Dauerspende per Paypal anpassen."
 
 #: provider/stripe.py
+msgid "This subscription is already canceled."
+msgstr "Diese Dauerspende wurde schon gekündigt."
+
+#: provider/stripe.py
 msgid "You can cancel your credit card subscription."
 msgstr "Du kannst Deine Dauerspende per Kreditkarte hier kündigen."
+
+#: provider/stripe.py
+msgid "You can modify your subscription when it receives the first payment."
+msgstr ""
+"Du kannst Deine Dauerspende ändern, sobald die erste Zahlung eingegangen ist."
+
+#: provider/stripe.py
+msgid "This subscription has been canceled."
+msgstr "Diese Dauerspende wurde gekündigt."
 
 #: provider/stripe.py
 msgid "You can modify your subscription."
@@ -341,6 +353,15 @@ msgstr "Du kannst Deine Dauerspende ändern."
 #: provider/stripe.py
 msgid "You can cancel your SEPA direct debit subscription here."
 msgstr "Du kannst Deine Dauerspende per SEPA-Lastschrift hier kündigen."
+
+#: provider/stripe.py
+#, python-brace-format
+msgid "SEPA direct debit with IBAN {label}"
+msgstr "SEPA-Lastschrift mit der IBAN {label}"
+
+#: provider/stripe.py
+msgid "Your SEPA direct debit IBAN was updated successfully."
+msgstr "Die IBAN für Deine SEPA-Lastschriftauftrag wurde aktualisiert."
 
 #: templates/admin/froide_payment/payment/change_form.html
 msgid "Convert to SEPA"
@@ -448,9 +469,19 @@ msgid "payment"
 msgstr "Bezahlung"
 
 #: templates/froide_payment/payment/_quickpayment.html
+#: templates/froide_payment/payment/_sepa_form.html
 #: templates/froide_payment/payment/base.html
 msgid "Loading..."
 msgstr "Wird geladen..."
+
+#: templates/froide_payment/payment/_sepa_form.html
+#: templates/froide_payment/payment/sepa.html
+msgid "Your IBAN requires your address details for verification."
+msgstr "Deine IBAN erfordert Deine Adresse als zusätzliche Überprüfung."
+
+#: templates/froide_payment/payment/_sepa_form.html
+msgid "Change IBAN"
+msgstr "IBAN ändern"
 
 #: templates/froide_payment/payment/base.html
 msgid "Donate now"
@@ -536,10 +567,6 @@ msgstr ""
 msgid "Finalize donation"
 msgstr "Spende abschließen"
 
-#: templates/froide_payment/payment/sepa.html
-msgid "Your IBAN requires your address details for verification."
-msgstr "Deine IBAN erfordert Deine Adresse als zusätzliche Überprüfung."
-
 #: templates/froide_payment/payment/status/base.html
 msgid "status"
 msgstr "Status"
@@ -587,6 +614,21 @@ msgid "Your subscription"
 msgstr "Deine Dauerspende"
 
 #: templates/froide_payment/subscription/default.html
+msgid "Change your payment method"
+msgstr "Ändere Deine Zahlungsmethode"
+
+#: templates/froide_payment/subscription/default.html
+#, python-format
+msgid ""
+"\n"
+"                                You are currently using %(method)s.\n"
+"                            "
+msgstr ""
+"\n"
+"                                Du verwendest gerade %(method)s.\n"
+"                            "
+
+#: templates/froide_payment/subscription/default.html
 msgid "Modify subscription"
 msgstr "Dauerspende ändern"
 
@@ -610,16 +652,18 @@ msgstr "Dauerspende jetzt kündigen"
 #, python-format
 msgid ""
 "\n"
-"            This subscription has been canceled on %(date)s.\n"
-"          "
+"        This subscription has been canceled on %(date)s.\n"
+"        "
 msgstr ""
 "\n"
 "            Diese Dauerspende wurde am %(date)s gekündigt.\n"
 "          "
 
 #: templates/froide_payment/subscription/default.html
-msgid "This subscription has not been marked as active yet."
-msgstr "Diese Dauerspende ist noch nicht aktiviert."
+msgid "This subscription can be modified after the first payment arrives."
+msgstr ""
+"Diese Dauerspende kann geändert werden, sobald die erste Zahlung eingegangen "
+"ist."
 
 #: templatetags/froide_payment.py
 msgid "Donation to {}"
@@ -680,6 +724,18 @@ msgstr "Wir haben eine Bestätigungs-E-Mail an Deine E-Mail-Adresse gesendet."
 msgid "There was an error with your input."
 msgstr "Es gab ein Problem mit Deiner Eingabe."
 
+#: views.py
+msgid ""
+"Your subscription provider does not support changing the payment method."
+msgstr "Dein gewählter Zahlungsweg erlaubt keine Änderungen über uns."
+
+#: views.py
+msgid "An error occurred."
+msgstr "Es ist ein Fehler aufgetreten."
+
+#~ msgid "Update"
+#~ msgstr "Aktualisieren"
+
 #~ msgid "Sie müssen den Bedingungen der Lastschrift zustimmen."
 #~ msgstr "Du musst den Bedingungen der Lastschrift zustimmen."
 
@@ -712,9 +768,6 @@ msgstr "Es gab ein Problem mit Deiner Eingabe."
 
 #~ msgid "Your order"
 #~ msgstr "Ihre Bestellung"
-
-#~ msgid "Or choose a payment method below"
-#~ msgstr "Oder wählen Sie eine dieser Zahlungsmethoden"
 
 #~ msgid "E-Mail"
 #~ msgstr "E-Mail"
