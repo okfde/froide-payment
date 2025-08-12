@@ -76,6 +76,10 @@ export default class SepaDebit extends BasePaymentMethod {
         this.payment.ui.showError(setupResponse.error)
         return
       }
+      if (setupResponse.type === "success") {
+        this.payment.onSuccess()
+        return
+      }
 
       let sepaData, confirmMethod
       if (setupResponse.type != "payment_intent") {

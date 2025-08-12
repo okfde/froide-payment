@@ -28,7 +28,7 @@ modify_subscription_confirmation = mail_registry.register(
 )
 
 
-class LastschriftPaymentForm(BasePaymentForm):
+class IBANMixin(forms.Form):
     owner_name = forms.CharField(
         label=_("Account owner"),
         required=True,
@@ -58,6 +58,9 @@ class LastschriftPaymentForm(BasePaymentForm):
             }
         ),
     )
+
+
+class LastschriftPaymentForm(IBANMixin, BasePaymentForm):
     terms = forms.BooleanField(
         required=True,
         label="Lastschrift einziehen",
@@ -105,8 +108,7 @@ class LastschriftPaymentForm(BasePaymentForm):
         self.payment.change_status_and_save(PaymentStatus.PENDING)
 
 
-class SEPAPaymentForm(LastschriftPaymentForm):
-    terms = None  # Handled client side
+class SEPAMixin(forms.Form):
     iban_address_required = (
         "AD",
         "PF",
@@ -125,6 +127,7 @@ class SEPAPaymentForm(LastschriftPaymentForm):
         "CH",
         "WF",
     )
+    iban_address_required_regex = "|".join(iban_address_required)
 
     address = forms.CharField(
         label=_("address"),
@@ -165,26 +168,8 @@ class SEPAPaymentForm(LastschriftPaymentForm):
     )
 
     SEPA_MANDATE = _(
-        "By providing your payment information and confirming this payment, you "
-        "authorise (A) Open Knowledge Foundation Deutschland e.V. and Stripe, our "
-        "payment service provider and/or PPRO, its local service provider, to send "
-        "instructions to your bank to debit your account and (B) your bank to debit "
-        "your account in accordance with those instructions. As part of your rights, "
-        "you are entitled to a refund from your bank under the terms and conditions of "
-        "your agreement with your bank. A refund must be claimed within 8 weeks "
-        "starting from the date on which your account was debited. Your rights are "
-        "explained in a statement that you can obtain from your bank. You agree to "
-        "receive notifications for future debits up to 2 days before they occur."
+        "By providing your payment information and confirming this payment, you authorise (A) Open Knowledge Foundation Deutschland e.V. and Stripe, our payment service provider, to send instructions to your bank to debit your account and (B) your bank to debit your account in accordance with those instructions. As part of your rights, you are entitled to a refund from your bank under the terms and conditions of your agreement with your bank. A refund must be claimed within 8 weeks starting from the date on which your account was debited. Your rights are explained in a statement that you can obtain from your bank. You agree to receive notifications for future debits up to 2 days before they occur."
     )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.iban_address_required_regex = "|".join(self.iban_address_required)
-        order = self.payment.order
-        self.fields["address"].initial = order.street_address_1
-        self.fields["postcode"].initial = order.postcode
-        self.fields["city"].initial = order.city
-        self.fields["country"].initial = order.country
 
     def clean(self):
         if "iban" not in self.cleaned_data:
@@ -201,7 +186,7 @@ class SEPAPaymentForm(LastschriftPaymentForm):
             self.payment_method = self.provider.create_payment_method(
                 self.cleaned_data["iban"],
                 self.cleaned_data["owner_name"],
-                self.payment.billing_email,
+                self.email,
                 address=address,
             )
         except ValueError as e:
@@ -231,8 +216,45 @@ class SEPAPaymentForm(LastschriftPaymentForm):
                 )
         return self.cleaned_data
 
+
+class SEPAPaymentForm(SEPAMixin, LastschriftPaymentForm):
+    terms = None  # Handled client side
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        order = self.payment.order
+        self.email = self.payment.billing_email
+        self.fields["address"].initial = order.street_address_1
+        self.fields["postcode"].initial = order.postcode
+        self.fields["city"].initial = order.city
+        self.fields["country"].initial = order.country
+
     def finalize_payment(self):
         pass
+
+
+class SEPASubscriptionChangeForm(IBANMixin, SEPAMixin, forms.Form):
+    class Media:
+        js = {
+            "all": ["payment.js"],
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.subscription = kwargs.pop("subscription")
+        self.provider = kwargs.pop("provider")
+        self.current_method_label = kwargs.pop("current_method_label", None)
+        self.provider.get_payment_method_info(self.subscription)
+        self.public_key = self.provider.public_key
+        self.stripe_country = getattr(settings, "STRIPE_COUNTRY", "DE")
+        super().__init__(*args, **kwargs)
+        customer = self.subscription.customer
+        self.order = self.subscription.get_last_order()
+        self.email = customer.user_email
+        self.fields["owner_name"].initial = customer.get_full_name()
+        self.fields["address"].initial = customer.street_address_1
+        self.fields["postcode"].initial = customer.postcode
+        self.fields["city"].initial = customer.city
+        self.fields["country"].initial = customer.country
 
 
 class StartPaymentMixin:

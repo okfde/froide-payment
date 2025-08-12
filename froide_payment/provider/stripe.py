@@ -20,7 +20,7 @@ from payments.core import BasicProvider
 from payments.forms import PaymentForm
 from payments.stripe import StripeProvider
 
-from ..forms import SEPAPaymentForm
+from ..forms import SEPAPaymentForm, SEPASubscriptionChangeForm
 from ..models import (
     Customer,
     Order,
@@ -163,9 +163,25 @@ class StripeWebhookMixin:
 
 class StripeSubscriptionMixin:
     def get_cancel_info(self, subscription):
+        if subscription.canceled:
+            return CancelInfo(False, _("This subscription is already canceled."))
         return CancelInfo(True, _("You can cancel your credit card subscription."))
 
     def get_modify_info(self, subscription):
+        if not subscription.active:
+            return ModifyInfo(
+                False,
+                _(
+                    "You can modify your subscription when it receives the first payment."
+                ),
+                True,
+            )
+        elif subscription.canceled:
+            return ModifyInfo(
+                False,
+                _("This subscription has been canceled."),
+                True,
+            )
         return ModifyInfo(True, _("You can modify your subscription."), True)
 
     def cancel_subscription(self, subscription):
@@ -894,6 +910,8 @@ class StripeSEPAProvider(StripeIntentProvider):
     stripe_setup_intent_prefix = "seti_"
 
     def get_cancel_info(self, subscription):
+        if subscription.canceled:
+            return CancelInfo(False, _("This subscription is already canceled."))
         return CancelInfo(
             True, _("You can cancel your SEPA direct debit subscription here.")
         )
@@ -1009,6 +1027,33 @@ class StripeSEPAProvider(StripeIntentProvider):
         except stripe.error.StripeError as e:
             logger.exception(e)
             raise ValueError(e.error.code)
+
+    def get_payment_method_info(self, subscription):
+        stripe_sub = stripe.Subscription.retrieve(subscription.remote_reference)
+        stripe_pm_id = stripe_sub.default_payment_method
+        stripe_pm = stripe.PaymentMethod.retrieve(stripe_pm_id)
+        label = f"{stripe_pm['sepa_debit']['country']}...{stripe_pm['sepa_debit']['last4']} ({stripe_pm['billing_details']['name']})"
+        return _("SEPA direct debit with IBAN {label}").format(label=label)
+
+    def get_change_payment_method_form(self, subscription, **kwargs):
+        return SEPASubscriptionChangeForm(
+            current_method_label=self.get_payment_method_info(subscription),
+            provider=self,
+            subscription=subscription,
+            **kwargs,
+        )
+
+    def update_payment_method(self, subscription, stripe_payment_method):
+        try:
+            self.setup_customer(subscription, stripe_payment_method)
+            stripe.Subscription.modify(
+                subscription.remote_reference,
+                default_payment_method=stripe_payment_method,
+            )
+        except stripe.error.StripeError as e:
+            logger.exception(e)
+            return None
+        return _("Your SEPA direct debit IBAN was updated successfully.")
 
     def payment_intent_processing(self, request, intent):
         """

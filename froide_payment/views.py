@@ -1,3 +1,4 @@
+import json
 import logging
 from functools import wraps
 
@@ -155,12 +156,22 @@ def subscription_detail(request, subscription):
 
     orders = Order.objects.filter(subscription=subscription).order_by("-created")
 
+    payment_method_form = None
+    provider = provider_factory(subscription.plan.provider)
+    if (
+        subscription.active
+        and not subscription.canceled
+        and hasattr(provider, "get_change_payment_method_form")
+    ):
+        payment_method_form = provider.get_change_payment_method_form(subscription)
+
     ctx = {
         "orders": orders,
         "subscription": subscription,
         "cancel_info": subscription.get_cancel_info(),
         "modify_info": subscription.get_modify_info(),
         "modify_form": ModifySubscriptionForm(subscription=subscription),
+        "payment_method_form": payment_method_form,
     }
     return render(request, templates, ctx)
 
@@ -284,3 +295,28 @@ def subscription_modify_confirm(request, subscription):
             request, messages.ERROR, _("There was an error with your input.")
         )
     return redirect(subscription)
+
+
+@require_POST
+@check_subscription_access
+def subscription_payment_method(request, subscription):
+    provider = provider_factory(subscription.plan.provider)
+    if not hasattr(provider, "get_change_payment_method_form"):
+        messages.add_message(
+            request,
+            messages.ERROR,
+            _(
+                "Your subscription provider does not support changing the payment method."
+            ),
+        )
+        return redirect(subscription)
+    if request.headers.get("x-requested-with") != "XMLHttpRequest":
+        return redirect(subscription)
+    data = json.loads(request.body.decode("utf-8"))
+    form = provider.get_change_payment_method_form(subscription, data=data)
+    if form.is_valid():
+        message = provider.update_payment_method(subscription, form.payment_method)
+        if message:
+            messages.add_message(request, messages.SUCCESS, message)
+            return JsonResponse({"status": "success"})
+    return JsonResponse({"error": _("An error occurred.")})

@@ -43,11 +43,13 @@ export class Payment {
   }
 
   async sendPaymentData(obj: PaymentMessage): Promise<PaymentProcessingResponse> {
+    const csrftoken = (document.querySelector('input[name="csrfmiddlewaretoken"]') as HTMLInputElement)?.value || '';
     const response = await fetch(this.config.action, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': csrftoken
       },
       body: JSON.stringify(obj)
     })

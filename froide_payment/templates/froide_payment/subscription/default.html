@@ -14,6 +14,29 @@
             <p>{{ subscription.plan }}</p>
             {% block custom_content %}
             {% endblock custom_content %}
+            {% if payment_method_form %}
+                <div class="card mb-5">
+                    <div class="card-body">
+                        <h5 class="card-title">{% trans "Change your payment method" %}</h5>
+                        {% if payment_method_form.current_method_label %}
+                            <p>
+                                {% blocktrans with method=payment_method_form.current_method_label %}
+                                You are currently using {{ method }}.
+                            {% endblocktrans %}
+                            </p>
+                        {% else %}
+                        {% endif %}
+                        {% include "froide_payment/payment/_sepa_form.html" with form=payment_method_form customer=subscription.customer %}
+                        {% comment %} <form action="{% url 'froide_payment:subscription-payment_method' token=subscription.token %}" method="post">
+                            {% csrf_token %}
+                            {% render_form payment_method_form %}
+                            <p>
+                                <button type="submit" class="btn btn-secondary">{% trans "Update" %}</button>
+                            </p>
+                        </form> {% endcomment %}
+                    </div>
+                </div>
+            {% endif %}
             {% if subscription.active %}
                 <div class="card mb-5">
                     <div class="card-body">
@@ -55,59 +78,58 @@
                     </tbody>
                 </table>
             {% endblock payments %}
-            {% if subscription.active %}
-                {% if cancel_info.can_cancel %}
-                    <div class="alert alert-secondary">
-                        <p>{{ cancel_info.message }}</p>
-                        <div class="text-end">
-                            <button type="button"
-                                    class="btn btn-secondary"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#cancel-subscription">{% trans "Cancel subscription" %}</button>
-                        </div>
+            {% if cancel_info.can_cancel %}
+                <div class="alert alert-secondary">
+                    <p>{{ cancel_info.message }}</p>
+                    <div class="text-end">
+                        <button type="button"
+                                class="btn btn-secondary"
+                                data-bs-toggle="modal"
+                                data-bs-target="#cancel-subscription">{% trans "Cancel subscription" %}</button>
                     </div>
-                    <div class="modal fade"
-                         id="cancel-subscription"
-                         tabindex="-1"
-                         role="dialog"
-                         aria-labelledby="cancel-subscription-label"
-                         aria-hidden="true">
-                        <div class="modal-dialog" role="document">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title" id="cancel-subscription-label">{% trans "Cancel subscription" %}</h5>
-                                    <button type="button"
-                                            class="btn-close"
-                                            data-bs-dismiss="modal"
-                                            aria-label="{% translate "Close" %}"></button>
-                                </div>
-                                <form action="{% url 'froide_payment:subscription-cancel' token=subscription.token %}"
-                                      method="post">
-                                    {% csrf_token %}
-                                    <div class="modal-body">{% include "froide_payment/subscription/_cancel_form.html" %}</div>
-                                    <div class="modal-footer">
-                                        <button type="button"
-                                                class="me-auto btn btn-secondary"
-                                                data-bs-dismiss="modal">{% trans "Close" %}</button>
-                                        <button type="submit" class="btn btn-danger">{% trans "Cancel subscription now" %}</button>
-                                    </div>
-                                </form>
+                </div>
+                <div class="modal fade"
+                     id="cancel-subscription"
+                     tabindex="-1"
+                     role="dialog"
+                     aria-labelledby="cancel-subscription-label"
+                     aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="cancel-subscription-label">{% trans "Cancel subscription" %}</h5>
+                                <button type="button"
+                                        class="btn-close"
+                                        data-bs-dismiss="modal"
+                                        aria-label="{% translate "Close" %}"></button>
                             </div>
+                            <form action="{% url 'froide_payment:subscription-cancel' token=subscription.token %}"
+                                  method="post">
+                                {% csrf_token %}
+                                <div class="modal-body">{% include "froide_payment/subscription/_cancel_form.html" %}</div>
+                                <div class="modal-footer">
+                                    <button type="button"
+                                            class="me-auto btn btn-secondary"
+                                            data-bs-dismiss="modal">{% trans "Close" %}</button>
+                                    <button type="submit" class="btn btn-danger">{% trans "Cancel subscription now" %}</button>
+                                </div>
+                            </form>
                         </div>
                     </div>
-                {% else %}
-                    <div class="alert alert-secondary">{{ cancel_info.message }}</div>
-                {% endif %}
+                </div>
             {% else %}
-                {% if subscription.canceled %}
-                    <div class="alert alert-info">
-                        {% blocktrans with date=subscription.canceled|date:"SHORT_DATE_FORMAT" %}
-            This subscription has been canceled on {{ date }}.
-          {% endblocktrans %}
-                    </div>
-                {% else %}
-                    <div class="alert alert-secondary">{% trans "This subscription has not been marked as active yet." %}</div>
-                {% endif %}
+                <div class="alert alert-secondary">{{ cancel_info.message }}</div>
+            {% endif %}
+            {% if subscription.canceled %}
+                <div class="alert alert-info">
+                    {% blocktrans with date=subscription.canceled|date:"SHORT_DATE_FORMAT" %}
+        This subscription has been canceled on {{ date }}.
+        {% endblocktrans %}
+                </div>
+            {% elif not subscription.active %}
+                <div class="alert alert-secondary">
+                    {% trans "This subscription can be modified after the first payment arrives." %}
+                </div>
             {% endif %}
         </div>
     </div>

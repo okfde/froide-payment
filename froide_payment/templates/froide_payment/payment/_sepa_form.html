@@ -1,0 +1,54 @@
+{% load i18n %}
+{% load frontendbuild %}
+<form method="post"
+      id="payment-form"
+      class="form-horizontal"
+      action="{% url 'froide_payment:subscription-payment_method' token=subscription.token %}"
+      data-stripepk="{{ form.public_key }}"
+      data-clientsecret=""
+      data-firstname="{{ customer.first_name }}"
+      data-lastname="{{ customer.last_name }}"
+      data-name="{{ customer.get_full_name }}"
+      data-email="{{ customer.user_email }}"
+      data-country="{{ customer.country.code }}"
+      data-stripecountry="{{ form.stripe_country }}"
+      data-successurl="{{ SITE_URL }}{{ subscription.get_absolute_url }}"
+      data-currency="{{ order.currency }}"
+      data-donation="{% if order.is_donation %}1{% endif %}"
+      data-interval="{{ order.get_interval }}"
+      data-amount="{{ order.amount_cents }}"
+      data-label="{{ order.description }}"
+      data-address1="{{ customer.street_address_1 }}"
+      data-address2="{{ customer.street_address_2 }}"
+      data-city="{{ customer.city }}"
+      data-sitename="{{ SITE_NAME }}"
+      data-locale="{{ LANGUAGE_CODE }}"
+      data-postcode="{{ customer.postcode }}">
+    {% csrf_token %}
+    <div id="loading" class="text-center">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">{% trans "Loading..." %}</span>
+        </div>
+    </div>
+    <div id="container">
+        {% include "bootstrap_field.html" with field=form.owner_name %}
+        {% include "bootstrap_field.html" with field=form.iban %}
+        <div id="additional-sepa-info"
+             data-ibanpattern="{{ form.iban_address_required_regex }}"
+             hidden>
+            <div class="alert alert-info">{% translate "Your IBAN requires your address details for verification." %}</div>
+            {% include "bootstrap_field.html" with field=form.address %}
+            {% include "bootstrap_field.html" with field=form.city %}
+            {% include "bootstrap_field.html" with field=form.postcode %}
+            {% include "bootstrap_field.html" with field=form.country %}
+        </div>
+        <div id="card-errors" class="alert alert-danger" hidden role="alert"></div>
+        <div>
+            <p class="text-muted small">{{ form.SEPA_MANDATE }}</p>
+        </div>
+        <div class="text-end">
+            <button id="form-button" type="submit" class="btn btn-success" disabled>{% translate "Change IBAN" %}</button>
+        </div>
+    </div>
+</form>
+{% addfrontendbuild "payment.js" %}
