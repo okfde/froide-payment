@@ -37,21 +37,19 @@
                     </div>
                 </div>
             {% endif %}
-            {% if subscription.active %}
+            {% if modify_info.can_modify %}
                 <div class="card mb-5">
                     <div class="card-body">
                         <h5 class="card-title">{% trans "Modify subscription" %}</h5>
                         <p>{{ modify_info.message }}</p>
-                        {% if modify_info.can_modify %}
-                            <form action="{% url 'froide_payment:subscription-modify' token=subscription.token %}"
-                                  method="post">
-                                {% csrf_token %}
-                                {% render_form modify_form %}
-                                <p>
-                                    <button type="submit" class="btn btn-secondary">{% trans "Modify subscription" %}</button>
-                                </p>
-                            </form>
-                        {% endif %}
+                        <form action="{% url 'froide_payment:subscription-modify' token=subscription.token %}"
+                              method="post">
+                            {% csrf_token %}
+                            {% render_form modify_form %}
+                            <p>
+                                <button type="submit" class="btn btn-secondary">{% trans "Modify subscription" %}</button>
+                            </p>
+                        </form>
                     </div>
                 </div>
             {% endif %}

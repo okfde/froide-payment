@@ -60,9 +60,33 @@ class PaypalProvider(BasicProvider):
         super().__init__(capture=capture)
 
     def get_cancel_info(self, subscription):
+        if not subscription.remote_reference:
+            return CancelInfo(
+                False, _("You cannot cancel your Paypal subscription here.")
+            )
+        if subscription.canceled:
+            return CancelInfo(
+                False, _("Your Paypal subscription has already been canceled.")
+            )
         return CancelInfo(True, _("You can cancel your Paypal subscription."))
 
     def get_modify_info(self, subscription):
+        if not subscription.remote_reference:
+            return ModifyInfo(
+                False, _("You cannot modify your Paypal subscription here."), False
+            )
+        if not subscription.active:
+            return ModifyInfo(
+                False,
+                _(
+                    "You can modify your subscription when it receives the first payment."
+                ),
+                False,
+            )
+        if subscription.canceled:
+            return ModifyInfo(
+                False, _("Your Paypal subscription has already been canceled."), False
+            )
         return ModifyInfo(True, _("You can modify your Paypal subscription."), False)
 
     def get_form(self, payment, data=None):
