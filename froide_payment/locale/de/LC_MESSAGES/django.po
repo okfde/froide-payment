@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-08-12 14:26+0100\n"
-"PO-Revision-Date: 2025-08-12 14:26+0100\n"
+"POT-Creation-Date: 2025-08-18 12:05+0100\n"
+"PO-Revision-Date: 2025-08-18 12:11+0100\n"
 "Last-Translator: Stefan Wehrmeyer <stefan.wehrmeyer@okfn.de>\n"
 "Language-Team: \n"
 "Language: de\n"
@@ -322,8 +322,25 @@ msgid "You can modify your direct debit subscription here."
 msgstr "Du kannst Deine Dauerspende per Lastschrift hier ändern."
 
 #: provider/paypal.py
+msgid "You cannot cancel your Paypal subscription here."
+msgstr "Du kannst Deine Dauerspende nur bei Paypal kündigen."
+
+#: provider/paypal.py
+msgid "Your Paypal subscription has already been canceled."
+msgstr "Deine Paypal-Dauerspende wurde schon gekündigt."
+
+#: provider/paypal.py
 msgid "You can cancel your Paypal subscription."
 msgstr "Du kannst Deine Dauerspende per Paypal hier kündigen."
+
+#: provider/paypal.py
+msgid "You cannot modify your Paypal subscription here."
+msgstr "Du kannst Deine Dauerspende nur bei Paypal anpassen."
+
+#: provider/paypal.py provider/stripe.py
+msgid "You can modify your subscription when it receives the first payment."
+msgstr ""
+"Du kannst Deine Dauerspende ändern, sobald die erste Zahlung eingegangen ist."
 
 #: provider/paypal.py
 msgid "You can modify your Paypal subscription."
@@ -336,11 +353,6 @@ msgstr "Diese Dauerspende wurde schon gekündigt."
 #: provider/stripe.py
 msgid "You can cancel your credit card subscription."
 msgstr "Du kannst Deine Dauerspende per Kreditkarte hier kündigen."
-
-#: provider/stripe.py
-msgid "You can modify your subscription when it receives the first payment."
-msgstr ""
-"Du kannst Deine Dauerspende ändern, sobald die erste Zahlung eingegangen ist."
 
 #: provider/stripe.py
 msgid "This subscription has been canceled."
