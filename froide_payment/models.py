@@ -305,9 +305,10 @@ class Subscription(models.Model):
         if not success:
             return False
         self.active = False
-        self.canceled = timezone.now()
-        self.canceled_by = user
-        self.cancel_trigger = trigger
+        if self.canceled is None:
+            self.canceled = timezone.now()
+            self.canceled_by = user
+            self.cancel_trigger = trigger
         self.save()
         subscription_canceled.send(sender=self)
         return success

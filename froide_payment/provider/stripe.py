@@ -192,6 +192,11 @@ class StripeSubscriptionMixin:
         if stripe_sub.status == "canceled":
             logger.info("Stripe subscription already canceled: %s", subscription.id)
             return True
+        if stripe_sub.status == "incomplete_expired":
+            if stripe_sub.canceled_at is not None:
+                subscription.canceled = convert_utc_timestamp(stripe_sub.canceled_at)
+                subscription.save(update_fields=["canceled"])
+            return True
         try:
             stripe_sub = stripe.Subscription.delete(subscription.remote_reference)
         except stripe.error.StripeError as e:
