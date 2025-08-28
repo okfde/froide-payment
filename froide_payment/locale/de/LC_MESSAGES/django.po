@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-08-18 12:05+0100\n"
-"PO-Revision-Date: 2025-08-18 12:11+0100\n"
+"POT-Creation-Date: 2025-08-28 20:42+0100\n"
+"PO-Revision-Date: 2025-08-28 20:43+0100\n"
 "Last-Translator: Stefan Wehrmeyer <stefan.wehrmeyer@okfn.de>\n"
 "Language-Team: \n"
 "Language: de\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 3.6\n"
+"X-Generator: Poedit 3.7\n"
 
 #: admin.py
 #, python-format
@@ -359,8 +359,12 @@ msgid "This subscription has been canceled."
 msgstr "Diese Dauerspende wurde gekündigt."
 
 #: provider/stripe.py
-msgid "You can modify your subscription."
-msgstr "Du kannst Deine Dauerspende ändern."
+msgid ""
+"You can modify your subscription or pause it by adjusting the next payment "
+"date."
+msgstr ""
+"Du kannst Deine Dauerspende ändern oder bei Bedarf durch Änderung des "
+"nächsten Abbuchungstermins pausieren."
 
 #: provider/stripe.py
 msgid "You can cancel your SEPA direct debit subscription here."
@@ -744,6 +748,9 @@ msgstr "Dein gewählter Zahlungsweg erlaubt keine Änderungen über uns."
 #: views.py
 msgid "An error occurred."
 msgstr "Es ist ein Fehler aufgetreten."
+
+#~ msgid "You can modify your subscription."
+#~ msgstr "Du kannst Deine Dauerspende ändern."
 
 #~ msgid "Update"
 #~ msgstr "Aktualisieren"
