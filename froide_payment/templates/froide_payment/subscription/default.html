@@ -27,18 +27,11 @@
                         {% else %}
                         {% endif %}
                         {% include "froide_payment/payment/_sepa_form.html" with form=payment_method_form customer=subscription.customer %}
-                        {% comment %} <form action="{% url 'froide_payment:subscription-payment_method' token=subscription.token %}" method="post">
-                            {% csrf_token %}
-                            {% render_form payment_method_form %}
-                            <p>
-                                <button type="submit" class="btn btn-secondary">{% trans "Update" %}</button>
-                            </p>
-                        </form> {% endcomment %}
                     </div>
                 </div>
             {% endif %}
             {% if modify_info.can_modify %}
-                <div class="card mb-5">
+                <div class="card mb-5" id="modify-subscription">
                     <div class="card-body">
                         <h5 class="card-title">{% trans "Modify subscription" %}</h5>
                         <p>{{ modify_info.message }}</p>
