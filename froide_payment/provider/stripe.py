@@ -182,7 +182,13 @@ class StripeSubscriptionMixin:
                 _("This subscription has been canceled."),
                 True,
             )
-        return ModifyInfo(True, _("You can modify your subscription."), True)
+        return ModifyInfo(
+            True,
+            _(
+                "You can modify your subscription or pause it by adjusting the next payment date."
+            ),
+            True,
+        )
 
     def cancel_subscription(self, subscription):
         if not subscription.remote_reference:
