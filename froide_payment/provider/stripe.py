@@ -14,7 +14,7 @@ from django.shortcuts import redirect
 from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
-from froide.helper.spam import suspicious_ip
+from froide.helper.spam import check_suspicious_request
 from payments import FraudStatus, RedirectNeeded, get_payment_model
 from payments.core import BasicProvider
 from payments.forms import PaymentForm
@@ -61,7 +61,7 @@ def requires_confirmation(request, payment, data) -> bool:
 def _requires_confirmation(request, payment, data) -> Optional[str]:
     if payment.variant != "sepa":
         return None
-    suspicion = suspicious_ip(request)
+    suspicion = check_suspicious_request(request)
     if suspicion:
         return str(suspicion)
     target_countries = settings.FROIDE_CONFIG.get("target_countries", None)
