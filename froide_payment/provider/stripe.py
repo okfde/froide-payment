@@ -1042,6 +1042,17 @@ class StripeSEPAProvider(StripeIntentProvider):
     def get_payment_method_info(self, subscription):
         stripe_sub = stripe.Subscription.retrieve(subscription.remote_reference)
         stripe_pm_id = stripe_sub.default_payment_method
+        if stripe_pm_id is None:
+            stripe_cus = stripe.Customer.retrieve(id=stripe_sub.customer)
+            stripe_pm_id = stripe_cus.invoice_settings.default_payment_method
+            if stripe_pm_id is None:
+                raise Exception("Could not find a payment method for subscription")
+            # attach customer payment method as default to subscription
+            stripe.Subscription.modify(
+                subscription.remote_reference,
+                default_payment_method=stripe_pm_id,
+            )
+
         stripe_pm = stripe.PaymentMethod.retrieve(stripe_pm_id)
         label = f"{stripe_pm['sepa_debit']['country']}...{stripe_pm['sepa_debit']['last4']} ({stripe_pm['billing_details']['name']})"
         return _("SEPA direct debit with IBAN {label}").format(label=label)
