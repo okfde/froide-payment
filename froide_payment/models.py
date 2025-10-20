@@ -36,6 +36,7 @@ CHECKOUT_PAYMENT_CHOICES = [
     ("banktransfer", _("Bank transfer")),
 ]
 
+
 CHECKOUT_PAYMENT_CHOICES_DICT = dict(CHECKOUT_PAYMENT_CHOICES)
 
 PAYMENT_METHODS = [
@@ -611,6 +612,19 @@ class Payment(BasePayment):
         PaymentStatus.CANCELED: "dark",
     }
 
+    STATUS_ICONS = {
+        PaymentStatus.WAITING: "clock-o",
+        PaymentStatus.PREAUTH: "clock-o",
+        PaymentStatus.PENDING: "clock-o",
+        PaymentStatus.DEFERRED: "clock-o",
+        PaymentStatus.CONFIRMED: "check",
+        PaymentStatus.REJECTED: "times",
+        PaymentStatus.REFUNDED: "backward",
+        PaymentStatus.ERROR: "times",
+        PaymentStatus.INPUT: "keyboard-o",
+        PaymentStatus.CANCELED: "times",
+    }
+
     def __str__(self):
         return "{}: {} ({} {} - {})".format(
             self.order,
@@ -682,6 +696,10 @@ class Payment(BasePayment):
     @property
     def status_color(self):
         return self.STATUS_COLORS[self.status]
+
+    @property
+    def status_icon(self):
+        return self.STATUS_ICONS[self.status]
 
     def is_pending(self):
         return self.status in (PaymentStatus.PENDING, PaymentStatus.DEFERRED)
