@@ -38,6 +38,7 @@ from ..signals import (
     subscription_deactivated,
 )
 from ..utils import send_sepa_mail
+from .mixins import CancelMixin, EditableMixin
 from .utils import CancelInfo, ModifyInfo
 
 logger = logging.getLogger(__name__)
@@ -161,7 +162,7 @@ class StripeWebhookMixin:
         return HttpResponse(status=201)
 
 
-class StripeSubscriptionMixin:
+class StripeSubscriptionMixin(EditableMixin):
     def get_cancel_info(self, subscription):
         if subscription.canceled:
             return CancelInfo(False, _("This subscription is already canceled."))
@@ -914,7 +915,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
             subscription_canceled.send(sender=sub)
 
 
-class StripeSEPAProvider(StripeIntentProvider):
+class StripeSEPAProvider(StripeIntentProvider, CancelMixin):
     form_class = SEPAPaymentForm
     provider_name = "sepa"
     stripe_payment_method_type = "sepa_debit"

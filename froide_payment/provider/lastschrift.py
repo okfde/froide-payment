@@ -4,7 +4,7 @@ from payments.core import BasicProvider
 
 from ..forms import LastschriftPaymentForm
 from ..models import PaymentStatus
-from .mixins import PlanProductMixin
+from .mixins import EditableMixin, PlanProductMixin
 from .utils import CancelInfo, ModifyInfo
 
 
@@ -41,7 +41,9 @@ class IBANProviderMixin:
         return form
 
 
-class LastschriftProvider(PlanProductMixin, IBANProviderMixin, BasicProvider):
+class LastschriftProvider(
+    PlanProductMixin, IBANProviderMixin, BasicProvider, EditableMixin
+):
     provider_name = "lastschrift"
     form_class = LastschriftPaymentForm
 

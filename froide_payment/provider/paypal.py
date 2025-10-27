@@ -16,6 +16,8 @@ from django.utils.translation import gettext_lazy as _
 from payments import PaymentError, RedirectNeeded
 from payments.core import BasicProvider
 
+from froide_payment.provider.mixins import EditableMixin
+
 from ..models import Payment, PaymentStatus, Plan, Product, Subscription
 from ..signals import (
     subscription_activated,
@@ -40,7 +42,7 @@ def utcisoformat(dt):
     return dt.replace(microsecond=0).replace(tzinfo=None).isoformat() + "Z"
 
 
-class PaypalProvider(BasicProvider):
+class PaypalProvider(BasicProvider, EditableMixin):
     provider_name = "paypal"
 
     def __init__(
