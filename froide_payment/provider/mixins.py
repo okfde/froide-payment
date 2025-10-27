@@ -2,7 +2,9 @@ from decimal import Decimal
 
 from django.utils.text import slugify
 
-from ..models import Plan, Product
+from .utils import CancelInfo, ModifyInfo
+
+from ..models import Plan, Product, Subscription
 
 
 class PlanProductMixin:
@@ -42,3 +44,17 @@ class PlanProductMixin:
                 product=product,
             )
         return plan
+
+
+class CancelMixin:
+    def get_cancel_info(self, subscription: Subscription) -> CancelInfo:
+        raise NotImplementedError
+
+
+class ModifyMixin:
+    def get_modify_info(self, subscription: Subscription) -> ModifyInfo:
+        raise NotImplementedError
+
+
+class EditableMixin(CancelMixin, ModifyMixin):
+    pass

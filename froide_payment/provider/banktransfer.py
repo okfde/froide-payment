@@ -6,7 +6,7 @@ from payments import RedirectNeeded
 from payments.core import BasicProvider
 
 from ..models import PaymentStatus
-from .mixins import PlanProductMixin
+from .mixins import EditableMixin, PlanProductMixin
 from .utils import CancelInfo, ModifyInfo
 
 CODE_CHARS = "ACDEFHJKLMNPRSTUWXY3469"
@@ -32,7 +32,7 @@ def generate_transfer_code():
     )
 
 
-class BanktransferProvider(PlanProductMixin, BasicProvider):
+class BanktransferProvider(PlanProductMixin, BasicProvider, EditableMixin):
     provider_name = "banktransfer"
 
     def get_cancel_info(self, subscription):
