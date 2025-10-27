@@ -1,5 +1,14 @@
-from collections import namedtuple
+from typing import NamedTuple
 
-CancelInfo = namedtuple("CancelInfo", ("can_cancel", "message"))
+from django.utils.functional import Promise
 
-ModifyInfo = namedtuple("ModifyInfo", ("can_modify", "message", "can_schedule"))
+
+class CancelInfo(NamedTuple):
+    can_cancel: bool
+    message: str | Promise
+
+
+class ModifyInfo(NamedTuple):
+    can_modify: bool
+    message: str | Promise
+    can_schedule: bool
