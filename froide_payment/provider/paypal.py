@@ -64,7 +64,8 @@ class PaypalProvider(BasicProvider, EditableMixin):
     def get_cancel_info(self, subscription):
         if not subscription.remote_reference:
             return CancelInfo(
-                False, _("You cannot cancel your Paypal subscription here.")
+                False,
+                _("You can cancel your subscription within your Paypal dashboard."),
             )
         if subscription.canceled:
             return CancelInfo(
