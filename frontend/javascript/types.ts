@@ -7,21 +7,24 @@ export interface PaymentUI {
     stopLoading: () => void
 }
 
-export type PaymentConfig = {
+export type PartialPaymentConfig = {
     action: string // URL to send payment data to
     stripepk: string
     clientSecret?: string
     locale: StripeElementLocale
     stripecountry: string
     country?: string
-    amount: number // in cents
     currency: string
     label: string
     successurl: string
-    interval: number
     name?: string
     donation: boolean
     sitename: string
+}
+
+export type PaymentConfig = PartialPaymentConfig & {
+    amount: number // in cents
+    interval: number
 }
 
 export interface PaymentProcessingResponse {
@@ -66,8 +69,8 @@ export type QuickPaymentMessage = {
 export type PaymentMessage = SuccessMessage | PaymentMethodMessage | SepaMessage | QuickPaymentMessage
 
 export interface AmountInterval {
-    amount?: number;
-    interval?: number; // for recurring payments
+    amount: number;
+    interval: number; // for recurring payments
 }
 
 interface CustomEventMap {
