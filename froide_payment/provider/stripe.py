@@ -431,7 +431,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
         return self.generate_intent_response(intent)
 
     def start_quick_payment(self, payment) -> dict[str, any]:
-        payment.change_status_and_save(PaymentStatus.PENDING)
+        payment.change_status_and_save(PaymentStatus.INPUT)
         if payment.order.is_recurring:
             intent = self.setup_subscription(payment.order.subscription)
             payment.transaction_id = intent.id
