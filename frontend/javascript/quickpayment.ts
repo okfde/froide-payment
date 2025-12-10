@@ -1,50 +1,57 @@
 import type { StripeElements, StripeElementsOptionsMode } from "@stripe/stripe-js";
 import type { ApplePayUpdateOption } from "@stripe/stripe-js/dist/stripe-js/elements/apple-pay";
 import { BasePaymentMethod } from "./base";
-import type { AmountInterval, PaymentConfig, PaymentProcessingResponse } from "./types";
+import type { AmountInterval, PartialPaymentConfig, PaymentProcessingResponse } from "./types";
 
 
 export default class QuickPaymentButtonMethod extends BasePaymentMethod {
   elements: StripeElements | null = null
 
-  async setup(expressCheckoutDiv: HTMLElement, config: PaymentConfig): Promise<void> {
+  async setup(expressCheckoutDiv: HTMLElement, basicConfig: PartialPaymentConfig): Promise<void> {
     if (!this.payment.stripe) {
       console.error('Stripe not initialized')
       return
     }
+    const fallbackConfig: AmountInterval = { amount: 500, interval: 0 }
+    let config: AmountInterval | null = null
 
     expressCheckoutDiv.addEventListener("donationchange", (event: CustomEvent<AmountInterval>) => {
-      config = {
-        ...config,
-        ...event.detail
+      if (config === null) {
+        // Optional: Animate in the Element
+        expressCheckoutDiv.style.visibility = 'initial';
+        const container = expressCheckoutDiv.closest(".quick-payment-container")
+        container?.removeAttribute("hidden");
       }
+      config = event.detail
     })
 
     function getElementsConfig(): StripeElementsOptionsMode {
+      const localConfig: AmountInterval = config || fallbackConfig
       return {
-        locale: config.locale,
-        mode: config.interval > 0 ? 'subscription' : 'payment',
-        amount: config.amount,
-        currency: config.currency,
+        locale: basicConfig.locale,
+        mode: localConfig.interval > 0 ? 'subscription' : 'payment',
+        amount: localConfig.amount,
+        currency: basicConfig.currency,
         captureMethod: 'automatic',
-        setupFutureUsage: config.interval > 0 ? 'off_session' : null,
+        setupFutureUsage: localConfig.interval > 0 ? 'off_session' : null,
       }
     }
 
     const getApplePayDetails = (): ApplePayUpdateOption | undefined => {
-      return config.interval > 0 ? {
+      const localConfig: AmountInterval = config || fallbackConfig
+      return localConfig.interval > 0 ? {
         recurringPaymentRequest: {
-          paymentDescription: config.label,
+          paymentDescription: basicConfig.label,
           regularBilling: {
-            amount: config.amount,
-            label: config.label,
+            amount: localConfig.amount,
+            label: basicConfig.label,
             recurringPaymentStartDate: undefined,
             recurringPaymentEndDate: undefined,
             recurringPaymentIntervalUnit: "month",
-            recurringPaymentIntervalCount: config.interval,
+            recurringPaymentIntervalCount: localConfig.interval,
           },
-          billingAgreement: config.label,
-          managementURL: config.successurl,
+          billingAgreement: basicConfig.label,
+          managementURL: basicConfig.successurl,
         }
       } : { recurringPaymentRequest: undefined }
     }
@@ -53,7 +60,7 @@ export default class QuickPaymentButtonMethod extends BasePaymentMethod {
     const expressCheckoutElement = this.elements.create("expressCheckout", {
       emailRequired: true,
       business: {
-        name: config.sitename,
+        name: basicConfig.sitename,
       },
       billingAddressRequired: true,
       buttonHeight: 55,
@@ -61,23 +68,19 @@ export default class QuickPaymentButtonMethod extends BasePaymentMethod {
         applePay: 'black'
       },
       buttonType: {
-        googlePay: config.donation ? 'donate' : 'buy',
-        applePay: config.donation ? 'donate' : 'buy',
+        googlePay: basicConfig.donation ? 'donate' : 'buy',
+        applePay: basicConfig.donation ? 'donate' : 'buy',
       },
       applePay: getApplePayDetails()
     });
 
     expressCheckoutDiv.style.visibility = 'hidden';
-    const container = expressCheckoutDiv.closest(".quick-payment-container")
     expressCheckoutElement.mount(expressCheckoutDiv);
 
     expressCheckoutElement.on('ready', ({ availablePaymentMethods }) => {
       if (!availablePaymentMethods) {
         // No buttons will show
       } else {
-        // Optional: Animate in the Element
-        expressCheckoutDiv.style.visibility = 'initial';
-        container?.removeAttribute("hidden");
         expressCheckoutDiv.dispatchEvent(new CustomEvent("quickpaymentAvailable"));
       }
     });
@@ -85,6 +88,10 @@ export default class QuickPaymentButtonMethod extends BasePaymentMethod {
     expressCheckoutElement.on("click", (event) => {
       if (!this.payment.stripe || !this.elements) {
         console.error('Stripe Elements not initialized')
+        return
+      }
+      if (config === null) {
+        console.error('No amount/interval config set')
         return
       }
       this.elements.update(getElementsConfig())
@@ -114,7 +121,7 @@ export default class QuickPaymentButtonMethod extends BasePaymentMethod {
           email: event.billingDetails.email,
           city: event.billingDetails.address?.city || '',
           postcode: event.billingDetails.address?.postal_code || '',
-          country: event.billingDetails.address?.country || config.country || 'DE',
+          country: event.billingDetails.address?.country || basicConfig.country || 'DE',
           street_address_1: event.billingDetails.address?.line1 || '',
           street_address_2: event.billingDetails.address?.line2 || '',
         })
@@ -129,16 +136,14 @@ export default class QuickPaymentButtonMethod extends BasePaymentMethod {
           // `clientSecret` from the created PaymentIntent
           clientSecret: response.payment_intent_client_secret,
           confirmParams: {
-            return_url: response.successurl || config.successurl,
-          },
-          // Uncomment below if you only want redirect for redirect-based payments.
-          // redirect: 'if_required',
+            return_url: response.successurl || basicConfig.successurl,
+          }
         });
         if (error) {
           // This point is reached only if there's an immediate error when confirming the payment. Show the error to your customer (for example, payment details incomplete).
           this.payment.ui.showError(error.message);
         } else {
-          document.location.href = response.successurl || config.successurl || '/'
+          document.location.href = response.successurl || basicConfig.successurl || '/'
         }
       } catch (err: unknown) {
         console.error('Error sending payment data:', err);
