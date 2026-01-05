@@ -345,6 +345,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
 
     def __init__(self, public_key, secret_key, **kwargs):
         stripe.api_key = secret_key
+        stripe.max_network_retries = 2
         self.secret_key = secret_key
         self.public_key = public_key
         super().__init__(**kwargs)
