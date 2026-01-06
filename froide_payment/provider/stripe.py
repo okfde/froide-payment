@@ -244,6 +244,10 @@ class StripeSubscriptionMixin(EditableMixin):
         except stripe.error.StripeError as e:
             logger.exception(e)
             return False
+        last_order = subscription.get_last_order()
+        if last_order is not None and last_order.service_end > next_datetime:
+            last_order.service_end = next_datetime
+            last_order.save()
         subscription.plan = new_plan
         subscription.save()
         return True
@@ -755,6 +759,10 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
 
     def get_payment_for_invoice(self, invoice_id):
         invoice = stripe.Invoice.retrieve(invoice_id)
+        if invoice.amount_due == 0:
+            # ignore invoices without an amount, such as those created during trials
+            return
+
         try:
             subscription = Subscription.objects.get(
                 remote_reference=invoice.subscription, plan__provider=self.provider_name
