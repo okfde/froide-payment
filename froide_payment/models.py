@@ -77,7 +77,7 @@ class Product(models.Model):
 
 class Plan(models.Model):
     name = models.CharField(max_length=256)
-    slug = models.SlugField()
+    slug = models.SlugField(max_length=256)
     category = models.CharField(max_length=256, blank=True)
     description = models.TextField(blank=True)
 
