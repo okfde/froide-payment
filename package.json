@@ -2,10 +2,9 @@
   "name": "froide_payment",
   "version": "1.0.0",
   "description": "Froide payment",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
+  "files": [
+    "frontend"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint"
@@ -15,7 +14,7 @@
     "url": "git+https://github.com/okfde/froide-payment.git"
   },
   "author": "Stefan Wehrmeyer",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/okfde/froide-payment/issues"
   },
