@@ -245,10 +245,11 @@ class StripeSubscriptionMixin(EditableMixin):
             logger.exception(e)
             return False
         last_order = subscription.get_last_order()
-        if last_order is not None and last_order.service_end > next_datetime:
+        if last_order is not None:
             last_order.service_end = next_datetime
             last_order.save()
         subscription.plan = new_plan
+        subscription.next_date = next_datetime
         subscription.save()
         return True
 

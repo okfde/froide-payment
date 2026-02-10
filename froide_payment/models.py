@@ -188,10 +188,14 @@ class Subscription(models.Model):
         )
 
     def get_next_date(self):
-        timestamp = self.last_date
-        if self.last_date is None:
-            timestamp = self.created
-        return timestamp + relativedelta(months=self.plan.interval)
+        last_order = self.get_last_order()
+        if last_order:
+            timestamp = last_order.service_end
+        elif self.last_date:
+            timestamp = self.last_date + relativedelta(months=self.plan.interval)
+        if timestamp is None:
+            timestamp = self.created + relativedelta(months=self.plan.interval)
+        return timestamp
 
     def get_last_order(self):
         return self.orders.all().order_by("-service_end").first()
