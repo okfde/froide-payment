@@ -109,6 +109,9 @@ class Plan(models.Model):
     def get_interval_description(self):
         return interval_description(self.interval)
 
+    def get_relativedelta(self):
+        return relativedelta(months=self.interval)
+
 
 class Customer(models.Model):
     created = models.DateTimeField(default=timezone.now, editable=False)
