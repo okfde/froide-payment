@@ -355,11 +355,11 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
         self.public_key = public_key
         super().__init__(**kwargs)
 
-    def get_received_amount_timestamp(self, charges):
+    def get_received_amount_timestamp(self, charges: list[stripe.Charge]):
         for charge in charges:
             if not charge.captured:
                 continue
-            txn = self.get_balance_transaction(charge.balance_transaction)
+            txn = charge.balance_transaction
             if txn is None:
                 continue
 
@@ -394,7 +394,12 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
 
         charges = stripe.Charge.list(
             payment_intent=payment.transaction_id,
-            expand=["data.refunds", "data.balance_transaction", "data.dispute"],
+            expand=[
+                "data.refunds",
+                "data.balance_transaction",
+                "data.dispute",
+                "data.dispute.balance_transactions",
+            ],
         ).data
         payment.attrs.charges = charges
         payment.captured_amount = Decimal(intent.amount_received) / 100
