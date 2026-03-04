@@ -360,21 +360,27 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
             raise ValueError
         charge = charges[0]
         txn = self.get_balance_transaction(charge.balance_transaction)
-        if txn is not None:
-            # Ignore refund fees
-            amount = txn.net - charge.amount_refunded
-            if amount > 0:
-                return (
-                    Decimal(amount) / 100,
-                    convert_utc_timestamp(txn.created),
-                    charge.refunded,
-                )
+        if txn is None:
+            return Decimal(0), None, charge.refunded or charge.disputed
+
+        amount = txn.net - charge.amount_refunded
+        dispute_net = 0
+        if charge.disputed:
+            dispute_net = sum([t.net for t in charge.dispute.balance_transactions])
+        amount += dispute_net
+
+        # Ignore refund and dispute fees
+        if amount > 0:
             return (
-                Decimal(0),
+                Decimal(amount) / 100,
                 convert_utc_timestamp(txn.created),
-                charge.refunded,
+                charge.refunded or charge.disputed,
             )
-        return Decimal(0), None, charge.refunded
+        return (
+            Decimal(0),
+            convert_utc_timestamp(txn.created),
+            charge.refunded or charge.disputed,
+        )
 
     def update_status(self, payment):
         if not payment.transaction_id:
@@ -387,7 +393,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
 
         charges = stripe.Charge.list(
             payment_intent=payment.transaction_id,
-            expand=["data.refunds", "data.balance_transaction"],
+            expand=["data.refunds", "data.balance_transaction", "data.dispute"],
         ).data
         payment.attrs.charges = charges
         payment.captured_amount = Decimal(intent.amount_received) / 100
