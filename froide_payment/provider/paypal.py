@@ -466,6 +466,9 @@ class PaypalProvider(BasicProvider, EditableMixin):
             subscription.plan = new_plan
             subscription.save()
 
+    def update_status(self, payment):
+        return self.update_payment(payment)
+
     def update_payment(self, payment):
         # Find transaction/payment ID
         data = json.loads(payment.extra_data or "{}")
