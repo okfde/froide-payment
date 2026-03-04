@@ -469,19 +469,31 @@ class PaypalProvider(BasicProvider, EditableMixin):
     def update_status(self, payment):
         return self.update_payment(payment)
 
+    def find_transaction_id(self, payment):
+        if payment.transaction_id:
+            return payment.transaction_id
+        else:
+            data = json.loads(payment.extra_data or "{}")
+            if data.get("response"):
+                response = data["response"]
+                if "purchase_units" in response:
+                    return data["response"]["purchase_units"][0]["payments"][
+                        "captures"
+                    ][0]["id"]
+                elif "transactions" in response:
+                    resource = response["transactions"][0]
+                    resource = resource["related_resources"][0]["sale"]
+                    return resource["id"]
+            elif "paypal_resource" in data:
+                resource = data["paypal_resource"]
+                return resource["id"]
+        raise ValueError(
+            "Could not determine transaction id for payment %s" % payment.id
+        )
+
     def update_payment(self, payment):
         # Find transaction/payment ID
-        data = json.loads(payment.extra_data or "{}")
-        if data.get("response"):
-            resource = data["response"]["transactions"][0]
-            resource = resource["related_resources"][0]["sale"]
-            transaction_id = resource["id"]
-        elif "paypal_resource" in data:
-            resource = data["paypal_resource"]
-            transaction_id = resource["id"]
-        elif payment.transaction_id:
-            transaction_id = payment.transaction_id
-
+        transaction_id = self.find_transaction_id(payment)
         url = "{endpoint}/v2/payments/captures/{id}".format(
             endpoint=self.endpoint, id=transaction_id
         )
