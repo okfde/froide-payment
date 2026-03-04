@@ -14,6 +14,7 @@ from django.template.response import TemplateResponse
 from django.urls import path
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from froide.helper.admin_utils import ForeignKeyFilter
 
 from .admin_utils import make_nullfilter
 from .models import Customer, Order, Payment, PaymentStatus, Plan, Product, Subscription
@@ -146,7 +147,11 @@ class OrderAdmin(admin.ModelAdmin):
         "customer",
         "subscription",
     )
-    list_filter = ("subscription__plan__provider", OrderPaidFilter)
+    list_filter = (
+        "subscription__plan__provider",
+        OrderPaidFilter,
+        ("subscription", ForeignKeyFilter),
+    )
     search_fields = ("user_email", "last_name", "first_name", "remote_reference")
 
     def get_queryset(self, request):
@@ -199,6 +204,7 @@ class PaymentAdmin(admin.ModelAdmin):
         "variant",
         "status",
         make_nullfilter("order__subscription", _("subscription order")),
+        ("order", ForeignKeyFilter),
     )
     search_fields = ("transaction_id", "billing_email", "billing_last_name")
 
