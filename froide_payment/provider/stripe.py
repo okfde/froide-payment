@@ -356,16 +356,27 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
         super().__init__(**kwargs)
 
     def get_received_amount_timestamp(self, charges):
-        for charge in charges:
-            txn = self.get_balance_transaction(charge.balance_transaction)
-            if txn is not None:
-                # Ignore refund fees
-                if txn.net > 0:
-                    return Decimal(txn.net) / 100, convert_utc_timestamp(txn.created)
+        if len(charges) > 1:
+            raise ValueError
+        charge = charges[0]
+        txn = self.get_balance_transaction(charge.balance_transaction)
+        if txn is not None:
+            # Ignore refund fees
+            amount = txn.net - charge.amount_refunded
+            if amount > 0:
+                return (
+                    Decimal(amount) / 100,
+                    convert_utc_timestamp(txn.created),
+                    charge.refunded,
+                )
+            return (
+                Decimal(0),
+                convert_utc_timestamp(txn.created),
+                charge.refunded,
+            )
+        return Decimal(0), None, charge.refunded
 
     def update_status(self, payment):
-        if payment.status not in (PaymentStatus.PENDING, PaymentStatus.INPUT):
-            return
         if not payment.transaction_id:
             return
         try:
@@ -374,15 +385,24 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
             # intent is not yet available
             return
 
-        charges = stripe.Charge.list(payment_intent=payment.transaction_id).data
+        charges = stripe.Charge.list(
+            payment_intent=payment.transaction_id,
+            expand=["data.refunds", "data.balance_transaction"],
+        ).data
         payment.attrs.charges = charges
         payment.captured_amount = Decimal(intent.amount_received) / 100
-        received = self.get_received_amount_timestamp(charges)
-        if received:
-            payment.received_amount = received[0]
-            payment.received_timestamp = received[1]
-
-        if intent.status == "succeeded":
+        received_amount, received_timestamp, refunded = (
+            self.get_received_amount_timestamp(charges)
+        )
+        payment.received_amount = received_amount
+        payment.received_timestamp = received_timestamp
+        if refunded:
+            payment.change_status_and_save(PaymentStatus.REFUNDED)
+            return False
+        elif not refunded and intent.status == "succeeded":
+            if payment.status == PaymentStatus.CONFIRMED:
+                payment.save()
+                return
             payment.change_status_and_save(PaymentStatus.CONFIRMED)
             return True
         elif intent.status in ("failed", "requires_payment_method"):
@@ -653,72 +673,6 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
         )
         payment_intent = stripe_subscription.latest_invoice.payment_intent
         return payment_intent
-
-    def update_payment(self, payment):
-        tn_id = payment.transaction_id
-        assert tn_id.startswith("pi_")
-        intent = stripe.PaymentIntent.retrieve(tn_id)
-        payment.captured_amount = Decimal(intent.amount_received) / 100
-
-        charges = stripe.Charge.list(payment_intent=tn_id).data
-        payment.attrs.charges = charges
-        received = self.get_received_amount_timestamp(charges)
-        if received:
-            payment.received_amount = received[0]
-            payment.received_timestamp = received[1]
-
-        if intent.status == "succeeded":
-            payment.change_status_and_save(PaymentStatus.CONFIRMED)
-        payment.save()
-
-    def get_or_create_order_from_invoice(self, invoice):
-        try:
-            return Order.objects.get(remote_reference=invoice.id)
-        except Order.DoesNotExist:
-            pass
-        subscription = Subscription.objects.get(
-            remote_reference=invoice.subscription, plan__provider=self.provider_name
-        )
-        first_order = subscription.get_first_order()
-        customer = subscription.customer
-        start_dt = convert_utc_timestamp(invoice.period_start)
-        end_dt = convert_utc_timestamp(invoice.period_end)
-        order = Order.objects.create(
-            customer=customer,
-            subscription=subscription,
-            user=customer.user,
-            first_name=customer.first_name,
-            last_name=customer.last_name,
-            street_address_1=customer.street_address_1,
-            street_address_2=customer.street_address_2,
-            city=customer.city,
-            postcode=customer.postcode,
-            country=customer.country,
-            user_email=customer.user_email,
-            total_net=subscription.plan.amount,
-            total_gross=subscription.plan.amount,
-            is_donation=first_order.is_donation,
-            kind=first_order.kind,
-            description=first_order.description,
-            service_start=start_dt,
-            service_end=end_dt,
-            remote_reference=invoice.id,
-        )
-        payment = order.get_or_create_payment(self.provider_name)
-        payment.transaction_id = invoice.charge
-        intent = stripe.PaymentIntent.retrieve(invoice.payment_intent)
-        payment.captured_amount = Decimal(intent.amount_received) / 100
-
-        charges = stripe.Charge.list(payment_intent=intent.id).data
-        payment.attrs.charges = charges
-        received = self.get_received_amount_timestamp(charges)
-        if received:
-            payment.received_amount = received[0]
-            payment.received_timestamp = received[1]
-
-        if invoice.status == "paid":
-            payment.change_status_and_save(PaymentStatus.CONFIRMED)
-        payment.save()
 
     # Webhook callbacks
 
