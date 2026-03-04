@@ -356,31 +356,32 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
         super().__init__(**kwargs)
 
     def get_received_amount_timestamp(self, charges):
-        if len(charges) > 1:
-            raise ValueError
-        charge = charges[0]
-        txn = self.get_balance_transaction(charge.balance_transaction)
-        if txn is None:
-            return Decimal(0), None, charge.refunded or charge.disputed
+        for charge in charges:
+            if not charge.captured:
+                continue
+            txn = self.get_balance_transaction(charge.balance_transaction)
+            if txn is None:
+                continue
 
-        amount = txn.net - charge.amount_refunded
-        dispute_net = 0
-        if charge.disputed:
-            dispute_net = sum([t.net for t in charge.dispute.balance_transactions])
-        amount += dispute_net
+            amount = txn.net - charge.amount_refunded
+            dispute_net = 0
+            if charge.disputed:
+                dispute_net = sum([t.net for t in charge.dispute.balance_transactions])
+            amount += dispute_net
 
-        # Ignore refund and dispute fees
-        if amount > 0:
+            # Ignore refund and dispute fees
+            if amount > 0:
+                return (
+                    Decimal(amount) / 100,
+                    convert_utc_timestamp(txn.created),
+                    charge.refunded or charge.disputed,
+                )
             return (
-                Decimal(amount) / 100,
+                Decimal(0),
                 convert_utc_timestamp(txn.created),
                 charge.refunded or charge.disputed,
             )
-        return (
-            Decimal(0),
-            convert_utc_timestamp(txn.created),
-            charge.refunded or charge.disputed,
-        )
+        return (Decimal(0), None, False)
 
     def update_status(self, payment):
         if not payment.transaction_id:
