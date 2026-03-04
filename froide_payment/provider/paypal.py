@@ -476,7 +476,8 @@ class PaypalProvider(BasicProvider, EditableMixin):
             payment.captured_amount = amounts.amount
             payment.received_amount = payment.captured_amount - amounts.fee
             payment.received_timestamp = create_time
-            success = resource["state"] == "completed"
+            payment.transaction_id = resource["id"]
+            success = resource["state"].lower() == "completed"
         if success:
             payment.change_status_and_save(PaymentStatus.CONFIRMED)
         payment.save()
