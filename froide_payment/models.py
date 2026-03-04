@@ -2,6 +2,7 @@ import json
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass
+from datetime import timedelta
 from decimal import Decimal
 from typing import Optional
 
@@ -237,6 +238,62 @@ class Subscription(models.Model):
             self,
             force=force,
             now=now,
+            remote_reference=remote_reference,
+            remote_reference_is_unique=remote_reference_is_unique,
+        )
+
+    def get_or_create_order_for_service_start(
+        self,
+        service_start,
+        amount=None,
+        is_donation=True,
+        kind="",
+        description=None,
+        remote_reference="",
+        remote_reference_is_unique=False,
+    ):
+        if remote_reference and remote_reference_is_unique:
+            try:
+                return Order.objects.get(remote_reference=remote_reference)
+            except Order.DoesNotExist:
+                pass
+
+        buffer = timedelta(days=1)
+        start = service_start - buffer
+        end = service_start + buffer
+
+        try:
+            return Order.objects.get(
+                subscription=self, service_start__gt=start, service_start__lt=end
+            )
+        except Order.DoesNotExist:
+            pass
+
+        customer = self.customer
+        if amount is None:
+            amount = self.plan.amount
+        if description is None:
+            description = self.plan.name
+        service_end = service_start + relativedelta(months=self.plan.interval)
+        return Order.objects.create(
+            customer=customer,
+            subscription=self,
+            user=customer.user,
+            first_name=customer.first_name,
+            last_name=customer.last_name,
+            street_address_1=customer.street_address_1,
+            street_address_2=customer.street_address_2,
+            city=customer.city,
+            postcode=customer.postcode,
+            country=customer.country,
+            user_email=customer.user_email,
+            total_net=amount,
+            total_gross=amount,
+            is_donation=is_donation,
+            kind=kind,
+            description=description,
+            service_start=service_start,
+            service_end=service_end,
             remote_reference=remote_reference,
             remote_reference_is_unique=remote_reference_is_unique,
         )

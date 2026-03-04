@@ -1,6 +1,5 @@
 import json
 import logging
-from datetime import timedelta
 from datetime import timezone as tz
 from decimal import ROUND_HALF_UP, Decimal
 from typing import NamedTuple
@@ -360,6 +359,7 @@ class PaypalProvider(BasicProvider, EditableMixin):
         logger.info("Paypal webhook capture completed for payment %s", payment.id)
         payment.attrs.paypal_resource = resource
         amounts = self.extract_amounts(resource)
+        payment.transaction_id = resource["id"]
         payment.captured_amount = amounts.amount
         payment.received_amount = amounts.amount - amounts.fee
         payment.received_timestamp = dateutil.parser.parse(resource["create_time"])
@@ -391,22 +391,25 @@ class PaypalProvider(BasicProvider, EditableMixin):
                 else:
                     subscription_deactivated.send(sender=subscription)
 
-            order = subscription.get_last_order()
-            soon = timezone.now() + timedelta(days=2)
-            if order.service_end < soon:
-                payment = subscription.create_recurring_order(force=True)
-            else:
-                payment = Payment.objects.get(order=order)
+            service_start = dateutil.parser.parse(resource["create_time"])
+            amounts = self.extract_amounts(resource)
+            order = subscription.get_or_create_order_for_service_start(
+                service_start,
+                amount=amounts.amount,
+                remote_reference=resource["id"],
+                remote_reference_is_unique=True,
+            )
+            payment = order.get_or_create_payment(subscription.plan.provider)
         else:
             return
 
         logger.info("Paypal webhook sale complete for payment %s", payment.id)
         payment.attrs.paypal_resource = resource
 
+        payment.transaction_id = resource["id"]
         amounts = self.extract_amounts(resource)
         payment.captured_amount = amounts.amount
         payment.received_amount = amounts.amount - amounts.fee
-
         payment.received_timestamp = dateutil.parser.parse(resource["create_time"])
         payment.change_status_and_save(PaymentStatus.CONFIRMED)
 
@@ -434,53 +437,71 @@ class PaypalProvider(BasicProvider, EditableMixin):
             self.capture_subscription_order(order, payment=payment)
         return redirect(payment.get_success_url())
 
+    def synchronize_subscription(self, subscription):
+        sub_url = "{e}/v1/billing/subscriptions/{s}".format(
+            e=self.endpoint, s=subscription.remote_reference
+        )
+        sub_data = self.get_api(sub_url, {})
+        plan_url = "{e}/v1/billing/plans/{s}".format(
+            e=self.endpoint, s=sub_data["plan_id"]
+        )
+        plan_data = self.get_api(plan_url, {})
+        plan = subscription.plan
+        billing_cycle = [
+            c for c in plan_data["billing_cycles"] if c["tenure_type"] == "REGULAR"
+        ][0]
+
+        assert billing_cycle["frequency"]["interval_unit"] == "MONTH"
+        paypal_interval = billing_cycle["frequency"]["interval_count"]
+        paypal_plan_amount = Decimal(
+            billing_cycle["pricing_scheme"]["fixed_price"]["value"]
+        )
+        if paypal_interval != plan.interval or paypal_plan_amount != plan.amount:
+            new_plan = self.get_or_create_plan(
+                plan.name,
+                plan.category,
+                paypal_plan_amount,
+                paypal_interval,
+            )
+            subscription.plan = new_plan
+            subscription.save()
+
     def update_payment(self, payment):
+        # Find transaction/payment ID
         data = json.loads(payment.extra_data or "{}")
         if data.get("response"):
             resource = data["response"]["transactions"][0]
             resource = resource["related_resources"][0]["sale"]
-        elif "paypal_resource" not in data:
-            return
-        else:
+            transaction_id = resource["id"]
+        elif "paypal_resource" in data:
             resource = data["paypal_resource"]
-        create_time = dateutil.parser.parse(resource["create_time"])
-        if not resource.get("amount") and not resource.get("response"):
-            buffer = timedelta(days=2)
-            start = create_time - buffer
-            end = create_time + buffer
-            url = self.endpoint + (
-                "/v1/billing/subscriptions/{id}/transactions?"
-                "start_time={start}&end_time={end}"
-            ).format(
-                id=resource["id"], start=utcisoformat(start), end=utcisoformat(end)
-            )
-            result = self.get_api(url, {})
-            transactions = [
-                t
-                for t in result["transactions"]
-                if (
-                    dateutil.parser.parse(t["time"]) - buffer < create_time
-                    and dateutil.parser.parse(t["time"]) + buffer > create_time
-                )
-            ]
-            assert len(transactions) == 1
-            transaction = transactions[0]
-            payment.transaction_id = transaction["id"]
-            amounts = self.extract_amounts(transaction)
-            payment.captured_amount = amounts.amount
-            payment.received_amount = payment.captured_amount - amounts.fee
-            payment.received_timestamp = create_time
-            success = transaction["status"] == "COMPLETED"
-        else:
-            amounts = self.extract_amounts(resource)
-            payment.captured_amount = amounts.amount
-            payment.received_amount = payment.captured_amount - amounts.fee
-            payment.received_timestamp = create_time
-            payment.transaction_id = resource["id"]
-            success = resource["state"].lower() == "completed"
-        if success:
+            transaction_id = resource["id"]
+        elif payment.transaction_id:
+            transaction_id = payment.transaction_id
+
+        url = "{endpoint}/v2/payments/captures/{id}".format(
+            endpoint=self.endpoint, id=transaction_id
+        )
+        transaction = self.get_api(url, {})
+        create_time = dateutil.parser.parse(transaction["create_time"])
+        payment.transaction_id = transaction["id"]
+        amounts = self.extract_amounts(transaction)
+        payment.captured_amount = amounts.amount
+        payment.received_amount = payment.captured_amount - amounts.fee
+        payment.received_timestamp = create_time
+        if transaction["status"] in ("COMPLETED",):
             payment.change_status_and_save(PaymentStatus.CONFIRMED)
-        payment.save()
+        elif transaction["status"] in ("PARTIALLY_REFUNDED", "REFUNDED"):
+            # TODO: find amounts?
+            payment.change_status_and_save(PaymentStatus.REFUNDED)
+        elif transaction["status"] in ("DECLINED",):
+            payment.change_status_and_save(PaymentStatus.REJECTED)
+        elif transaction["status"] in ("FAILED",):
+            payment.change_status_and_save(PaymentStatus.ERROR)
+        elif transaction["status"] in ("PENDING",):
+            payment.change_status_and_save(PaymentStatus.PENDING)
+        else:
+            raise ValueError("Could not deal with status: %s", transaction)
 
     def synchronize_orders(self, subscription):
         list_url = "{e}/v1/billing/subscriptions/{s}/transactions".format(
@@ -552,18 +573,10 @@ class PaypalProvider(BasicProvider, EditableMixin):
         except ValueError:
             # can't capture
             return
-        if response["status"] in ("COMPLETED", "PARTIALLY_REFUNDED"):
-            payment.transaction_id = response["id"]
-            amounts = self.extract_amounts(response)
-            payment.captured_amount = amounts.amount
-            payment.received_amount = payment.captured_amount - amounts.fee
-            payment.change_status_and_save(PaymentStatus.CONFIRMED)
-        elif response["status"] == "PENDING":
-            payment.change_status_and_save(PaymentStatus.PENDING)
-        elif response["status"] == "REFUNDED":
-            payment.change_status_and_save(PaymentStatus.REFUNDED)
-        else:
-            payment.change_status_and_save(PaymentStatus.REJECTED)
+
+        payment.transaction_id = response["id"]
+        payment.save()
+        self.update_payment(payment)
 
     def setup_subscription(self, payment, data=None):
         order = payment.order
