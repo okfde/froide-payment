@@ -77,7 +77,10 @@ def order_detail(request, token):
             for payment in payments:
                 provider = provider_factory(payment.variant)
                 if hasattr(provider, "update_status"):
-                    provider.update_status(payment)
+                    try:
+                        provider.update_status(payment)
+                    except Exception:
+                        pass
 
     ctx = {
         "payments": payments,
