@@ -106,7 +106,10 @@ def order_success(request, token):
         for payment in payments:
             provider = provider_factory(payment.variant)
             if hasattr(provider, "update_status"):
-                provider.update_status(payment)
+                try:
+                    provider.update_status(payment)
+                except Exception:
+                    pass
 
     return redirect(order.get_success_url())
 
