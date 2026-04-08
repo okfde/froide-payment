@@ -6,7 +6,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_permission_codename
 from django.core.exceptions import BadRequest
-from django.core.mail import mail_admins
+from django.core.mail import mail_managers
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
@@ -206,7 +206,7 @@ def subscription_cancel(request, subscription):
             request, messages.INFO, _("Your subscription has been canceled.")
         )
     else:
-        mail_admins(
+        mail_managers(
             "Subscription cancelation failed", "Subscription ID: %s" % subscription.id
         )
         messages.add_message(
@@ -246,7 +246,7 @@ def subscription_modify(request, subscription):
                         "There was an error modifying your subscription with our payment provider."
                     ),
                 )
-                mail_admins(
+                mail_managers(
                     "Subscription modification failed",
                     "Subscription ID: %s" % subscription.id,
                 )
@@ -291,7 +291,7 @@ def subscription_modify_confirm(request, subscription):
                     "There was an error modifying your subscription with our payment provider."
                 ),
             )
-            mail_admins(
+            mail_managers(
                 "Subscription modification failed",
                 "Subscription ID: %s" % subscription.id,
             )
