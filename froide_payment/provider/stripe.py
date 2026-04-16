@@ -214,7 +214,7 @@ class StripeSubscriptionMixin(EditableMixin):
             return True
         return False
 
-    def modify_subscription(self, subscription, amount, interval, next_date):
+    def modify_subscription(self, subscription, amount, interval, next_date=None):
         current_plan = subscription.plan
         new_plan = self.get_or_create_plan(
             current_plan.name,
@@ -228,16 +228,20 @@ class StripeSubscriptionMixin(EditableMixin):
         )
         assert len(sub_items.data) == 1
         sub_item = sub_items.data[0]
-        next_datetime = datetime(
-            year=next_date.year,
-            month=next_date.month,
-            day=next_date.day,
-            tzinfo=tz.utc,
-        )
+        trial_end = None
+        next_datetime = None
+        if next_date is not None:
+            next_datetime = datetime(
+                year=next_date.year,
+                month=next_date.month,
+                day=next_date.day,
+                tzinfo=tz.utc,
+            )
+            trial_end = int(next_datetime.timestamp())
         try:
             stripe.Subscription.modify(
                 subscription.remote_reference,
-                trial_end=int(next_datetime.timestamp()),
+                trial_end=trial_end,
                 proration_behavior="none",
                 items=[{"id": sub_item.id, "plan": new_plan.remote_reference}],
             )
@@ -245,11 +249,12 @@ class StripeSubscriptionMixin(EditableMixin):
             logger.exception(e)
             return False
         last_order = subscription.get_last_order()
-        if last_order is not None:
+        if last_order is not None and next_datetime is not None:
             last_order.service_end = next_datetime
             last_order.save()
         subscription.plan = new_plan
-        subscription.next_date = next_datetime
+        if next_datetime is not None:
+            subscription.next_date = next_datetime
         subscription.save()
         return True
 
