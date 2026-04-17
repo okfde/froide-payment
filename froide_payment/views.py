@@ -186,7 +186,7 @@ def subscription_detail(request, subscription):
 @check_subscription_access
 def subscription_cancel(request, subscription):
     cancel_info = subscription.get_cancel_info()
-    if not subscription.active or subscription.canceled or not cancel_info.can_cancel:
+    if subscription.canceled or not cancel_info.can_cancel:
         return redirect(subscription)
 
     user = None
