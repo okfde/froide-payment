@@ -108,16 +108,16 @@
                         </div>
                     </div>
                 </div>
-            {% else %}
-                <div class="alert alert-secondary">{{ cancel_info.message }}</div>
-            {% endif %}
-            {% if subscription.canceled %}
+            {% elif subscription.canceled %}
                 <div class="alert alert-info">
                     {% blocktrans with date=subscription.canceled|date:"SHORT_DATE_FORMAT" %}
         This subscription has been canceled on {{ date }}.
         {% endblocktrans %}
                 </div>
-            {% elif not subscription.active %}
+            {% else %}
+                <div class="alert alert-secondary">{{ cancel_info.message }}</div>
+            {% endif %}
+            {% if not subscription.active and not subscription.canceled %}
                 <div class="alert alert-secondary">
                     {% trans "This subscription can be modified after the first payment arrives." %}
                 </div>
