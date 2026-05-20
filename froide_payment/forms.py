@@ -19,8 +19,8 @@ from payments.forms import PaymentForm as BasePaymentForm
 from froide_payment.widgets import PriceInput
 
 from .models import Customer, Order, PaymentStatus, Subscription
-from .signals import subscription_created
 from .utils import interval_description
+from .signals import subscription_created, subscription_modified
 
 modify_subscription_confirmation = mail_registry.register(
     "froide_payment/email/modify_subscription",
@@ -449,7 +449,10 @@ class ModifySubscriptionForm(forms.Form):
 
     def save(self):
         provider = self.subscription.get_provider()
-        return provider.modify_subscription(
+        result = provider.modify_subscription(
             self.subscription,
             **self.cleaned_data,
         )
+        if result:
+            subscription_modified.send(sender=self.subscription)
+        return result
