@@ -1,3 +1,4 @@
+import importlib
 import json
 import logging
 from functools import wraps
@@ -22,6 +23,16 @@ from .signals import subscription_cancel_feedback
 logger = logging.getLogger(__name__)
 
 
+def get_custom_access_func():
+    access_func_path = getattr(settings, "PAYMENT_SUBSCRIPTION_ACCESS_FUNC", None)
+    if access_func_path is None:
+        # Needs to be configured
+        return False
+    module, attr = access_func_path.rsplit(".", 1)
+    module = importlib.import_module(module)
+    return getattr(module, attr)
+
+
 def can_access(obj, user):
     if user.is_superuser:
         return True
@@ -36,13 +47,29 @@ def can_access(obj, user):
     return True
 
 
+def can_access_subscription(request, subscription):
+    user = request.user
+    if user.is_superuser:
+        return True
+    opts = subscription._meta
+    codename = get_permission_codename("change", opts)
+    perm = "%s.%s" % (opts.app_label, codename)
+    if user.is_staff and user.has_perm(perm):
+        return True
+
+    customer = subscription.customer
+    if customer.user and user == customer.user:
+        return True
+
+    access_func = get_custom_access_func()
+    return access_func(request, subscription)
+
+
 def check_subscription_access(func):
     @wraps(func)
     def inner(request, token, *args, **kwargs):
         subscription = get_object_or_404(Subscription, token=token)
-        user = request.user
-        customer = subscription.customer
-        if can_access(customer, user):
+        if can_access_subscription(request, subscription):
             return func(request, subscription, *args, **kwargs)
         return render_403(request)
 
@@ -225,59 +252,11 @@ def subscription_cancel(request, subscription):
 @require_POST
 @check_subscription_access
 def subscription_modify(request, subscription):
-    customer = subscription.customer
     form = ModifySubscriptionForm(request.POST, subscription=subscription)
     if not subscription.get_modify_info().can_modify:
         raise BadRequest("Subscription can't be modified")
 
     if form.is_valid():
-        if customer.user or request.user.has_perm("froide_payment.change_subscription"):
-            # Subscription customer has a user and previous check has established access
-            success = form.save()
-            if success:
-                messages.add_message(
-                    request, messages.INFO, _("Your subscription has been modified.")
-                )
-            else:
-                messages.add_message(
-                    request,
-                    messages.ERROR,
-                    _(
-                        "There was an error modifying your subscription with our payment provider."
-                    ),
-                )
-                mail_managers(
-                    "Subscription modification failed",
-                    "Subscription ID: %s" % subscription.id,
-                )
-        else:
-            # Subscription customer has no user, so we need to confirm the modification
-            form.send_confirmation_email()
-            messages.add_message(
-                request,
-                messages.INFO,
-                _("We have sent a confirmation email to your email address."),
-            )
-
-    else:
-        messages.add_message(
-            request, messages.ERROR, _("There was an error with your input.")
-        )
-
-    return redirect(subscription)
-
-
-@check_subscription_access
-def subscription_modify_confirm(request, subscription):
-    form = ModifySubscriptionForm(subscription=subscription)
-    try:
-        data = form.get_form_data_from_code(request.GET.get("code", ""))
-    except ValueError as e:
-        messages.add_message(request, messages.ERROR, str(e))
-        return redirect(subscription)
-    form = ModifySubscriptionForm(data=data, subscription=subscription)
-    if form.is_valid():
-        # Subscription customer email has confirmed the modification
         success = form.save()
         if success:
             messages.add_message(

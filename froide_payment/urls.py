@@ -8,7 +8,6 @@ from .views import (
     subscription_cancel,
     subscription_detail,
     subscription_modify,
-    subscription_modify_confirm,
     subscription_payment_method,
 )
 
@@ -25,11 +24,6 @@ urlpatterns = [
         "subscription/<uuid:token>/modify/",
         subscription_modify,
         name="subscription-modify",
-    ),
-    path(
-        "subscription/<uuid:token>/modify/confirm/",
-        subscription_modify_confirm,
-        name="subscription-modify-confirm",
     ),
     path(
         "subscription/<uuid:token>/payment-method/",
