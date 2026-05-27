@@ -1,7 +1,7 @@
 from django.utils.translation import gettext_lazy as _
-from payments import RedirectNeeded
 from payments.core import BasicProvider
 
+from .. import RedirectNeeded
 from ..forms import LastschriftPaymentForm
 from ..models import PaymentStatus
 from .mixins import EditableMixin, PlanProductMixin

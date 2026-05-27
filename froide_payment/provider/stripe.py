@@ -15,11 +15,12 @@ from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from froide.helper.spam import check_suspicious_request
-from payments import FraudStatus, RedirectNeeded, get_payment_model
+from payments import FraudStatus, get_payment_model
 from payments.core import BasicProvider
 from payments.forms import PaymentForm
 from payments.stripe import StripeProvider
 
+from .. import RedirectNeeded
 from ..forms import SEPAPaymentForm, SEPASubscriptionChangeForm
 from ..models import (
     Customer,

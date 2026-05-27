@@ -13,9 +13,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 from froide.helper.utils import render_403
-from payments import RedirectNeeded
 from payments.core import provider_factory
 
+from . import RedirectNeeded
 from .forms import ModifySubscriptionForm
 from .models import Order, Payment, PaymentStatus, Subscription
 from .signals import subscription_cancel_feedback

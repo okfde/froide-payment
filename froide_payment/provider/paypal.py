@@ -12,11 +12,12 @@ from django.shortcuts import redirect
 from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
-from payments import PaymentError, RedirectNeeded
+from payments import PaymentError
 from payments.core import BasicProvider
 
 from froide_payment.provider.mixins import EditableMixin
 
+from .. import RedirectNeeded
 from ..models import Payment, PaymentStatus, Plan, Product, Subscription
 from ..signals import (
     subscription_activated,
