@@ -12,13 +12,13 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
-from froide.helper.utils import render_403
+from froide.helper.utils import get_redirect, render_403
 from payments.core import provider_factory
 
 from . import RedirectNeeded
 from .forms import ModifySubscriptionForm
 from .models import Order, Payment, PaymentStatus, Subscription
-from .signals import subscription_cancel_feedback
+from .signals import subscription_cancel_feedback, subscription_modified
 
 logger = logging.getLogger(__name__)
 
@@ -257,7 +257,13 @@ def subscription_modify(request, subscription):
         raise BadRequest("Subscription can't be modified")
 
     if form.is_valid():
-        success = form.save()
+        try:
+            success = form.save()
+        except RedirectNeeded as redirect_url:
+            request.session["next"] = request.POST.get(
+                "next", subscription.get_absolute_url()
+            )
+            return redirect(str(redirect_url))
         if success:
             messages.add_message(
                 request, messages.INFO, _("Your subscription has been modified.")
@@ -305,3 +311,26 @@ def subscription_payment_method(request, subscription):
             messages.add_message(request, messages.SUCCESS, message)
             return JsonResponse({"status": "success"})
     return JsonResponse({"error": _("An error occurred.")})
+
+
+def subscription_modify_approved(request, token):
+    sub = get_object_or_404(Subscription, token=token)
+    plan = sub.update_plan()
+    if plan:
+        subscription_modified.send(sender=sub)
+    messages.add_message(
+        request,
+        messages.SUCCESS,
+        _("The subscription was modified."),
+    )
+    return get_redirect(request)
+
+
+def subscription_modify_canceled(request, token):
+    sub = get_object_or_404(Subscription, token=token)
+    messages.add_message(
+        request,
+        messages.WARNING,
+        _("The subscription was not modified."),
+    )
+    return redirect(sub)

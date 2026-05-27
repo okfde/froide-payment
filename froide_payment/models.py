@@ -364,6 +364,10 @@ class Subscription(models.Model):
         provider = self.get_provider()
         return provider.get_modify_info(self)
 
+    def update_plan(self):
+        provider = self.get_provider()
+        return provider.update_plan(self)
+
     def cancel(self, user=None, trigger=""):
         provider = self.get_provider()
         success = provider.cancel_subscription(self)

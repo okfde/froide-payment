@@ -9,6 +9,7 @@ import requests
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import redirect
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
@@ -232,7 +233,7 @@ class PaypalProvider(BasicProvider, EditableMixin):
         data = response.json()
         return "%s %s" % (data["token_type"], data["access_token"])
 
-    def get_api(self, url, params):
+    def get_api(self, url, params=None):
         access_token = self._get_access_token()
         headers = {"Content-Type": "application/json", "Authorization": access_token}
         response = requests.get(
@@ -556,18 +557,107 @@ class PaypalProvider(BasicProvider, EditableMixin):
             amount,
             interval,
         )
-        modify_data = {"plan_id": new_plan.remote_reference}
+        modify_data = {
+            "plan_id": new_plan.remote_reference,
+            "application_context": {
+                "brand_name": settings.SITE_NAME,
+                "return_url": settings.SITE_URL
+                + reverse(
+                    "froide_payment:subscription-modify_approved",
+                    kwargs={"token": subscription.token},
+                ),
+                "cancel_url": settings.SITE_URL
+                + reverse(
+                    "froide_payment:subscription-modify_canceled",
+                    kwargs={"token": subscription.token},
+                ),
+                "locale": settings.LANGUAGE_CODE.lower(),
+            },
+        }
         try:
-            self.post_api(modify_url, modify_data)
+            response = self.post_api(modify_url, modify_data)
         except ValueError as e:
             # modification failed
             logger.info("Paypal subscription modification failed %s", subscription.id)
             logger.exception(e)
             return False
 
+        approve_urls = [
+            link["href"] for link in response["links"] if link["rel"] == "approve"
+        ]
+        if approve_urls:
+            raise RedirectNeeded(approve_urls[0])
+
         subscription.plan = new_plan
         subscription.save()
         return True
+
+    def update_plan(self, subscription: Subscription):
+        current_plan = subscription.plan
+        sub_url = "{e}/v1/billing/subscriptions/{sub_id}".format(
+            e=self.endpoint, sub_id=subscription.remote_reference
+        )
+        try:
+            response = self.get_api(sub_url)
+        except ValueError:
+            return
+
+        pp_plan_id = response["plan_id"]
+        try:
+            plan = Plan.objects.get(
+                remote_reference=pp_plan_id, provider=self.provider_name
+            )
+            subscription.plan = plan
+            subscription.save(update_fields=["plan"])
+            return plan
+        except Plan.DoesNotExist:
+            pass
+        plan_url = "{e}/v1/billing/plans/{plan_id}".format(
+            e=self.endpoint, plan_id=pp_plan_id
+        )
+        try:
+            response = self.get_api(plan_url)
+        except ValueError:
+            return
+
+        billing_cycle = [
+            bc
+            for bc in response["billing_cycles"]
+            if bc["tenure_type"] == "REGULAR" and bc["status"] == "ACTIVE"
+        ]
+        if not billing_cycle:
+            return
+        billing_cycle = billing_cycle[0]
+
+        interval = billing_cycle["frequency"]["interval_count"]
+        assert billing_cycle["frequency"]["interval_unit"] == "MONTH"
+
+        assert (
+            billing_cycle["pricing_scheme"]["fixed_price"]["currency_code"]
+            == settings.DEFAULT_CURRENCY
+        )
+        amount = Decimal(billing_cycle["pricing_scheme"]["fixed_price"]["value"])
+
+        product = Product.objects.create(
+            name="{provider} {category}".format(
+                provider=self.provider_name, category=current_plan.category
+            ),
+            category=current_plan.category,
+            provider=self.provider_name,
+            remote_reference=response["product_id"],
+        )
+        plan = Plan.objects.create(
+            name=response["name"],
+            slug=slugify(response["name"]),
+            category=current_plan.category,
+            amount=amount,
+            interval=interval,
+            amount_year=amount * Decimal(12 / interval),
+            provider=self.provider_name,
+            remote_reference=pp_plan_id,
+            product=product,
+        )
+        return plan
 
     def capture_subscription_order(self, order, payment=None):
         subscription = order.subscription
