@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 from datetime import timezone as tz
 from decimal import Decimal
-from typing import Optional
+from typing import NamedTuple, Optional
 
 import stripe
 from django.conf import settings
@@ -349,6 +349,13 @@ def get_statement_descriptor(payment):
     return "{} {}".format(settings.SITE_NAME, payment.order.id)
 
 
+class TransactionResult(NamedTuple):
+    amount: Decimal
+    amount_received: Decimal
+    received_timestamp: datetime | None
+    refunded: bool
+
+
 class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicProvider):
     form_class = PaymentForm
     provider_name = "creditcard"
@@ -361,7 +368,9 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
         self.public_key = public_key
         super().__init__(**kwargs)
 
-    def get_received_amount_timestamp(self, charges: list[stripe.Charge]):
+    def get_received_amount_timestamp(
+        self, charges: list[stripe.Charge]
+    ) -> TransactionResult:
         for charge in charges:
             if not charge.captured:
                 continue
@@ -369,25 +378,27 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
             if txn is None:
                 continue
 
-            amount = txn.net - charge.amount_refunded
-            dispute_net = 0
+            amount = charge.amount_captured - charge.amount_refunded
+            amount_received = txn.net - charge.amount_refunded
             if charge.disputed:
-                dispute_net = sum([t.net for t in charge.dispute.balance_transactions])
-            amount += dispute_net
-
-            # Ignore refund and dispute fees
-            if amount > 0:
-                return (
-                    Decimal(amount) / 100,
-                    convert_utc_timestamp(txn.created),
-                    charge.refunded or charge.disputed,
+                amount += sum([t.amount for t in charge.dispute.balance_transactions])
+                amount_received = amount + sum(
+                    [t.net for t in charge.dispute.balance_transactions]
                 )
-            return (
-                Decimal(0),
+
+            if amount_received < 0:
+                amount_received = 0
+            if amount < 0:
+                amount = 0
+
+            return TransactionResult(
+                Decimal(amount) / 100,
+                Decimal(amount_received) / 100,
                 convert_utc_timestamp(txn.created),
                 charge.refunded or charge.disputed,
             )
-        return (Decimal(0), None, False)
+
+        return TransactionResult(Decimal(0), Decimal(0), None, False)
 
     def update_status(self, payment):
         if not payment.transaction_id:
@@ -408,10 +419,10 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
             ],
         ).data
         payment.attrs.charges = charges
-        payment.captured_amount = Decimal(intent.amount_received) / 100
-        received_amount, received_timestamp, refunded = (
+        amount, received_amount, received_timestamp, refunded = (
             self.get_received_amount_timestamp(charges)
         )
+        payment.captured_amount = amount
         payment.received_amount = received_amount
         payment.received_timestamp = received_timestamp
         if refunded:
