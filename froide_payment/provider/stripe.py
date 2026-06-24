@@ -379,6 +379,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
                 continue
 
             amount = charge.amount_captured - charge.amount_refunded
+            refunded = charge.amount_refunded > 0
             amount_received = txn.net - charge.amount_refunded
             if charge.disputed:
                 amount += sum([t.amount for t in charge.dispute.balance_transactions])
@@ -395,7 +396,7 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
                 Decimal(amount) / 100,
                 Decimal(amount_received) / 100,
                 convert_utc_timestamp(txn.created),
-                charge.refunded or charge.disputed,
+                refunded or charge.disputed,
             )
 
         return TransactionResult(Decimal(0), Decimal(0), None, False)
