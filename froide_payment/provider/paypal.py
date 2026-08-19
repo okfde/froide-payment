@@ -571,7 +571,7 @@ class PaypalProvider(BasicProvider, EditableMixin):
                     "froide_payment:subscription-modify_canceled",
                     kwargs={"token": subscription.token},
                 ),
-                "locale": settings.LANGUAGE_CODE.lower(),
+                "locale": settings.LANGUAGE_CODE.split("-")[0],
             },
         }
         try:
