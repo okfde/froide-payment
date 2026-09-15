@@ -430,7 +430,7 @@ class PaymentAdmin(admin.ModelAdmin):
         try:
             owner_name = payment.attrs.owner
             iban = payment.attrs.iban
-        except KeyError:
+        except (KeyError, AttributeError):
             if order.customer:
                 customer_data = order.customer.data
                 owner_name = customer_data.get("owner", order.get_full_name())
