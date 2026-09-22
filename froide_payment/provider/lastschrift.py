@@ -19,7 +19,7 @@ class IBANProviderMixin:
         iban = None
         try:
             iban = payment.attrs.iban
-        except KeyError:
+        except (KeyError, AttributeError):
             pass
         if iban is None and payment.order.customer:
             customer = payment.order.customer

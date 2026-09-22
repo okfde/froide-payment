@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load form_helper %}
 {% load frontendbuild %}
 <form method="post"
       id="payment-form"
@@ -31,16 +32,16 @@
         </div>
     </div>
     <div id="container">
-        {% include "bootstrap_field.html" with field=form.owner_name %}
-        {% include "bootstrap_field.html" with field=form.iban %}
+        {% render_field form.owner_name %}
+        {% render_field form.iban %}
         <div id="additional-sepa-info"
              data-ibanpattern="{{ form.iban_address_required_regex }}"
              hidden>
             <div class="alert alert-info">{% translate "Your IBAN requires your address details for verification." %}</div>
-            {% include "bootstrap_field.html" with field=form.address %}
-            {% include "bootstrap_field.html" with field=form.city %}
-            {% include "bootstrap_field.html" with field=form.postcode %}
-            {% include "bootstrap_field.html" with field=form.country %}
+            {% render_field form.address %}
+            {% render_field form.city %}
+            {% render_field form.postcode %}
+            {% render_field form.country %}
         </div>
         <div id="card-errors" class="alert alert-danger" hidden role="alert"></div>
         <div>
