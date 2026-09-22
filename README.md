@@ -26,6 +26,7 @@ Configure these event types:
 - `invoice.payment_action_required`
 - `invoice.upcoming`
 - `invoice.created`
+- `invoice.finalized`
 
 Use this URL on your domain:
 
@@ -93,7 +94,7 @@ PAYMENT_VARIANTS = {
         # separate Webhook signing secret
         'signing_secret': '',
     }),
-   'sepa': ('froide_payment.provider.StripeSourceProvider', {
+   'sepa': ('froide_payment.provider.StripeSEPAProvider', {
        # Test API keys
        'public_key': '',
        'secret_key': '',
