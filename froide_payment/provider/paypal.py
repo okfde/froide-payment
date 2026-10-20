@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import datetime
 from datetime import timezone as tz
 from decimal import ROUND_HALF_UP, Decimal
 from typing import NamedTuple
@@ -541,6 +542,17 @@ class PaypalProvider(BasicProvider, EditableMixin):
         self.get_api(list_url, params)
 
     def cancel_subscription(self, subscription):
+        sub_url = "{e}/v1/billing/subscriptions/{sub_id}".format(
+            e=self.endpoint, sub_id=subscription.remote_reference
+        )
+        response = self.get_api(sub_url)
+        if response["status"] in ("CANCELLED", "EXPIRED"):
+            subscription.canceled = datetime.fromisoformat(
+                response["status_update_time"]
+            )
+            subscription.save(update_fields=["canceled"])
+            return True
+
         cancel_url = "{e}/v1/billing/subscriptions/{sub_id}/cancel".format(
             e=self.endpoint, sub_id=subscription.remote_reference
         )
