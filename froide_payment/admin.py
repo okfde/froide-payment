@@ -95,7 +95,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
         success_count = 0
         for sub in queryset:
             count += 1
-            if sub.cancel():
+            if sub.cancel(user=request.user, trigger="admin"):
                 success_count += 1
 
         self.message_user(
