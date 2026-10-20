@@ -546,6 +546,11 @@ class PaypalProvider(BasicProvider, EditableMixin):
             e=self.endpoint, sub_id=subscription.remote_reference
         )
         response = self.get_api(sub_url)
+        if response.status_code == 404:
+            subscription.canceled = subscription.created
+            subscription.save(update_fields=["canceled"])
+            return True
+
         if response["status"] in ("CANCELLED", "EXPIRED"):
             subscription.canceled = datetime.fromisoformat(
                 response["status_update_time"]
