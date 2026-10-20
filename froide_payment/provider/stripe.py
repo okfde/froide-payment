@@ -902,6 +902,12 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
         if created:
             subscription_created.send(sender=subscription)
 
+    def customer_subscription_updated(
+        self, request, stripe_subscription: stripe.Subscription
+    ):
+        if stripe_subscription.status in ("incomplete_expired", "canceled"):
+            self.customer_subscription_deleted(request, stripe_subscription)
+
     def customer_subscription_deleted(
         self, request, stripe_subscription: stripe.Subscription
     ):
