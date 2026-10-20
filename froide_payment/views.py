@@ -211,7 +211,7 @@ def subscription_detail(request, subscription):
 
 @require_POST
 @check_subscription_access
-def subscription_cancel(request, subscription):
+def subscription_cancel(request, subscription: Subscription):
     cancel_info = subscription.get_cancel_info()
     if subscription.canceled or not cancel_info.can_cancel:
         return redirect(subscription)

@@ -167,7 +167,20 @@ class StripeSubscriptionMixin(EditableMixin):
     def get_cancel_info(self, subscription):
         if subscription.canceled:
             return CancelInfo(False, _("This subscription is already canceled."))
-        return CancelInfo(True, _("You can cancel your credit card subscription."))
+        if not subscription.remote_reference:
+            return CancelInfo(False, _("This subscription has not been activated."))
+
+        first_order = subscription.get_first_order()
+        successful_payment = first_order.payment_set.filter(
+            status__in=[
+                PaymentStatus.CONFIRMED,
+                PaymentStatus.REFUNDED,
+                PaymentStatus.PENDING,
+            ]
+        ).exists()
+        if successful_payment:
+            return CancelInfo(True, _("You can cancel your subscription."))
+        return CancelInfo(True, _("This subscription has not been activated."))
 
     def get_modify_info(self, subscription):
         if not subscription.active:
@@ -914,13 +927,6 @@ class StripeSEPAProvider(StripeIntentProvider, CancelMixin):
     provider_name = "sepa"
     stripe_payment_method_type = "sepa_debit"
     stripe_setup_intent_prefix = "seti_"
-
-    def get_cancel_info(self, subscription):
-        if subscription.canceled:
-            return CancelInfo(False, _("This subscription is already canceled."))
-        return CancelInfo(
-            True, _("You can cancel your SEPA direct debit subscription here.")
-        )
 
     def get_initial_intent(self, payment):
         intent = None

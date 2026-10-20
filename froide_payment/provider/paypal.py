@@ -72,7 +72,17 @@ class PaypalProvider(BasicProvider, EditableMixin):
             return CancelInfo(
                 False, _("Your Paypal subscription has already been canceled.")
             )
-        return CancelInfo(True, _("You can cancel your Paypal subscription."))
+        first_order = subscription.get_first_order()
+        successful_payment = first_order.payment_set.filter(
+            status__in=[
+                PaymentStatus.CONFIRMED,
+                PaymentStatus.REFUNDED,
+                PaymentStatus.PENDING,
+            ]
+        ).exists()
+        if successful_payment:
+            return CancelInfo(True, _("You can cancel your Paypal subscription."))
+        return CancelInfo(False, _("This subscription is not yet active."))
 
     def get_modify_info(self, subscription):
         if not subscription.remote_reference:
