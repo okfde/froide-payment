@@ -1,4 +1,4 @@
-import type { StripeElements, StripeElementsOptionsMode } from "@stripe/stripe-js";
+import type { AvailablePaymentMethods, StripeElements, StripeElementsOptionsMode } from "@stripe/stripe-js";
 import type { ApplePayUpdateOption } from "@stripe/stripe-js/dist/stripe-js/elements/apple-pay";
 import { BasePaymentMethod } from "./base";
 import type { AmountInterval, PartialPaymentConfig, PaymentProcessingResponse } from "./types";
@@ -15,14 +15,21 @@ export default class QuickPaymentButtonMethod extends BasePaymentMethod {
     const fallbackConfig: AmountInterval = { amount: 500, interval: 0 }
     let config: AmountInterval | null = null
 
+    let needConfigResolve: ((value: AmountInterval) => void) | null = null
+    const needConfigPromise = new Promise((resolve) => needConfigResolve = resolve)
+    let hasPaymentMethodsResolve: ((value: AvailablePaymentMethods) => void) | null = null
+    const hasPaymentMethodsPromise = new Promise((resolve) => hasPaymentMethodsResolve = resolve)
+
     expressCheckoutDiv.addEventListener("donationchange", (event: CustomEvent<AmountInterval>) => {
-      if (config === null) {
-        // Optional: Animate in the Element
-        expressCheckoutDiv.style.visibility = 'initial';
-        const container = expressCheckoutDiv.closest(".quick-payment-container")
-        container?.removeAttribute("hidden");
-      }
+      if (config === null && needConfigResolve) needConfigResolve(event.detail)
       config = event.detail
+    })
+
+    Promise.all([needConfigPromise, hasPaymentMethodsPromise]).then(() => {
+      // Optional: Animate in the Element
+      expressCheckoutDiv.style.visibility = 'initial';
+      const container = expressCheckoutDiv.closest(".quick-payment-container")
+      container?.removeAttribute("hidden");
     })
 
     function getElementsConfig(): StripeElementsOptionsMode {
@@ -81,6 +88,9 @@ export default class QuickPaymentButtonMethod extends BasePaymentMethod {
       if (!availablePaymentMethods) {
         // No buttons will show
       } else {
+        if (hasPaymentMethodsResolve) {
+          hasPaymentMethodsResolve(availablePaymentMethods)
+        }
         expressCheckoutDiv.dispatchEvent(new CustomEvent("quickpaymentAvailable"));
       }
     });
