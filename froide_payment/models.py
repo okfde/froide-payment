@@ -622,18 +622,25 @@ class PaymentStatus(BasePaymentStatus):
     PENDING = "pending"
     CANCELED = "canceled"
     DEFERRED = "deferred"
+    WAITING = BasePaymentStatus.WAITING
+    PREAUTH = BasePaymentStatus.PREAUTH
+    CONFIRMED = BasePaymentStatus.CONFIRMED
+    REFUNDED = BasePaymentStatus.REFUNDED
+    REJECTED = BasePaymentStatus.REJECTED
+    ERROR = BasePaymentStatus.ERROR
+    INPUT = BasePaymentStatus.INPUT
 
     CHOICES = [
         (
-            BasePaymentStatus.WAITING,
+            WAITING,
             pgettext_lazy("payment status", "Waiting for input"),
         ),
-        (BasePaymentStatus.PREAUTH, pgettext_lazy("payment status", "Pre-authorized")),
-        (BasePaymentStatus.CONFIRMED, pgettext_lazy("payment status", "Confirmed")),
-        (BasePaymentStatus.REJECTED, pgettext_lazy("payment status", "Rejected")),
-        (BasePaymentStatus.REFUNDED, pgettext_lazy("payment status", "Refunded")),
-        (BasePaymentStatus.ERROR, pgettext_lazy("payment status", "Error")),
-        (BasePaymentStatus.INPUT, pgettext_lazy("payment status", "Input")),
+        (PREAUTH, pgettext_lazy("payment status", "Pre-authorized")),
+        (CONFIRMED, pgettext_lazy("payment status", "Confirmed")),
+        (REJECTED, pgettext_lazy("payment status", "Rejected")),
+        (REFUNDED, pgettext_lazy("payment status", "Refunded")),
+        (ERROR, pgettext_lazy("payment status", "Error")),
+        (INPUT, pgettext_lazy("payment status", "Input")),
         (PENDING, pgettext_lazy("payment status", "Confirmation pending")),
         (DEFERRED, pgettext_lazy("payment status", "Capture deferred")),
         (CANCELED, pgettext_lazy("payment status", "Canceled")),
