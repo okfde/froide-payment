@@ -73,7 +73,7 @@ class PaypalProvider(BasicProvider, EditableMixin):
                 False, _("Your Paypal subscription has already been canceled.")
             )
         first_order = subscription.get_first_order()
-        successful_payment = first_order.payment_set.filter(
+        successful_payment = first_order.payments.filter(
             status__in=[
                 PaymentStatus.CONFIRMED,
                 PaymentStatus.REFUNDED,

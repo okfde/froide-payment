@@ -171,7 +171,7 @@ class StripeSubscriptionMixin(EditableMixin):
             return CancelInfo(False, _("This subscription has not been activated."))
 
         first_order = subscription.get_first_order()
-        successful_payment = first_order.payment_set.filter(
+        successful_payment = first_order.payments.filter(
             status__in=[
                 PaymentStatus.CONFIRMED,
                 PaymentStatus.REFUNDED,
