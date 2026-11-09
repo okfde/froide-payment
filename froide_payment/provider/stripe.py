@@ -920,8 +920,8 @@ class StripeIntentProvider(StripeSubscriptionMixin, StripeWebhookMixin, BasicPro
                 stripe_subscription.canceled_at, tz=tz.utc
             )
         if not sub.cancel_trigger and stripe_subscription.cancellation_details:
-            sub.cancel_trigger = stripe_subscription.cancellation_details.get(
-                "reason", ""
+            sub.cancel_trigger = (
+                stripe_subscription.cancellation_details.get("reason") or "webhook"
             )
         sub.save()
         if should_send_signal:
